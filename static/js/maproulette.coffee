@@ -214,12 +214,21 @@ revGeocode = ->
     # display a message saying where we are in the world
     msg locstr
 
-@getTask = ->
+@getTask = (difficulty, near) ->
   ###
-  # Gets the next task and displays it
+  # Gets a new task and challenge and displays it
   ###
-  $.getJSON "/task", (data) ->
+  args = ""
+  args = "?difficulty=#{difficulty}" if difficulty?
+  if near?
+    if args
+      args = "#{args}&near=#{near}"
+    else
+      args = "#{args}&near=#{near}"
+  $.getJSON "/task#{args}", (data) ->
     currentTask = data
+    # Enter in the time we got the task
+    currentTask.startTime = new Date.getTime()
     features = data.features.features
     return false if not features? or not features.length
     for feature in features
@@ -241,6 +250,39 @@ revGeocode = ->
       revGeocode()
       setDelay 3, msgClose
     msgTaskText()
+
+@getNextTask = (near = null) ->
+  ###
+  # Gets another task from the current challenge, close to the location (if supplied)
+  ###
+    if near
+      url = "/c/#{currentChallenge}/task?near=#{near}"
+    else
+      url = "/c/#{currentChallenge}/task"
+
+    $.getJSON url, (data) ->
+      currentTask = data
+      features = data.features.features
+      return false if not features? or not features.length
+      for feature in features
+      if feature.properties.selected is true
+        selectedFeatureId = feature.properties.id
+        selectedFeatureType = feature.properties.type
+      geojsonLayer.addData feature
+      extent = getExtent(features[0])
+      map.fitBounds(extent)
+
+      updateStats()
+      # If we have a selected object, then use it to geocode (for
+      # efficiency)
+      if selectedFeatureType? and selectedFeatureId?
+        revCodeCodeOSMObj selectedFeatureType, selectedFeatureId
+        setDelay 3, msgClose
+      else
+        # Otherwise, fall back on the old method
+        revGeocode()
+        setDelay 3, msgClose
+      msgTaskText()
 
 initmap = ->
   ###
@@ -295,7 +337,9 @@ initmap = ->
   msg msgMovingOnToTheNextChallenge, 1
   payload = {
       "action": action,
-      "editor": editor}
+      "editor": editor,
+      "startTime": currentTask.startTime,
+      "endTime": new Date.getTime() }
   $.post "/c/#{currentTask.challenge}/task/#{currentTask.id}", payload, -> setTimeout getTask, 1000
 
 @openIn = (e) ->
