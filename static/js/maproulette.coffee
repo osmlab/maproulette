@@ -28,8 +28,6 @@ mr_attrib = """
   <p>
     thing by <a href='mailto:m@rtijn.org'>Martijn van Exel</a>
   <p>
-  This website uses <a href="http://www.maxmind.com/en/javascript">GeoIP Javascript from MaxMind</a>.
-  </p>
 </small>"""
 
 # Misc variables
@@ -473,6 +471,7 @@ getLocationByHTML5 = () ->
 
 
   # Determine the user's preferences
+  challenge = $(document).getUrlParam("challenge")
   if
   difficulty = "beginner" if not difficulty?
   if not location?
