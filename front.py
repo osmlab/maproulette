@@ -62,10 +62,6 @@ def post_task(challenge, task_id, form):
     r = requests.post(url, data = form)
     return Response(r.text())
 
-@app.route('/argparam')
-def iptest():
-    return render_template('argparam.haml')
-
 # By default, send out the standard client
 @app.route('/')
 def index():
@@ -99,16 +95,7 @@ def task():
     #
     difficulty = request.args.get('difficulty', 'beginner')
     near = request.args.get('near')
-    if not near:
-        # In the meantime, we can use
-        # http://freegeoip.net/{format}/{ip_or_hostname}
-        ## Add some error handling here
-        loc = requests.get("http://freegeoip.net/json/%(ip)" % 
-                           {'ip': request.remote_addr}).json()
-        lat = loc['latitude']
-        lon = loc['longitude']
-        point = shapely.geometry.Point(lat, lon)
-    else:
+    if near:
         lat, lon = near.split(',')
         point = shapely.geometry.Point(lat, lon)
 
