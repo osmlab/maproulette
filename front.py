@@ -1,8 +1,9 @@
-from flask import Flask, request, abort, send_from_directory, jsonify, render_template
+from flask import Flask, request, abort, send_from_directory, jsonify, render_template, Response
 from hamlish_jinja import HamlishExtension
 from flaskext.coffee import coffee
 from markdown import markdown
 from ConfigParser import ConfigParser
+import requests
 
 import settings
 
@@ -17,7 +18,6 @@ app.debug = True
 config = ConfigParser({'host': '127.0.0.1'})
 config.read('config.ini')
 
-
 # Some helper functions
 def get_task(challenge, near = None):
     host = config.get(challenge, 'host')
@@ -28,12 +28,12 @@ def get_task(challenge, near = None):
             'port': port,
             'near': near}
     else:
-        url = "http://%(host)s:%(port)s/task?near=%(near)" % {
+        url = "http://%(host)s:%(port)s/task" % {
             'host': host,
             'port': port}
     r = requests.get(url)
     # Insert error checking here
-    return Response(r.text(), mimetype = 'application/json')
+    return make_json_response(r.text)
 
 def get_stats(challenge):
     host = config.get(challenge, 'host')
@@ -41,7 +41,8 @@ def get_stats(challenge):
     url = "http://%(host)s:%(port)s/stats" % {
         'host': host,
         'port': port}
-    return Response(r.text(), mimetype = 'application/json')
+    r = requests.get(url)
+    return make_json_response(r.text)
 
 def get_meta(challenge):
     host = config.get(challenge, 'host')
@@ -50,7 +51,7 @@ def get_meta(challenge):
         'host': host,
         'port': port}
     r = requests.get(url)
-    return Response(r.text(), mimetype = 'application/json')
+    return make_json_response(r.text)
 
 def post_task(challenge, task_id, form):
     host = config.get(challenge, 'host')
@@ -60,7 +61,10 @@ def post_task(challenge, task_id, form):
         'port': port,
         'id': task_id}
     r = requests.post(url, data = form)
-    return Response(r.text())
+    return make_json_response(r.text)
+
+def make_json_response(json):
+    return Response(json.encode('utf8'), 200, mimetype = 'application/json')
 
 # By default, send out the standard client
 @app.route('/')
@@ -101,15 +105,15 @@ def task():
 
     # Now we look for an appropriate task
     challenges = []
-    for challenge in config.sections:
-        if challenge.difficulty == difficulty:
+    for challenge in config.sections():
+        if config.get(challenge, 'difficulty') == difficulty:
             bbox_list = eval(config.get(challenge, 'bbox'))
             box = shapely.geometry.box(*bbox_list)
             if box.contains(point):
                 challenges.append(challenge)
     if not challenges:
         # No matching challenges... Now what do we do?
-        pass
+        return "No matching challenges\n", 404
     
 @app.route('/c/<challenge>/meta')
 def challenge_meta(challenge):
@@ -143,4 +147,4 @@ def catch_all(path):
     return send_from_directory('static', path)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=5000)
