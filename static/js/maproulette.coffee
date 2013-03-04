@@ -19,6 +19,11 @@ difficulty = null
 location = null
 challenge = null
 
+# User variables for the future
+totalTasks = 0
+totalFixed = 0
+pageStartTime = null
+
 # Statically stored strings
 msgMovingOnToTheNextChallenge = 'OK, moving right along...'
 msgZoomInForEdit = """Please zoom in a little so we don't have to load a huge area from the API."""
