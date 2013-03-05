@@ -7,6 +7,8 @@ import requests
 
 import settings
 
+from pprint import pprint
+
 app = Flask(__name__)
 
 # Add haml support
@@ -80,15 +82,17 @@ def challenges_api():
     # This is a lot of parsing and unparsing of json...
     challenges = []
     for challenge in config.sections():
-        meta = requests.get("http://%{host}s:%(port)s/meta" % {
+        meta = requests.get("http://%(host)s:%(port)s/meta" % {
                 'host': config.get(challenge, 'host'),
                 'port': config.get(challenge, 'port')}).json()
-        stats = requests.get("http://%{host}s:%(port)s/stats" % {
+        stats = requests.get("http://%(host)s:%(port)s/stats" % {
                 'host': config.get(challenge, 'host'),
                 'port': config.get(challenge, 'port')}).json()
+
         meta.update(stats)
+        pprint(meta)
         challenges.append(meta)
-    return json.dumps(challenges)
+    return jsonify({'challenges': challenges})
 
 @app.route('/api/task')
 def task():
@@ -97,22 +101,27 @@ def task():
     ## We may want to consider a service like
     ## http://www.maxmind.com/en/web_services#city for a fallback in the future
     #
-    difficulty = request.args.get('difficulty', 'beginner')
+    difficulty = request.args.get('difficulty', 'easy')
+    print difficulty
     near = request.args.get('near')
     if near:
         lat, lon = near.split(',')
         point = shapely.geometry.Point(lat, lon)
-
     # Now we look for an appropriate task
     challenges = []
     for challenge in config.sections():
         if config.get(challenge, 'difficulty') == difficulty:
-            bbox_list = eval(config.get(challenge, 'bbox'))
-            box = shapely.geometry.box(*bbox_list)
-            if box.contains(point):
+            print "Difficulty matches"
+            if near:
+                bbox_list = eval(config.get(challenge, 'bbox'))
+                box = shapely.geometry.box(*bbox_list)
+                if box.contains(point):
+                    challenges.append(challenge)
+            else:
                 challenges.append(challenge)
-    if not challenges:
-        # No matching challenges... Now what do we do?
+    if challenges:
+        return jsonify({'challenges': challenges})
+    else:
         return "No matching challenges\n", 404
     
 @app.route('/c/<challenge>/meta')
@@ -120,23 +129,21 @@ def challenge_meta(challenge):
     if config.has_section(challenge):
         return get_meta(challenge)
     else:
-        pass
-        # Return 404
+        return "No such challenge\n", 404
 
 @app.route('/c/<challenge>/stats')
 def challenge_stats(challenge):
     if config.has_section(challenge):
         return get_stats(challenge)
     else:
-        pass
-        # Return 404
+        return "No such challenge\n", 404
 
 @app.route('/c/<challenge>/task')
 def challenge_task(challenge):
     if config.has_section(challenge):
         return get_task(challenge, request.args.get('near'))
     else:
-        pass
+        return "No such challenge\n", 404
 
 @app.route('/c/<challenge>/task/<id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
