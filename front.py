@@ -147,8 +147,12 @@ def challenge_task(challenge):
 
 @app.route('/c/<challenge>/task/<id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
-    dct = request.form
-    
+    if config.has_section(challenge):
+        dct = request.form
+        return post_task(challenge, task_id, dct)
+    else:
+        return "No such challenge\n", 404
+
 @app.route('/<path:path>')
 def catch_all(path):
     return send_from_directory('static', path)
