@@ -261,13 +261,13 @@ revGeocode = ->
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
-    if not currentChallenge?
-      #
+    if not currentChallenge? or currentChallenge.slug != challenge
+      updateDetails(challenge)
+    # In the meantime, we can grab our task, I think...
     if near
       url = "/c/#{currentChallenge.slug}/task?near=#{near}"
     else
       url = "/c/#{currentChallenge.slug}/task"
-
     $.getJSON url, (data) ->
       currentTask = data
       features = data.features.features
@@ -291,6 +291,15 @@ revGeocode = ->
         revGeocode()
         setDelay 3, msgClose
       msgTaskText()
+
+changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
+  ###
+  # Change the tile layer
+  ###
+  map.removeLayer(tileLayer)
+  tileLayer = new TileLayer(layerUrl, attribution: layerAttrib)
+  # The second argument adds the layer at the bottom
+  map.addLayer(tileLayer, true)
 
 initmap = ->
   ###
