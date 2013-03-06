@@ -1,15 +1,15 @@
-from flask import Flask, request, abort, send_from_directory, jsonify, render_template, Response
+from flask import Flask, request, send_from_directory, jsonify, \
+    render_template, Response
 from hamlish_jinja import HamlishExtension
 from flaskext.coffee import coffee
-from markdown import markdown
 from ConfigParser import ConfigParser
 import requests
-
-import settings
-
-from pprint import pprint
+from random import choice
+from shapely.geometry import asShape, Point
+import geojson
 
 app = Flask(__name__)
+coffee(app)
 
 # Add haml support
 app.jinja_env.add_extension(HamlishExtension)
@@ -20,12 +20,24 @@ app.debug = True
 config = ConfigParser({'host': '127.0.0.1'})
 config.read('config.ini')
 
+# Grab the challenge metadata
+challenges = {}
+for challenge in config.sections():
+    challenges['challenge'] = {'port': config.get(challenge, 'port'),
+                               'host': config.get(challenge, 'host')}
+    meta = requests.get("http://%(host)s:%(port)s/meta" % {
+            'host': config.get(challenge, 'host'),
+            'port': config.get(challenge, 'port')}).json()
+    challenge[challenge]['meta'] = meta
+    challenge[challenge]['bounds'] = asShape(meta['polygon'])
+    
 # Some helper functions
 def get_task(challenge, near = None):
+    """Gets a task and returns the resulting JSON as a string"""
     host = config.get(challenge, 'host')
     port = config.get(challenge, 'port')
     if near:
-        url = "http://%(host)s:%(port)s/task?near=%(near)" % {
+        url = "http://%(host)s:%(port)s/task?near=%(near)s" % {
             'host': host,
             'port': port,
             'near': near}
@@ -35,9 +47,10 @@ def get_task(challenge, near = None):
             'port': port}
     r = requests.get(url)
     # Insert error checking here
-    return make_json_response(r.text)
+    return r.text
 
 def get_stats(challenge):
+    """Gets the status of a challenge and returns it as a view"""
     host = config.get(challenge, 'host')
     port = config.get(challenge, 'port')
     url = "http://%(host)s:%(port)s/stats" % {
@@ -47,6 +60,7 @@ def get_stats(challenge):
     return make_json_response(r.text)
 
 def get_meta(challenge):
+    """Gets the metadata of a challenge and returns it as a view"""
     host = config.get(challenge, 'host')
     port = config.get(challenge, 'port')
     url = "http://%(host)s:%(port)s/stats" % {
@@ -56,98 +70,119 @@ def get_meta(challenge):
     return make_json_response(r.text)
 
 def post_task(challenge, task_id, form):
+    """Handles the challenge posting proxy functionality"""
     host = config.get(challenge, 'host')
     port = config.get(challenge, 'port')
-    url = "http://%(host)s:%(port)s/task/$(task_id)s" % {
+    url = "http://%(host)s:%(port)s/task/%(task_id)s" % {
         'host': host,
         'port': port,
-        'id': task_id}
+        'task_id': task_id}
     r = requests.post(url, data = form)
     return make_json_response(r.text)
 
+def filter_task(difficulty = 'easy', point = None):
+    """Returns matching challenges based on difficulty and area"""
+    chgs = []
+    for name, challenge in challenges.items():
+        if challenge['meta']['difficulty'] == difficulty:
+            if point:
+                if challenge['bounds'].contains(point):
+                    chgs.append(name)
+            else:
+                chgs.append(name)
+    return chgs
+
+def task_distance(task_text, point):
+    """Accepts a task and a point and returns the distance between them"""
+    # First we must turn the task into an object from text
+    task = geojson.loads(task_text)
+    # Now find the selected feature
+    for feature in task['features']:
+        if feature['selected'] is True:
+            geom = asShape(feature)
+            return geom.distance(point)
+
+def closest_task(chgs, point):
+    """Returns the closest task by a list of challenges"""
+    # Transform point into coordinates
+    coords = point.coords
+    lat, lon = coords[0]
+    latlng = "%f,%f" % (lat, lon)
+    tasks = [get_task(chg, latlng) for chg in chgs]
+    sorted_tasks = sorted(tasks, key=lambda task: task_distance(task, point))
+    return sorted_tasks[0]
+
 def make_json_response(json):
+    """Takes text and returns it as a JSON response"""
     return Response(json.encode('utf8'), 200, mimetype = 'application/json')
 
 # By default, send out the standard client
 @app.route('/')
 def index():
+    "Display the index.html"
     return render_template('index.haml')
 
 @app.route('/challenges.html')
 def challenges_web():
+    "Returns the challenges template"
     return render_template('challenges.haml')
 
 @app.route('/api/challenges')
 def challenges_api():
-    # This is a lot of parsing and unparsing of json...
-    challenges = []
-    for challenge in config.sections():
-        meta = requests.get("http://%(host)s:%(port)s/meta" % {
-                'host': config.get(challenge, 'host'),
-                'port': config.get(challenge, 'port')}).json()
-        stats = requests.get("http://%(host)s:%(port)s/stats" % {
-                'host': config.get(challenge, 'host'),
-                'port': config.get(challenge, 'port')}).json()
-
-        meta.update(stats)
-        pprint(meta)
-        challenges.append(meta)
-    return jsonify({'challenges': challenges})
+    "Returns a list of challenges as json"
+    chgs = [c.get('meta') for c in challenges]
+    return jsonify({'challenges': chgs})
 
 @app.route('/api/task')
 def task():
+    """Returns an appropriate task based on parameters"""
     # We need to find a task for the user to work on, based (as much
     # as possible)
-    ## We may want to consider a service like
-    ## http://www.maxmind.com/en/web_services#city for a fallback in the future
-    #
     difficulty = request.args.get('difficulty', 'easy')
-    print difficulty
     near = request.args.get('near')
     if near:
         lat, lon = near.split(',')
-        point = shapely.geometry.Point(lat, lon)
-    # Now we look for an appropriate task
-    challenges = []
-    for challenge in config.sections():
-        if config.get(challenge, 'difficulty') == difficulty:
-            print "Difficulty matches"
-            if near:
-                bbox_list = eval(config.get(challenge, 'bbox'))
-                box = shapely.geometry.box(*bbox_list)
-                if box.contains(point):
-                    challenges.append(challenge)
-            else:
-                challenges.append(challenge)
-    if challenges:
-        return jsonify({'challenges': challenges})
+        point = Point(lat, lon)
     else:
-        return "No matching challenges\n", 404
+        point = None
+    chgs = filter_task(difficulty, point)
+    if near:
+        task = closest_task(chgs, point)
+    else:
+        # Choose a random one
+        challenge = choice(chgs)
+        task = get_task(challenge)
+    return make_json_response(task)
     
 @app.route('/c/<challenge>/meta')
 def challenge_meta(challenge):
-    if config.has_section(challenge):
+    "Returns the metadata for a challenge"
+    if challenge in challenges:
         return get_meta(challenge)
     else:
         return "No such challenge\n", 404
 
 @app.route('/c/<challenge>/stats')
 def challenge_stats(challenge):
-    if config.has_section(challenge):
+    "Returns stat data for a challenge"
+    if challenge in challenges:
         return get_stats(challenge)
     else:
         return "No such challenge\n", 404
 
 @app.route('/c/<challenge>/task')
 def challenge_task(challenge):
-    if config.has_section(challenge):
-        return get_task(challenge, request.args.get('near'))
+    "Returns a task for specified challenge"
+    if challenge in challenges:
+        task = get_task(get_task(challenge, request.args.get('near')))
+        return make_json_response(task)
     else:
         return "No such challenge\n", 404
 
 @app.route('/c/<challenge>/task/<id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
-    if config.has_section(challenge):
+    "Accepts data for completed task"
+    if challenge in challenges:
         dct = request.form
         return post_task(challenge, task_id, dct)
     else:
@@ -155,7 +190,8 @@ def challenge_post(challenge, task_id):
 
 @app.route('/<path:path>')
 def catch_all(path):
+    "Returns static files based on path"
     return send_from_directory('static', path)
 
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(port=6000)
