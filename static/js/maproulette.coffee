@@ -256,10 +256,13 @@ revGeocode = ->
       setDelay 3, msgClose
     msgTaskText()
 
-@getNextTask = (near = null) ->
+@getTaskByChallenge = (challenge, near = null) ->
   ###
-  # Gets another task from the current challenge, close to the location (if supplied)
+  # Gets another task from the current challenge, close to the
+  # location (if supplied)
   ###
+    if not currentChallenge?
+      #
     if near
       url = "/c/#{currentChallenge.slug}/task?near=#{near}"
     else
@@ -464,6 +467,7 @@ updateDetails = (challenge) ->
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
       initmap()
+
 @init = ->
   ###
   # Find a challenge and set the map up
@@ -497,12 +501,16 @@ updateDetails = (challenge) ->
         when "i"
           openIn('id')
 
-
-  # Determine the user's preferences
+  # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
-  if
-  difficulty = "beginner" if not difficulty?
-  if not location?
+  difficulty = $(document).getUrlParam("difficulty")
+  near = $(document).getUrlParam("near")
+  difficulty = "easy" if not difficulty?
+  if challenge?
+    # If we know the challenge, we can use that to set the page up
+  else
+    # We'll need to grab a task and then use the information from that
+    # task to populate the page
 
 
   # Now make a request for a task
