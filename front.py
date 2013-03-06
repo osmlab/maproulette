@@ -23,13 +23,13 @@ config.read('config.ini')
 # Grab the challenge metadata
 challenges = {}
 for challenge in config.sections():
-    challenges['challenge'] = {'port': config.get(challenge, 'port'),
+    challenges[challenge] = {'port': config.get(challenge, 'port'),
                                'host': config.get(challenge, 'host')}
     meta = requests.get("http://%(host)s:%(port)s/meta" % {
             'host': config.get(challenge, 'host'),
             'port': config.get(challenge, 'port')}).json()
-    challenge[challenge]['meta'] = meta
-    challenge[challenge]['bounds'] = asShape(meta['polygon'])
+    challenges[challenge]['meta'] = meta
+    challenges[challenge]['bounds'] = asShape(meta['polygon'])
     
 # Some helper functions
 def get_task(challenge, near = None):
