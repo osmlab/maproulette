@@ -130,7 +130,7 @@ def challenges_web():
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
-    chgs = [c.get('meta') for c in challenges]
+    chgs = [challenges[c].get('meta') for c in challenges]
     return jsonify({'challenges': chgs})
 
 @app.route('/api/task')
