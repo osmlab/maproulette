@@ -261,9 +261,9 @@ revGeocode = ->
   # Gets another task from the current challenge, close to the location (if supplied)
   ###
     if near
-      url = "/c/#{currentChallenge}/task?near=#{near}"
+      url = "/c/#{currentChallenge.slug}/task?near=#{near}"
     else
-      url = "/c/#{currentChallenge}/task"
+      url = "/c/#{currentChallenge.slug}/task"
 
     $.getJSON url, (data) ->
       currentTask = data
@@ -464,27 +464,6 @@ updateDetails = (challenge) ->
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
       initmap()
-
-getLocationByIP = ->
-  ###
-  # Try to retrieve the user's location by IP address by asking the
-  # server for help. Use sparingly.
-  ###
-  # This requires the loading of
-  # http://dev.maxmind.com/geoip/javascript and user must sign up
-  latitude = geoip_latitude()
-  longitude = geoip_longitude()
-  if latitude and longitude
-    "#{latitude},#{longitude}"
-  else
-    null
-
-getLocationByHTML5 = () ->
-  ###
-  # Try to retrieve the user's location using the HTML5 Geolocation methods
-  ###
-  return null if not navigator.geolocation
-
 @init = ->
   ###
   # Find a challenge and set the map up
