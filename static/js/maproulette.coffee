@@ -37,7 +37,8 @@ mr_attrib = """
 
 # Misc variables
 map = undefined
-geojsonLayer = new L.GeoJSON()
+geojsonLayer = null
+
 
 setDelay = (seconds, func) ->
   ###
@@ -219,7 +220,7 @@ revGeocode = ->
     # display a message saying where we are in the world
     msg locstr
 
-@getTask = (difficulty, near) ->
+@getInitialTask = (difficulty, near) ->
   ###
   # Gets a new task and challenge and displays it
   ###
@@ -262,7 +263,7 @@ revGeocode = ->
   # location (if supplied)
   ###
     if not currentChallenge? or currentChallenge.slug != challenge
-      updateDetails(challenge)
+      updateChallengeDetails(challenge)
     # In the meantime, we can grab our task, I think...
     if near
       url = "/c/#{currentChallenge.slug}/task?near=#{near}"
@@ -301,43 +302,17 @@ changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
   # The second argument adds the layer at the bottom
   map.addLayer(tileLayer, true)
 
-initmap = ->
+addGeoJSONLayer = ->
   ###
-  # Initialize Leaflet map and layers
+  # Adds a GeoJSON layer to the map
   ###
-  map = new L.Map "map"
-  tileLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
-  map.setView new L.LatLng(40.0, -90.0), 17
-  map.addLayer tileLayer
-  # We need an onEachFeature function to create markers
   geojsonLayer = new L.geoJson(null, {
-      onEachFeature: (feature, layer) ->
-        if feature.properties and feature.properties.text
-          layer.bindPopup(feature.properties.text)
-          layer.openPopup()})
+    # We need an onEachFeature function to create markers
+    onEachFeature: (feature, layer) ->
+      if feature.properties and feature.properties.text
+        layer.bindPopup(feature.properties.text)
+        layer.openPopup()})
   map.addLayer geojsonLayer
-
-  # get the first task
-  getTask()
-
-  # add keyboard hooks
-  if enablekeyboardhooks
-    $(document).bind "keydown", (e) ->
-      key = String.fromCharCode(e)
-      switch key.which
-        when "q"
-            nextUp "falsepositive"
-        when "w"
-            nextUp "skip"
-        when "e"
-          openIn('josm')
-        when "r"
-          openIn('potlatch')
-        when "i"
-          openIn('id')
-
-    # Update the counter
-    updateCounter()
 
 @nextUp = (action) ->
   ###
@@ -465,7 +440,7 @@ updateStats = ->
     remaining = data.total - data.done
     $("#counter").text remaining
 
-updateDetails = (challenge) ->
+updateChallengeDetails = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
@@ -475,24 +450,17 @@ updateDetails = (challenge) ->
     if data.tileurl? and data.tileurl != tileURL
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
-      initmap()
+      changeMapLayer(tileURL, tileAttrib)
 
 @init = ->
   ###
   # Find a challenge and set the map up
   ###
-  # Set up the map
   map = new L.Map "map"
-  osmLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
+  tileLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
   map.setView new L.LatLng(40.0, -90.0), 17
-  map.addLayer osmLayer
-  # We need an onEachFeature function to create markers later
-  geojsonLayer = new L.geoJson(null, {
-      onEachFeature: (feature, layer) ->
-        if feature.properties and feature.properties.text
-          layer.bindPopup(feature.properties.text)
-          layer.openPopup()})
-  map.addLayer geojsonLayer
+  map.addLayer tileLayer
+  addGeoJSONLayer()
 
   # add keyboard hooks
   if enablekeyboardhooks
@@ -509,6 +477,19 @@ updateDetails = (challenge) ->
           openIn('potlatch')
         when "i"
           openIn('id')
+
+  # Set up the map
+  map = new L.Map "map"
+  osmLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
+  map.setView new L.LatLng(40.0, -90.0), 17
+  map.addLayer osmLayer
+  # We need an onEachFeature function to create markers later
+  geojsonLayer = new L.geoJson(null, {
+      onEachFeature: (feature, layer) ->
+        if feature.properties and feature.properties.text
+          layer.bindPopup(feature.properties.text)
+          layer.openPopup()})
+  map.addLayer geojsonLayer
 
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
