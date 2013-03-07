@@ -10,6 +10,7 @@ tileAttrib = '© <a href="http://openstreetmap.org">OpenStreetMap</a> contributo
 # Task specific features
 currentChallenge = null
 currentTask = null
+selectedFeature = null
 selectedFeatureType = null
 selectedFeatureId = null
 
@@ -226,15 +227,7 @@ revGeocode = ->
     # Enter in the time we got the task
     currentTask.startTime = new Date.getTime()
     features = data.features.features
-    return false if not features? or not features.length
-    for feature in features
-      if feature.properties.selected is true
-        selectedFeatureId = feature.properties.id
-        selectedFeatureType = feature.properties.type
-      geojsonLayer.addData feature
-    extent = getExtent(features[0])
-    map.fitBounds(extent)
-
+    drawFeatures(features) if features? and features.length
     updateStats()
     # If we have a selected object, then use it to geocode (for
     # efficiency)
@@ -247,24 +240,28 @@ revGeocode = ->
       setDelay 3, msgClose
     msgTaskText()
 
-@getTaskByChallenge = (challenge, near = null) ->
+drawFeatures = (features) ->
+  ###
+  # Draw the features onto the current geojson layer. Also pulls out
+  # selected features
+  ###
+  for feature in features
+    if feature.properties.selected is true
+        selectedFeature = feature
+        selectedFeatureId = feature.properties.id
+        selectedFeatureType = feature.properties.type
+      geojsonLayer.addData feature
+    extent = getExtent(selectedFeature)
+    map.fitBounds(extent)
+
+@getTask = (challenge = currentChallenge.slug, near = null) ->
   ###
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
   if not currentChallenge? or currentChallenge.slug != challenge
     updateChallengeDetails(challenge)
-    # In the meantime, we can grab our task, I think...
-  if near
-    url = "/c/#{challenge}/task?near=#{near}"
-  else
-      url = "/c/#{challenge}/task"
-  $.getJSON url, (data) ->
-    currentTask = data
-    features = data.features.features
-    return false if not features? or not features.length
-    for feature in features
-      if feature.properties.selected is true
+    # In the meantime, we can grab our task,  feature.properties.selected is true
         selectedFeatureId = feature.properties.id
         selectedFeatureType = feature.properties.type
       geojsonLayer.addData feature
@@ -479,7 +476,8 @@ enableKeyboardShortcuts = ->
   if challenge?
     updateChallengeDetails(challenge)
     updateStats(challenge)
-    getTaskByChallenge(challenge, near)
+    getTask(challenge, near)
   else
     # We'll need to grab a task and then use the information from that
     # task to populate the page
+
