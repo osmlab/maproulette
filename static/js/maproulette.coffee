@@ -1,4 +1,4 @@
-###
+1###
 # This file contains all the MapRoulette client/javascript code
 ###
 root = exports ? this
@@ -39,14 +39,12 @@ mr_attrib = """
 map = undefined
 geojsonLayer = null
 
-
 setDelay = (seconds, func) ->
   ###
   # Wraps setTimeout to make it easiet to write in Coffeescript
     ###
   # setTimeout takes miliseconds, so we multiply them by 1000
   setTimeout func, seconds * 1000
-
 
 jQuery.fn.extend
   ###
@@ -137,12 +135,6 @@ msgTaskText = ->
   ###
   msg currentTask.text if currentTask.text
 
-msgGeocodeThenText = ->
-  ###
-  # Displays the geocoded location and then the instructions in the
-  # msgbox
-  ###
-
 dlg = (h) ->
   ###
   #  Display the data (html) in a dialog box. Must be closed with dlgClose()
@@ -209,10 +201,8 @@ revGeocode = ->
   # Reverse geocodes the center of the (currently displayed) map
   ###
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=" + map.getCenter().lat + " &lon=" + map.getCenter().lng
-
   #close any notifications that are still hanging out on the page.
   msgClose()
-
   # this next bit fires the RGC request and parses the result in a
   # decent way, but it looks really ugly.
   $.getJSON mqurl, (data) ->
@@ -452,6 +442,19 @@ updateChallengeDetails = (challenge) ->
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
 
+enableKeyboardShortcuts = ->
+  ###
+  # Enables and sets the keyboard shortcuts
+  ###
+  $(document).bind "keydown", (e) ->
+    key = String.fromCharCode(e)
+    switch key.which
+      when "q" then nextUp "falsepositive"
+      when "w" then nextUp "skip"
+      when "e" then openIn('josm')
+      when "r" then openIn('potlatch')
+      when "i" then openIn('id')
+
 @init = ->
   ###
   # Find a challenge and set the map up
@@ -466,19 +469,7 @@ updateChallengeDetails = (challenge) ->
 
   # add keyboard hooks
   if enablekeyboardhooks
-    $(document).bind "keydown", (e) ->
-      key = String.fromCharCode(e)
-      switch key.which
-        when "q"
-            nextUp "falsepositive"
-        when "w"
-            nextUp "skip"
-        when "e"
-          openIn('josm')
-        when "r"
-          openIn('potlatch')
-        when "i"
-          openIn('id')
+    enableKeyboardShortcuts()
 
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
@@ -488,8 +479,7 @@ updateChallengeDetails = (challenge) ->
   if challenge?
     updateChallengeDetails(challenge)
     updateStats(challenge)
-
-    # If we know the challenge, we can use that to set the page up
+    getTaskByChallenge(challenge, near)
   else
     # We'll need to grab a task and then use the information from that
     # task to populate the page
