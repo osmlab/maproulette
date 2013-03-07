@@ -262,18 +262,18 @@ revGeocode = ->
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
-    if not currentChallenge? or currentChallenge.slug != challenge
-      updateChallengeDetails(challenge)
+  if not currentChallenge? or currentChallenge.slug != challenge
+    updateChallengeDetails(challenge)
     # In the meantime, we can grab our task, I think...
-    if near
-      url = "/c/#{currentChallenge.slug}/task?near=#{near}"
-    else
-      url = "/c/#{currentChallenge.slug}/task"
-    $.getJSON url, (data) ->
-      currentTask = data
-      features = data.features.features
-      return false if not features? or not features.length
-      for feature in features
+  if near
+    url = "/c/#{challenge}/task?near=#{near}"
+  else
+      url = "/c/#{challenge}/task"
+  $.getJSON url, (data) ->
+    currentTask = data
+    features = data.features.features
+    return false if not features? or not features.length
+    for feature in features
       if feature.properties.selected is true
         selectedFeatureId = feature.properties.id
         selectedFeatureType = feature.properties.type
@@ -281,16 +281,16 @@ revGeocode = ->
       extent = getExtent(features[0])
       map.fitBounds(extent)
 
-      updateStats(currentChallenge.slug)
-      # If we have a selected object, then use it to geocode (for
-      # efficiency)
-      if selectedFeatureType? and selectedFeatureId?
-        revCodeCodeOSMObj selectedFeatureType, selectedFeatureId
-        setDelay 3, msgClose
-      else
-        # Otherwise, fall back on the old method
-        revGeocode()
-        setDelay 3, msgClose
+    updateStats(currentChallenge.slug)
+    # If we have a selected object, then use it to geocode (for
+    # efficiency)
+    if selectedFeatureType? and selectedFeatureId?
+      revCodeCodeOSMObj selectedFeatureType, selectedFeatureId
+      setDelay 3, msgClose
+    else
+      # Otherwise, fall back on the old method
+      revGeocode()
+      setDelay 3, msgClose
       msgTaskText()
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
