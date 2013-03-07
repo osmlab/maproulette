@@ -281,7 +281,7 @@ revGeocode = ->
       extent = getExtent(features[0])
       map.fitBounds(extent)
 
-      updateStats()
+      updateStats(currentChallenge.slug)
       # If we have a selected object, then use it to geocode (for
       # efficiency)
       if selectedFeatureType? and selectedFeatureId?
@@ -431,12 +431,12 @@ Come back here after checking the area.<br />
   <p>#{mr_attrib}</p>
   <p><div class='button' onClick="dlgClose()">OK</div></p>""", 0
 
-updateStats = ->
+updateStats = (challenge) ->
   ###
-  # Get the stats for the current challenge and display the count of
-  # remaining tasks
+  # Get the stats for the challenge and display the count of remaining
+  # tasks
   ###
-  $.getJSON "/stats", (data) ->
+  $.getJSON "c/#{challenge}/stats", (data) ->
     remaining = data.total - data.done
     $("#counter").text remaining
 
@@ -456,6 +456,8 @@ updateChallengeDetails = (challenge) ->
   ###
   # Find a challenge and set the map up
   ###
+
+  # First create the map
   map = new L.Map "map"
   tileLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
   map.setView new L.LatLng(40.0, -90.0), 17
@@ -478,33 +480,16 @@ updateChallengeDetails = (challenge) ->
         when "i"
           openIn('id')
 
-  # Set up the map
-  map = new L.Map "map"
-  osmLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
-  map.setView new L.LatLng(40.0, -90.0), 17
-  map.addLayer osmLayer
-  # We need an onEachFeature function to create markers later
-  geojsonLayer = new L.geoJson(null, {
-      onEachFeature: (feature, layer) ->
-        if feature.properties and feature.properties.text
-          layer.bindPopup(feature.properties.text)
-          layer.openPopup()})
-  map.addLayer geojsonLayer
-
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
   difficulty = $(document).getUrlParam("difficulty")
   near = $(document).getUrlParam("near")
   difficulty = "easy" if not difficulty?
   if challenge?
+    updateChallengeDetails(challenge)
+    updateStats(challenge)
+
     # If we know the challenge, we can use that to set the page up
   else
     # We'll need to grab a task and then use the information from that
     # task to populate the page
-
-
-  # Now make a request for a task
-  # get the first error
-  getItem()
-  # Update the counter
-  updateCounter()
