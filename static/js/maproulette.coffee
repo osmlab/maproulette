@@ -317,7 +317,7 @@ addGeoJSONLayer = ->
   challenge = currentChallenge.slug
   task_id = currentTask.id
   $.post "/c/#{challenge}/task/#{task_id}", payload, ->
-    setDelay 1 ->
+    setDelay 1, ->
       clearTask()
       getTask(challenge, near)
 
