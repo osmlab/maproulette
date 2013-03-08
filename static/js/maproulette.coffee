@@ -304,10 +304,6 @@ addGeoJSONLayer = ->
   # the result of the confirmation dialog in the database, and load
   # the next challenge
   ###
-  # Clear out some variables
-  currentTask = null
-  selectedFeature = null
-
   # Now display the message and move on to the next task
   msg msgMovingOnToTheNextChallenge, 1
   payload = {
@@ -319,7 +315,9 @@ addGeoJSONLayer = ->
   center = map.getCenter()
   near = "#{center.lat},#{center.lon}"
   challenge = currentChallenge.slug
-  $.post "/c/#{currentTask.challenge}/task/#{currentTask.id}", payload, -> setTimeout getTask(challenge, near), 1000
+  task_id = currentTask.id
+  $.post "/c/#{challenge}/task/#{task_id}", payload, ->
+    setDelay 1 getTask(challenge, near)
 
 @openIn = (e) ->
   ###
