@@ -1,4 +1,4 @@
-11###
+###
 # This file contains all the MapRoulette client/javascript code
 ###
 root = exports ? this
@@ -270,7 +270,7 @@ showTask = (task) ->
   # location (if supplied)
   ###
   if not currentChallenge? or currentChallenge.slug != challenge
-    updateChallengechallenge)
+    updateChallengechallenge()
   $.getJSON "c/#{challenge}/task", (data) ->
     currentTask = data
     currentTask.startTime = new Date.getTime()
