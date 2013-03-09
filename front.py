@@ -1,5 +1,6 @@
 from flask import Flask, request, send_from_directory, jsonify, \
-    render_template, Response
+    render_template, Response, session
+from flask_oauth import OAuth
 from hamlish_jinja import HamlishExtension
 from flaskext.coffee import coffee
 from ConfigParser import ConfigParser
@@ -19,6 +20,23 @@ app.debug = True
 # Load the configuration
 config = ConfigParser({'host': '127.0.0.1'})
 config.read('config.ini')
+
+#initialize osm oauth
+# instantiate OAuth object
+oauth = OAuth()
+osm = oauth.remote_app(
+    'osm',
+    base_url='http://openstreetmap.org/',
+    request_token_url='http://www.openstreetmap.org/oauth/request_token',
+    access_token_url='http://www.openstreetmap.org/oauth/access_token',
+    authorize_url='http://www.openstreetmap.org/oauth/authorize',
+    consumer_key='zoTZ4nLqQ1Y5ncemWkzvc3b3hG156jgvryIjiEkX',
+    consumer_secret='e6nIgyAUqPt8d9kJymX6J86i5sG5mI8Rvv7XfRUb'
+)
+
+@osm.tokengetter
+def get_osm_token(token=None):
+    return session.get('osm_token')
 
 # Grab the challenge metadata
 challenges = {}
@@ -192,6 +210,27 @@ def challenge_post(challenge, task_id):
 def catch_all(path):
     "Returns static files based on path"
     return send_from_directory('static', path)
+
+@app.route('/oauth/authenticate')
+def oauth_authenticate():
+    """Initiates OAuth authentication agains the OSM server"""
+    return osm.authorize(callback=url_for('oauth_authorized',
+      next=request.args.get('next') or request.referrer or None))
+
+@app.route('/oauth/callback')
+def oauth_authorized(resp):
+    """Receives the OAuth callback from OSM"""
+    next_url = request.args.get('next') or url_for('index')
+    if resp is None:
+        flash(u'You denied the request to sign in.')
+        return redirect(next_url)
+    session['osm_token'] = (
+      resp['oauth_token'],
+      resp['oauth_token_secret']
+    )
+    session['twitter_user'] = resp['screen_name']
+    flash('You were signed in as %s' % resp['screen_name'])
+    return redirect(next_url)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=8888)
