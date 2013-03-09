@@ -433,7 +433,7 @@ updateChallenge = (challenge) ->
   ###
   $.getJSON "/c/#{challenge}/meta", (data) ->
     currentChallenge = data
-    $('#challengeDetails').text data.blurb
+    $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
