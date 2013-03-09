@@ -3,6 +3,11 @@
 ###
 root = exports ? this
 
+# Map variables
+map = undefined
+geojsonLayer = null
+tileLayer = null
+
 # Challenge related attributes
 tileUrl = "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 tileAttrib = '© <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
@@ -23,19 +28,16 @@ totalTasks = 0
 totalFixed = 0
 pageStartTime = null
 
-# Statically stored strings
+# Static strings
 msgMovingOnToTheNextChallenge = 'OK, moving right along...'
 msgZoomInForEdit = """Please zoom in a little so we don't have to load a huge area from the API."""
 mr_attrib = """
 <small>
   <p>
-    thing by <a href='mailto:m@rtijn.org'>Martijn van Exel</a>
+    thing by <a href='mailto:m@rtijn.org'>Martijn van Exel and Serge Wroclawski</a>
   <p>
 </small>"""
 
-# Misc variables
-map = undefined
-geojsonLayer = null
 
 setDelay = (seconds, func) ->
   ###
@@ -128,11 +130,10 @@ getExtent = (feature) ->
   ###
   $("#msgBox").fadeOut()
 
-msg = (html, timeout = null) ->
+msg = (html) ->
   ###
   # Display a msg (html) in the msgbox. Must be closed with msgClose()
   ###
-  clearTimeout timeout
   $("#msgBox").html(html).fadeIn()
   $("#msgBox").css "display", "block"
 
@@ -256,10 +257,7 @@ showTask = (task) ->
   ###
   # Displays a task to the display and waits for the user prompt
   ###
-  ######## NOT USED YET ########
-  # Draw the features and move the map to the right extent
   drawFeaures(task.features)
-  # Update the stats on the side. We can rely on the ordering here
   revGeocode()
   setDelay 3, msgClose()
   msgTaskText()
@@ -304,8 +302,8 @@ addGeoJSONLayer = ->
   # the result of the confirmation dialog in the database, and load
   # the next challenge
   ###
-  # Now display the message and move on to the next task
-  msg msgMovingOnToTheNextChallenge, 1
+  msg msgMovingOnToTheNextChallenge
+  setDelay 1, msgClose()
   payload = {
       "action": action,
       "editor": editor,
