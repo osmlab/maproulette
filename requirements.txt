@@ -2,6 +2,7 @@ CoffeeScript==1.0.5
 Fabric==1.5.3
 Flask==0.9
 Flask-Coffee==0.3
+Flask-OAuth==0.12
 Hamlish-Jinja==0.3.0
 Jinja2==2.6
 PyExecJS==1.0.4
@@ -10,9 +11,11 @@ Werkzeug==0.8.3
 argparse==1.2.1
 distribute==0.6.24
 geojson==1.0.1
+httplib2==0.8
 logilab-astng==0.24.2
 logilab-common==0.59.0
 meld3==0.6.10
+oauth2==1.5.211
 paramiko==1.9.0
 pycrypto==2.6
 requests==1.1.0
