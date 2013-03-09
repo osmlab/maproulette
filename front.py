@@ -7,6 +7,7 @@ import requests
 from random import choice
 from shapely.geometry import asShape, Point
 import geojson
+from xml.etree import ElementTree as ET
 
 app = Flask(__name__)
 coffee(app)
@@ -32,6 +33,21 @@ for challenge in config.sections():
     challenges[challenge]['bounds'] = asShape(meta['polygon'])
     
 # Some helper functions
+def get_user_attribs(s):
+    """Takes a string XML representation of a user's details and
+    returns a dictionary of values we care about"""
+    root = ET.fromstring(s)
+    user = {}
+    user['id'] = root.find('./user').attribs['id']
+    user['username'] = root.find('./user').attrib['display_name']
+    try:
+        user['lat'] = float(root.find('./user/home').attrib('lat'))
+        user['lon'] = float(root.find('./user/home').attrib('lon'))
+    except AttributeError:
+        pass
+    user['changesets'] = int(root.find('./user/changesets').attrib('count'))
+    return user
+
 def get_task(challenge, near = None):
     """Gets a task and returns the resulting JSON as a string"""
     host = config.get(challenge, 'host')
@@ -146,6 +162,7 @@ def task():
     else:
         point = None
     chgs = filter_task(difficulty, point)
+    # We need code to test for an empty list here
     if near:
         task = closest_task(chgs, point)
     else:
