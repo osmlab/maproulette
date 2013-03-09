@@ -1,5 +1,5 @@
 from flask import Flask, request, send_from_directory, jsonify, \
-    render_template, Response, session, url_for
+    render_template, Response, session, url_for, flash, redirect
 from flask_oauth import OAuth
 from hamlish_jinja import HamlishExtension
 from flaskext.coffee import coffee
@@ -17,6 +17,7 @@ coffee(app)
 app.jinja_env.add_extension(HamlishExtension)
 app.jinja_env.hamlish_mode = 'indented'
 app.debug = True
+app.secret_key = "Toronto is a great place to hold a hack weekend"
 
 # Load the configuration
 config = ConfigParser({'host': '127.0.0.1'})
@@ -228,13 +229,14 @@ def catch_all(path):
     "Returns static files based on path"
     return send_from_directory('static', path)
 
-@app.route('/oauth/authenticate')
-def oauth_authenticate():
-    """Initiates OAuth authentication agains the OSM server"""
+@app.route('/oauth/authorize')
+def oauth_authorize():
+    """Initiates OAuth authorization agains the OSM server"""
     return osm.authorize(callback=url_for('oauth_authorized',
       next=request.args.get('next') or request.referrer or None))
 
 @app.route('/oauth/callback')
+@osm.authorized_handler
 def oauth_authorized(resp):
     """Receives the OAuth callback from OSM"""
     next_url = request.args.get('next') or url_for('index')
@@ -245,8 +247,8 @@ def oauth_authorized(resp):
       resp['oauth_token'],
       resp['oauth_token_secret']
     )
-    session['twitter_user'] = resp['screen_name']
-    flash('You were signed in as %s' % resp['screen_name'])
+    print(resp)
+    flash('You were signed in')
     return redirect(next_url)
 
 if __name__ == '__main__':
