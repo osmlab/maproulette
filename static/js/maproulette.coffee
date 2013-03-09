@@ -3,6 +3,11 @@
 ###
 root = exports ? this
 
+# Map variables
+map = undefined
+geojsonLayer = null
+tileLayer = null
+
 # Challenge related attributes
 tileUrl = "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 tileAttrib = '© <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
@@ -10,8 +15,7 @@ tileAttrib = '© <a href="http://openstreetmap.org">OpenStreetMap</a> contributo
 # Task specific features
 currentChallenge = null
 currentTask = null
-selectedFeatureType = null
-selectedFeatureId = null
+selectedFeature = null
 
 # User variables
 editor = ""
@@ -24,20 +28,15 @@ totalTasks = 0
 totalFixed = 0
 pageStartTime = null
 
-# Statically stored strings
+# Static strings
 msgMovingOnToTheNextChallenge = 'OK, moving right along...'
 msgZoomInForEdit = """Please zoom in a little so we don't have to load a huge area from the API."""
-enablekeyboardhooks = true
 mr_attrib = """
 <small>
   <p>
-    thing by <a href='mailto:m@rtijn.org'>Martijn van Exel</a>
+    thing by <a href='mailto:m@rtijn.org'>Martijn van Exel and Serge Wroclawski</a>
   <p>
 </small>"""
-
-# Misc variables
-map = undefined
-geojsonLayer = null
 
 
 setDelay = (seconds, func) ->
@@ -46,7 +45,6 @@ setDelay = (seconds, func) ->
     ###
   # setTimeout takes miliseconds, so we multiply them by 1000
   setTimeout func, seconds * 1000
-
 
 jQuery.fn.extend
   ###
@@ -91,6 +89,15 @@ jQuery.fn.extend
     else
       returnVal
 
+clearTask = ->
+  ###
+  # Clear all the task-related variables in between tasks
+  ###
+  currentTask = null
+  selectedFeature = null
+  # Remove and re-add the geojson layer (since we can't clear it)
+  map.removeLayer(geojsonLayer)
+  addGeoJSONLayer()
 
 getExtent = (feature) ->
   ###
@@ -123,11 +130,10 @@ getExtent = (feature) ->
   ###
   $("#msgBox").fadeOut()
 
-msg = (html, timeout = null) ->
+msg = (html) ->
   ###
   # Display a msg (html) in the msgbox. Must be closed with msgClose()
   ###
-  clearTimeout timeout
   $("#msgBox").html(html).fadeIn()
   $("#msgBox").css "display", "block"
 
@@ -136,12 +142,6 @@ msgTaskText = ->
   # Display the current task text in the msgbox
   ###
   msg currentTask.text if currentTask.text
-
-msgGeocodeThenText = ->
-  ###
-  # Displays the geocoded location and then the instructions in the
-  # msgbox
-  ###
 
 dlg = (h) ->
   ###
@@ -191,13 +191,15 @@ nomToString = (addr) ->
     else
       "Somewhere on Earth"
 
-revGeocodeOSMObj = (type, id) ->
+revGeocodeOSMObj = (feature) ->
   ###
-  # Reverse geocodes an OSM object
+  # Reverse geocodes an OSM object as a geoJSON feature
   ###
   # The Nominatim documents say reverse geocoding an object is
   # preferable to a location, so this function should be used instead
   # of revGeocode
+  type = feature.properties.type
+  id = feature.properties.id
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=#{type}@osm_id=#{id}"
   msgClose()
   $.getJSON mqurl, (data) ->
@@ -209,10 +211,8 @@ revGeocode = ->
   # Reverse geocodes the center of the (currently displayed) map
   ###
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=" + map.getCenter().lat + " &lon=" + map.getCenter().lng
-
   #close any notifications that are still hanging out on the page.
   msgClose()
-
   # this next bit fires the RGC request and parses the result in a
   # decent way, but it looks really ugly.
   $.getJSON mqurl, (data) ->
@@ -220,7 +220,7 @@ revGeocode = ->
     # display a message saying where we are in the world
     msg locstr
 
-@getInitialTask = (difficulty, near) ->
+@getInitialTask = (difficulty = "easy", near) ->
   ###
   # Gets a new task and challenge and displays it
   ###
@@ -233,65 +233,47 @@ revGeocode = ->
       args = "#{args}&near=#{near}"
   $.getJSON "/task#{args}", (data) ->
     currentTask = data
-    # Enter in the time we got the task
     currentTask.startTime = new Date.getTime()
-    features = data.features.features
-    return false if not features? or not features.length
-    for feature in features
-      if feature.properties.selected is true
-        selectedFeatureId = feature.properties.id
-        selectedFeatureType = feature.properties.type
+    # Since this is out first task, we'll need to grab the metadata
+    # from the task and use that to populate the page
+    challenge = currentTask.challenge
+    updateChallenge(challenge)
+    updateStats(challenge)
+    showTask(data)
+
+drawFeatures = (features) ->
+  ###
+  # Draw the features onto the current geojson layer. Also pulls out
+  # selected features
+  ###
+  for feature in features
+    if feature.properties.selected is true
+        selectedFeature = feature
       geojsonLayer.addData feature
-    extent = getExtent(features[0])
+    extent = getExtent(selectedFeature)
     map.fitBounds(extent)
 
-    updateStats()
-    # If we have a selected object, then use it to geocode (for
-    # efficiency)
-    if selectedFeatureType? and selectedFeatureId?
-      revCodeCodeOSMObj selectedFeatureType, selectedFeatureId
-      setDelay 3, msgClose
-    else
-      # Otherwise, fall back on the old method
-      revGeocode()
-      setDelay 3, msgClose
-    msgTaskText()
+showTask = (task) ->
+  ###
+  # Displays a task to the display and waits for the user prompt
+  ###
+  drawFeaures(task.features)
+  revGeocode()
+  setDelay 3, msgClose()
+  msgTaskText()
 
-@getTaskByChallenge = (challenge, near = null) ->
+@getTask = (challenge = currentChallenge.slug, near = null) ->
   ###
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
   if not currentChallenge? or currentChallenge.slug != challenge
-    updateChallengeDetails(challenge)
-    # In the meantime, we can grab our task, I think...
-  if near
-    url = "/c/#{challenge}/task?near=#{near}"
-  else
-      url = "/c/#{challenge}/task"
-  $.getJSON url, (data) ->
+    updateChallengechallenge()
+  $.getJSON "c/#{challenge}/task", (data) ->
     currentTask = data
-    features = data.features.features
-    return false if not features? or not features.length
-    for feature in features
-      if feature.properties.selected is true
-        selectedFeatureId = feature.properties.id
-        selectedFeatureType = feature.properties.type
-      geojsonLayer.addData feature
-      extent = getExtent(features[0])
-      map.fitBounds(extent)
-
-    updateStats(currentChallenge.slug)
-    # If we have a selected object, then use it to geocode (for
-    # efficiency)
-    if selectedFeatureType? and selectedFeatureId?
-      revCodeCodeOSMObj selectedFeatureType, selectedFeatureId
-      setDelay 3, msgClose
-    else
-      # Otherwise, fall back on the old method
-      revGeocode()
-      setDelay 3, msgClose
-      msgTaskText()
+    currentTask.startTime = new Date.getTime()
+    showTask(data)
+  updateStats(challenge)
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
   ###
@@ -320,19 +302,22 @@ addGeoJSONLayer = ->
   # the result of the confirmation dialog in the database, and load
   # the next challenge
   ###
-  # Clear out some variables
-  currentTask = null
-  selectedFeatureId = null
-  selectedFeatureType = null
-
-  # Now display the message and move on to the next task
-  msg msgMovingOnToTheNextChallenge, 1
+  msg msgMovingOnToTheNextChallenge
+  setDelay 1, msgClose()
   payload = {
       "action": action,
       "editor": editor,
       "startTime": currentTask.startTime,
       "endTime": new Date.getTime() }
-  $.post "/c/#{currentTask.challenge}/task/#{currentTask.id}", payload, -> setTimeout getTask, 1000
+  # Find the map centroid for our next near
+  center = map.getCenter()
+  near = "#{center.lat},#{center.lon}"
+  challenge = currentChallenge.slug
+  task_id = currentTask.id
+  $.post "/c/#{challenge}/task/#{task_id}", payload, ->
+    setDelay 1, ->
+      clearTask()
+      getTask(challenge, near)
 
 @openIn = (e) ->
   ###
@@ -345,8 +330,10 @@ addGeoJSONLayer = ->
   bounds = map.getBounds()
   sw = bounds.getSouthWest()
   ne = bounds.getNorthEast()
+  selectedFeatureId = selectedFeature.properties.id
+  selectedFeatureType = selectedFeature.properties.type
   if editor is "josm"
-    JOSMurl =  "http://127.0.0.1:8111/load_and_zoom?left=#{sw.lng}&right=#{ne.lng}&top=#{ne.lat}&bottom=#{sw.lat}&new_layer=0&select=#{selectedFeatureType}#{selectedFeatureId}"
+    JOSMurl =  "http://127.0.0.1:8111/load_and_zoom?left=#{sw.lng}&right=#{ne.lng}&top=#{ne.lat}&bottom=#{sw.lat}&new_layer=0&select=#{selectedFeaturetype}#{selectedFeatureId}"
     # Use the .ajax JQ method to load the JOSM link unobtrusively and
     # alert when the JOSM plugin is not running.
     $.ajax
@@ -440,56 +427,50 @@ updateStats = (challenge) ->
     remaining = data.total - data.done
     $("#counter").text remaining
 
-updateChallengeDetails = (challenge) ->
+updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
   $.getJSON "/c/#{challenge}/meta", (data) ->
     currentChallenge = data
-    $('#challengeDetails').text data.blurb
+    $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
 
+enableKeyboardShortcuts = ->
+  ###
+  # Enables and sets the keyboard shortcuts
+  ###
+  $(document).bind "keydown", (e) ->
+    key = String.fromCharCode(e)
+    switch key.which
+      when "q" then nextUp "falsepositive"
+      when "w" then nextUp "skip"
+      when "e" then openIn('josm')
+      when "r" then openIn('potlatch')
+      when "i" then openIn('id')
+
 @init = ->
   ###
   # Find a challenge and set the map up
   ###
-
   # First create the map
   map = new L.Map "map"
   tileLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
   map.setView new L.LatLng(40.0, -90.0), 17
   map.addLayer tileLayer
   addGeoJSONLayer()
-
-  # add keyboard hooks
-  if enablekeyboardhooks
-    $(document).bind "keydown", (e) ->
-      key = String.fromCharCode(e)
-      switch key.which
-        when "q"
-            nextUp "falsepositive"
-        when "w"
-            nextUp "skip"
-        when "e"
-          openIn('josm')
-        when "r"
-          openIn('potlatch')
-        when "i"
-          openIn('id')
+  enableKeyboardShortcuts()
 
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
   difficulty = $(document).getUrlParam("difficulty")
   near = $(document).getUrlParam("near")
-  difficulty = "easy" if not difficulty?
   if challenge?
-    updateChallengeDetails(challenge)
+    updateChallenge(challenge)
     updateStats(challenge)
-
-    # If we know the challenge, we can use that to set the page up
+    getTask(challenge, near)
   else
-    # We'll need to grab a task and then use the information from that
-    # task to populate the page
+    getInitialTask(difficulty, near)
