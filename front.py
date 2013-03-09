@@ -33,7 +33,7 @@ for challenge in config.sections():
     challenges[challenge]['bounds'] = asShape(meta['polygon'])
     
 # Some helper functions
-def get_user_attribs(s):
+def parse_user_details(s):
     """Takes a string XML representation of a user's details and
     returns a dictionary of values we care about"""
     root = ET.fromstring(s)
@@ -48,15 +48,20 @@ def get_user_attribs(s):
     user['changesets'] = int(root.find('./user/changesets').attrib('count'))
     return user
 
-def get_task(challenge, near = None):
+def get_task(challenge, near = None, lock = True):
     """Gets a task and returns the resulting JSON as a string"""
     host = config.get(challenge, 'host')
     port = config.get(challenge, 'port')
+    args = ""
     if near:
-        url = "http://%(host)s:%(port)s/task?near=%(near)s" % {
+        args += "near=%(near)s"
+    if not lock:
+        args += "lock=no"
+    if args:
+        url = "http://%(host)s:%(port)s/task?%(args)" % {
             'host': host,
             'port': port,
-            'near': near}
+            'args': args}
     else:
         url = "http://%(host)s:%(port)s/task" % {
             'host': host,
@@ -105,7 +110,7 @@ def filter_task(difficulty = 'easy', point = None):
                 if challenge['bounds'].contains(point):
                     chgs.append(name)
             else:
-                chgs.append(name)
+               chgs.append(name)
     return chgs
 
 def task_distance(task_text, point):
