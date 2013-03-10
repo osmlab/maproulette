@@ -4,3 +4,4 @@
 *.ini
 *.conf
 *.log
+settings.py
