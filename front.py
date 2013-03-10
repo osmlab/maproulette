@@ -9,7 +9,7 @@ from random import choice
 from shapely.geometry import asShape, Point
 import geojson
 from xml.etree import ElementTree as ET
-from sys import exit, stderr
+import sys
 
 try:
     import settings
@@ -20,13 +20,13 @@ Run bin/make_secret.py
     sys.exit(2)
 
 app = Flask(__name__)
+app.secret_key = settings.secret_key
 coffee(app)
 
 # Add haml support
 app.jinja_env.add_extension(HamlishExtension)
 app.jinja_env.hamlish_mode = 'indented'
 app.debug = True
-app.secret_key = "Toronto is a great place to hold a hack weekend"
 
 # Load the configuration
 config = ConfigParser({'host': '127.0.0.1'})
@@ -266,4 +266,12 @@ def oauth_authorized(resp):
     return redirect(next_url)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=80)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type = int, help = "the port to bind to",
+                        default = 6000)
+    parser.add_argument("--host", help = "the host to bind to",
+                        default = "localhost")
+    args = parser.parse_args()
+    app.run(port=args.port)
+    app.run(host=args.host, port=args.port)
