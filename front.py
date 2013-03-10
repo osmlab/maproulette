@@ -9,6 +9,15 @@ from random import choice
 from shapely.geometry import asShape, Point
 import geojson
 from xml.etree import ElementTree as ET
+from sys import exit, stderr
+
+try:
+    import settings
+except ImportError:
+    sys.stderr("""There must be a settings.py file with a secret_key.
+Run bin/make_secret.py
+""")
+    sys.exit(2)
 
 app = Flask(__name__)
 coffee(app)
