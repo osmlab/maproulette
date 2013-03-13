@@ -269,7 +269,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type = int, help = "the port to bind to",
-                        default = 6000)
+                        default = 3000)
     parser.add_argument("--host", help = "the host to bind to",
                         default = "localhost")
     args = parser.parse_args()
