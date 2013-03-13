@@ -12,19 +12,20 @@
     %div#msgBox
     %div#dlgBox
     %div.banner
-      %strong
-        OPENSTREETMAP
-        %em
-          MAPROULETTE
-      %div#challenge
-        CURRENT CHALLENGE
-        %div#challengeDetails
-      %div#about.button onclick='showHelp()'
-        about/help
-      %div style="font-size:10px"
-        we're down to
-        %span#counter
-          connectivity errors. Thanks!    
+      %div.content
+        %strong
+          OpenStreetMap
+          %em
+            MAPROULETTE
+        %div#challenge
+          CURRENT CHALLENGE
+          %div#challengeDetails
+        %div#about.button onclick='showHelp()'
+          about/help
+        %div style="font-size:10px"
+          we're down to
+          %span#counter
+            connectivity errors. Thanks!
       %div#noterror.button onclick='nextUp("noterror")'
         THIS IS NOT AN ERROR:/
         %span.key << q
