@@ -1,7 +1,6 @@
-body { 
+body {
     height:100%;
-    line-height:200%;
-    font:16px bold arial,sans-serif;
+    font:16px/20px bold 'Helvetica Neue',arial,sans-serif;
 }
 
 .xhair {
@@ -52,15 +51,14 @@ div.fullscreen{
     display:block;
     position:absolute;
     top:0;
-    left:0;    
+    left:0;
     width:100%;
     height:100%;
 }
 
 div.banner {
     text-align:center;
-    border: 1px solid #666;
-    padding:4px;
+    border: 1px solid #999;
     z-index:15;
     position:absolute;
     right:10px;
@@ -71,23 +69,57 @@ div.banner {
     border-radius: 4px;
 }
 
+div.content {
+    padding:10px;
+}
+
 div.button {
     font-size:14px;
     line-height:20px;
     /*font-weight:bold;*/
     color:black;
     padding:4px;
-    margin:4px;
-    background-color:#6cf;
-    border: 1px solid black;
-    -moz-border-radius: 4px;
-    border-radius: 4px;
+    background-color:#bef;
+    border-top: 1px solid #81ADC2;
+    transition:background 100ms linear;
+}
+
+div.button:last-child {
+    -moz-border-radius: 0 0 3px 3px;
+    border-radius: 0 0 3px 3px;
 }
 
 div.button:hover {
     cursor:pointer;
-    background-color:#666!important;
-    color:#fff!important;
+    background:#6AC0EB;
+}
+
+.key {
+    background:#fff;
+    color: #222;
+    font-size: 10px;
+    padding: 0px 7px;
+    font-weight: bold;
+    display: inline-block;
+    border-radius: 2px;
+    border: 1px solid #aaa;
+    position: relative;
+    z-index: 1;
+    text-align: left;
+    clear: both;
+}
+
+.key::after {
+    content: "";
+    position: absolute;
+    border-radius: 2px;
+    height: 10px;
+    width: 100%;
+    z-index: 0;
+    bottom: -4px;
+    left: -1px;
+    border: 1px solid #aaa;
+    border-top: 0;
 }
 
 div.button#about {
@@ -96,7 +128,7 @@ div.button#about {
 }
 
 div.button#noterror {
-    background-color:#4c3;
+    background-color:#ae9;
 }
 
 div.button#skip {
@@ -113,22 +145,6 @@ div#challengeDetails {
 
 span.#counter {
     style="font-weight:bold";
-}
-
-.key {
-    margin:0px 6px;
-    font-size:10px;
-    line-height:14px;
-    display: inline-block;
-    width: 14px;
-    height:14px;
-    padding:2px;
-    border:1px solid black;
-    text-align:center;
-    background-color:white;
-    color:black;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
 }
 
 #announce {
