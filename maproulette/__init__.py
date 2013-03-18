@@ -1,9 +1,8 @@
-from flask import Flask, request, send_from_directory, jsonify, \
-    render_template, Response, session, url_for, flash, redirect
+from flask import Flask, session, request, send_from_directory, jsonify, \
+    render_template, Response, url_for, flash, redirect
+from flask_oauth import OAuth
 from simplekv.memory import DictStore
 from flaskext.kvsession import KVSessionExtension
-from flask_oauth import OAuth
-from hamlish_jinja import HamlishExtension
 from flaskext.coffee import coffee
 import requests
 from random import choice
@@ -36,9 +35,6 @@ app.secret_key = settings.secret_key
 # Coffeescript enable the app
 coffee(app)
 
-# Add haml support
-app.jinja_env.add_extension(HamlishExtension)
-app.jinja_env.hamlish_mode = 'indented'
 app.debug = True
 
 # Adding MongoDB configs
@@ -171,12 +167,12 @@ def make_json_response(json):
 @app.route('/')
 def index():
     "Display the index.html"
-    return render_template('index.haml')
+    return render_template('index.html')
 
 @app.route('/challenges.html')
 def challenges_web():
     "Returns the challenges template"
-    return render_template('challenges.haml')
+    return render_template('challenges.html')
 
 @app.route('/api/challenges')
 def challenges_api():

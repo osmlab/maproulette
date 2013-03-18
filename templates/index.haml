@@ -21,6 +21,11 @@
           logged in as: {{ session.osm_display_name }}
         -else:
           %a href="{{ url_for('oauth_authorize') }} << log in
+      %div 
+        -if {{is_authorized}}
+            logged in as {{OSM.display_name}}
+        -else
+            not logged in. log in.
       %div#challenge
         CURRENT CHALLENGE
         %div#challengeDetails
