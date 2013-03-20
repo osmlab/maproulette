@@ -1,9 +1,10 @@
 from flask import Flask, request, send_from_directory, jsonify, \
     render_template, Response, session, url_for, flash, redirect
+from simplekv.memory import DictStore
+from flaskext.kvsession import KVSessionExtension
 from flask_oauth import OAuth
 from hamlish_jinja import HamlishExtension
 from flaskext.coffee import coffee
-from ConfigParser import ConfigParser
 import requests
 from random import choice
 from shapely.geometry import asShape, Point
@@ -19,8 +20,19 @@ Run bin/make_secret.py
 """)
     sys.exit(2)
 
+# initialize server KV session store
+store = DictStore()
+
+# instantiate flask app
 app = Flask(__name__)
+
+# connect flask app to server KV session store
+KVSessionExtension(store, app)
+
+# Apps need a secret key
 app.secret_key = settings.secret_key
+
+# Coffeescript enable the app
 coffee(app)
 
 # Add haml support
@@ -28,16 +40,12 @@ app.jinja_env.add_extension(HamlishExtension)
 app.jinja_env.hamlish_mode = 'indented'
 app.debug = True
 
-# Load the configuration
-config = ConfigParser({'host': '127.0.0.1'})
-config.read('config.ini')
-
 #initialize osm oauth
 # instantiate OAuth object
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
-    base_url='http://openstreetmap.org/',
+    base_url='http://api.openstreetmap.org/api/0.6/',
     request_token_url='http://www.openstreetmap.org/oauth/request_token',
     access_token_url='http://www.openstreetmap.org/oauth/access_token',
     authorize_url='http://www.openstreetmap.org/oauth/authorize',
@@ -49,17 +57,6 @@ osm = oauth.remote_app(
 def get_osm_token(token=None):
     return session.get('osm_token')
 
-# Grab the challenge metadata
-challenges = {}
-for challenge in config.sections():
-    challenges[challenge] = {'port': config.get(challenge, 'port'),
-                               'host': config.get(challenge, 'host')}
-    meta = requests.get("http://%(host)s:%(port)s/meta" % {
-            'host': config.get(challenge, 'host'),
-            'port': config.get(challenge, 'port')}).json()
-    challenges[challenge]['meta'] = meta
-    challenges[challenge]['bounds'] = asShape(meta['polygon'])
-    
 # Some helper functions
 def parse_user_details(s):
     """Takes a string XML representation of a user's details and
@@ -238,10 +235,6 @@ def challenge_post(challenge, task_id):
     else:
         return "No such challenge\n", 404
 
-@app.route('/<path:path>')
-def catch_all(path):
-    "Returns static files based on path"
-    return send_from_directory('static', path)
 
 @app.route('/oauth/authorize')
 def oauth_authorize():
@@ -261,9 +254,19 @@ def oauth_authorized(resp):
       resp['oauth_token'],
       resp['oauth_token_secret']
     )
-    print(resp)
+    print 'getting user data from osm'
+    osmuserresp = osm.get('user/details')
+    if osmuserresp.status == 200:
+        session['user'] = osmuserresp.data['user']
+    else:
+        print 'not able to get osm user data'
     flash('You were signed in')
     return redirect(next_url)
+
+@app.route('/<path:path>')
+def catch_all(path):
+    "Returns static files based on path"
+    return send_from_directory('static', path)
 
 if __name__ == '__main__':
     import argparse
