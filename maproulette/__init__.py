@@ -16,8 +16,8 @@ try:
     import settings
 except ImportError:
     sys.stderr("""There must be a settings.py file with a secret_key.
-Run bin/make_secret.py
-""")
+    Run bin/make_secret.py
+    """)
     sys.exit(2)
 
 # initialize server KV session store
@@ -273,7 +273,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type = int, help = "the port to bind to",
-                        default = 6000)
+                        default = 6666)
     parser.add_argument("--host", help = "the host to bind to",
                         default = "localhost")
     args = parser.parse_args()
