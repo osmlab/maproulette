@@ -1,7 +1,7 @@
 from flask import Flask, session, request, send_from_directory, jsonify, \
-    render_template, Response, url_for, flash, redirect
+    render_template, Response, url_for, redirect
 from flask_oauth import OAuth
-from simplekv.memory import DictStore
+from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee
 import requests
@@ -21,7 +21,7 @@ except ImportError:
     sys.exit(2)
 
 # initialize server KV session store
-store = DictStore()
+store = FilesystemStore('./sessiondata')
 
 # instantiate flask app
 app = Flask(__name__)
@@ -56,22 +56,26 @@ osm = oauth.remote_app(
 
 @osm.tokengetter
 def get_osm_token(token=None):
+    session.regenerate()
     return session.get('osm_token')
 
 # Some helper functions
 def parse_user_details(s):
     """Takes a string XML representation of a user's details and
     returns a dictionary of values we care about"""
-    root = ET.fromstring(s)
+    root = et.find('./user')
+    if not root:
+        print 'aaaargh'
+        return None
     user = {}
-    user['id'] = root.find('./user').attribs['id']
-    user['username'] = root.find('./user').attrib['display_name']
+    user['id'] = root.attrib['id']
+    user['username'] = root.attrib['display_name']
     try:
-        user['lat'] = float(root.find('./user/home').attrib('lat'))
-        user['lon'] = float(root.find('./user/home').attrib('lon'))
+        user['lat'] = float(root.find('./home').attrib['lat'])
+        user['lon'] = float(root.find('./home').attrib['lon'])
     except AttributeError:
         pass
-    user['changesets'] = int(root.find('./user/changesets').attrib('count'))
+    user['changesets'] = int(root.find('./changesets').attrib['count'])
     return user
 
 def get_task(challenge, near = None, lock = True):
@@ -237,6 +241,11 @@ def challenge_post(challenge, task_id):
         return "No such challenge\n", 404
 
 
+@app.route('/logout')
+def logout():
+    session.destroy()
+    return redirect('/')
+
 @app.route('/oauth/authorize')
 def oauth_authorize():
     """Initiates OAuth authorization agains the OSM server"""
@@ -249,7 +258,6 @@ def oauth_authorized(resp):
     """Receives the OAuth callback from OSM"""
     next_url = request.args.get('next') or url_for('index')
     if resp is None:
-        flash(u'You denied the request to sign in.')
         return redirect(next_url)
     session['osm_token'] = (
       resp['oauth_token'],
@@ -258,10 +266,9 @@ def oauth_authorized(resp):
     print 'getting user data from osm'
     osmuserresp = osm.get('user/details')
     if osmuserresp.status == 200:
-        session['user'] = osmuserresp.data['user']
+        session['user'] = get_user_attribs(osmuserresp.data)
     else:
         print 'not able to get osm user data'
-    flash('You were signed in')
     return redirect(next_url)
 
 @app.route('/<path:path>')

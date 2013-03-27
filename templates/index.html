@@ -15,7 +15,7 @@
         <strong>OPENSTREETMAP <em>MAPROULETTE</em></strong>
         <div>
             {%- if session.osm_token -%}
-            logged in as  XXX
+            logged in as {{ session.user.username }}. <a href="{{ url_for('logout') }}">log out</a>
             {%- else -%}
             not logged in. <a href="{{ url_for('oauth_authorize') }}">log in</a>
             {%- endif -%}
