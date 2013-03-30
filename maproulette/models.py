@@ -1,11 +1,12 @@
 import datetime
 from flask import url_for
 from maproulette import db
-from mongoengine-extras.fields import SlugField
 
 import re
 from mongoengine.base import ValidationError
 from mongoengine.fields import StringField
+
+"""This module contains the various ORM models"""
 
 # Mostly taken from
 # https://github.com/bennylope/mongoengine-extras/blob/master/mongoengine_extras/fields.py
@@ -33,7 +34,7 @@ class Challenge(db.Document):
     blurb = db.StringField()
     polygon = db.ListField(field=db.GeoPointField)
     help = db.StringField()
-    tasks = db.ListField(dbEmbeddedDocumentField('Task'))
+    tasks = db.ListField(db.EmbeddedDocumentField('Task'))
     instruction = db.StringField()
     run_id = db.StringField(max_length=64)
     active = db.BooleanField()
@@ -42,12 +43,12 @@ class Challenge(db.Document):
     }
     
     def __unicode__(self):
-        return title
+        return self.title
     
 class Task(db.Document):
     task_id = db.StringField(max_length = 255, primary_key = True)
     location = db.GeoPointField()
-    taskactions = ListField(ReferenceField(TaskState))
+    taskactions = db.ListField(db.ReferenceField(db.TaskState))
     run_id  = db.StringField(max_length = 64)
     meta = {
         'allow_inheritance': True,
@@ -60,14 +61,16 @@ class Task(db.Document):
 
         Available states: "available", "locked", "done", "deleted"
         """
-        # First check for deletion or completion
-        # (this may need some adjusting in the future, this is probably far too complicated)
+        # First check for deletion or completion (this may need some
+        # adjusting in the future, this is probably far too
+        # complicated)
         for ts in self.taskactions:
             if ts.action == 'deleted':
                 return 'deleted'
             elif ts.action == 'reviewed' or ts.action == 'edited':
                 return 'done'
-        # If none of those are the case, then we only need the most recent taskaction
+        # If none of those are the case, then we only need the most
+        # recent taskaction
         ts = self.taskactions[0]
         if ts.action == 'available' or ts.action == 'skipped':
             return 'available'
@@ -87,10 +90,10 @@ class TaskAction(db.DynamicDocument):
     ACTIONS = ('assigned', 'edited', 'reviewed', 'deleted',
                'notanerrored', 'skipped', 'alreadyfixed')
     ACTIONS_MAXLENGTH = max([len(i) for i in ACTIONS])
-    action = StringField(choices = ACTIONS, max_length = ACTIONS_MAXLENGTH)
-    task = ReferenceField(Task)
-    timestamp = DateTimeField(default=datetime.datetime.now)
-    osmuser = ReferenceField(OSMUser)
+    action = db.StringField(choices = ACTIONS, max_length = ACTIONS_MAXLENGTH)
+    task = db.ReferenceField(Task)
+    timestamp = db.DateTimeField(default=datetime.datetime.now)
+    osmuser = db.ReferenceField(OSMUser)
     meta = {
         'ordering': ['timestamp']
         }
