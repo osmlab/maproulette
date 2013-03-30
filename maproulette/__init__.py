@@ -11,6 +11,7 @@ from shapely.geometry import asShape, Point
 import geojson
 from xml.etree import ElementTree as ET
 import sys
+from flask.ext.mongoengine import MongoEngine
 
 try:
     import settings
@@ -40,8 +41,12 @@ app.jinja_env.add_extension(HamlishExtension)
 app.jinja_env.hamlish_mode = 'indented'
 app.debug = True
 
+# Adding MongoDB configs
+app.config["MONGODB_SETTINGS"] = {'DB': "maproulette"}
+db = MongoEngine(app)
+
 #initialize osm oauth
-# instantiate OAuth object
+# instantite OAuth object
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
