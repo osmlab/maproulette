@@ -5,9 +5,7 @@ from flask_oauth import OAuth
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee
-import requests
 from random import choice
-from shapely.geometry import asShape, Point
 import geojson
 
 import sys
