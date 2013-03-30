@@ -50,12 +50,12 @@ db = MongoEngine(app)
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
-    base_url='http://api.openstreetmap.org/api/0.6/',
-    request_token_url='http://www.openstreetmap.org/oauth/request_token',
-    access_token_url='http://www.openstreetmap.org/oauth/access_token',
-    authorize_url='http://www.openstreetmap.org/oauth/authorize',
-    consumer_key='zoTZ4nLqQ1Y5ncemWkzvc3b3hG156jgvryIjiEkX',
-    consumer_secret='e6nIgyAUqPt8d9kJymX6J86i5sG5mI8Rvv7XfRUb'
+    base_url='http://openstreetmap.org/',
+    request_token_url = 'http://www.openstreetmap.org/oauth/request_token',
+    access_token_url = 'http://www.openstreetmap.org/oauth/access_token',
+    authorize_url = 'http://www.openstreetmap.org/oauth/authorize',
+    consumer_key = settings.consumer_key,
+    consumer_secret = settings.consumer_secret
 )
 
 @osm.tokengetter
