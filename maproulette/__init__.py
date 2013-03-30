@@ -1,5 +1,5 @@
 from flask import Flask, session, request, send_from_directory, jsonify, \
-    render_template, Response, url_for, redirect
+    render_template, url_for, redirect
 from helpers import make_json_response, parse_user_details
 from flask_oauth import OAuth
 from simplekv.fs import FilesystemStore
