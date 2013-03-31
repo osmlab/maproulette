@@ -13,6 +13,7 @@ from flask.ext.mongoengine import MongoEngine
 
 try:
     import settings
+    settings_keys = dir(settings)
 except ImportError:
     sys.stderr.write("""There must be a settings.py file with a secret_key.
     Run bin/make_secret.py
@@ -43,14 +44,24 @@ db = MongoEngine(app)
 #initialize osm oauth
 # instantite OAuth object
 oauth = OAuth()
+if 'consumer_key' in settings_keys:
+    consumer_key = settings.consumer_key
+else:
+    consumer_key = "consumer_key"
+
+if 'consumer_secret' in settings_keys:
+    consumer_secret = settings.consumer_secret
+else:
+    consumer_secret = "111111"
+    
 osm = oauth.remote_app(
     'osm',
     base_url='http://openstreetmap.org/',
     request_token_url = 'http://www.openstreetmap.org/oauth/request_token',
     access_token_url = 'http://www.openstreetmap.org/oauth/access_token',
     authorize_url = 'http://www.openstreetmap.org/oauth/authorize',
-    consumer_key = settings.consumer_key,
-    consumer_secret = settings.consumer_secret
+    consumer_key = consumer_key,
+    consumer_secret = consumer_secret
 )
 
 @osm.tokengetter
