@@ -21,14 +21,14 @@ class SlugField(db.StringField):
 class OSMUser(db.Document):
     user_id = db.IntField(primary_key=True)
     oauth_token = db.StringField()
-    display_name = db.Stringfield()
-    home_location = db.GeoPointfield()
+    display_name = db.StringField()
+    home_location = db.GeoPointField()
 
     def __unicode__(self):
         return self.display_name
 
 class Challenge(db.Document):
-    slug = db.SlugField(primary_key = True)
+    slug = SlugField(primary_key = True)
     title = db.StringField(max_length=128)
     description = db.StringField()
     blurb = db.StringField()
@@ -48,7 +48,7 @@ class Challenge(db.Document):
 class Task(db.Document):
     task_id = db.StringField(max_length = 255, primary_key = True)
     location = db.GeoPointField()
-    taskactions = db.ListField(db.ReferenceField(db.TaskState))
+    taskactions = db.ListField(db.ReferenceField('TaskAction'))
     run_id  = db.StringField(max_length = 64)
     meta = {
         'allow_inheritance': True,
@@ -83,7 +83,7 @@ class Task(db.Document):
                 return 'locked'
 
 class GeoTask(Task):
-    geographies = db.EmbeddedDocument()
+    geographies = db.DictField()
     instruction = db.StringField()
 
 class TaskAction(db.DynamicDocument):
