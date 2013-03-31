@@ -24,7 +24,11 @@ except ImportError:
 store = FilesystemStore('./sessiondata')
 
 # instantiate flask app
-app = Flask(__name__)
+app = Flask(__name__,
+           static_folder = 'static',
+           template_folder = 'templates')
+
+app.config.from_pyfile('maproulette.cfg')
 
 # connect flask app to server KV session store
 KVSessionExtension(store, app)
@@ -38,30 +42,18 @@ coffee(app)
 app.debug = True
 
 # Adding MongoDB configs
-app.config["MONGODB_SETTINGS"] = {'DB': "maproulette"}
 db = MongoEngine(app)
 
-#initialize osm oauth
 # instantite OAuth object
 oauth = OAuth()
-if 'consumer_key' in settings_keys:
-    consumer_key = settings.consumer_key
-else:
-    consumer_key = "consumer_key"
-
-if 'consumer_secret' in settings_keys:
-    consumer_secret = settings.consumer_secret
-else:
-    consumer_secret = "111111"
-    
 osm = oauth.remote_app(
     'osm',
     base_url='http://openstreetmap.org/',
     request_token_url = 'http://www.openstreetmap.org/oauth/request_token',
     access_token_url = 'http://www.openstreetmap.org/oauth/access_token',
     authorize_url = 'http://www.openstreetmap.org/oauth/authorize',
-    consumer_key = consumer_key,
-    consumer_secret = consumer_secret
+    consumer_key = app.config['OAUTH_KEY'],
+    consumer_secret = app.config['OAUTH_SECRET']
 )
 
 @osm.tokengetter
@@ -143,11 +135,6 @@ def oauth_authorized(resp):
     else:
         print 'not able to get osm user data'
     return redirect(next_url)
-
-@app.route('/<path:path>')
-def catch_all(path):
-    "Returns static files based on path"
-    return send_from_directory('static', path)
 
 if __name__ == '__main__':
     import argparse
