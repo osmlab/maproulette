@@ -15,8 +15,18 @@ class SlugField(db.StringField):
     slug_regex = re.compile(r"^[-\w]+$")
     def validate(self, s):
         # 72 + 182 (id length) + ':' = 255 total length for id 
-        if not SlugField.slug_regex.match(s) or len(s) > 72:
+        if not SlugField.slug_regex.match(s):
             raise ValidationError("This string is not a slug: %s" % s)
+        return super(SlugField, self).validate(s)
+
+class IDField(db.StringField):
+    """An ID field"""
+    id_regex = re.compile(r"^[-_#\w]+$")
+    def validate(self, s):
+        # 72 + 182 (id length) + ':' = 255 total length for id 
+        if not SlugField.slug_regex.match(s):
+            raise ValidationError("This string is not a slug: %s" % s)
+        return super(IDField, self).validate(s)
 
 class OSMUser(db.Document):
     user_id = db.IntField(primary_key=True)
@@ -28,7 +38,7 @@ class OSMUser(db.Document):
         return self.display_name
 
 class Challenge(db.Document):
-    slug = SlugField(primary_key = True)
+    slug = SlugField(primary_key = True, max_length = 72)
     title = db.StringField(max_length=128)
     description = db.StringField()
     blurb = db.StringField()
@@ -43,17 +53,22 @@ class Challenge(db.Document):
     }
     
     def __unicode__(self):
-        return self.title
+        return self.slug
     
 class Task(db.Document):
-    task_id = db.StringField(max_length = 255, primary_key = True)
+    identifier = IDField(max_length = 182, unique_with='challenge',
+                         primary_key=True)
+    challenge = db.ReferenceField(Challenge, required=True)
     location = db.GeoPointField()
     taskactions = db.ListField(db.ReferenceField('TaskAction'))
-    run_id  = db.StringField(max_length = 64)
+    run  = SlugField(max_length = 64)
     meta = {
         'allow_inheritance': True,
         'indexes': ['location']
         }
+
+    def __unicode__(self):
+        return "%s:%s" % (self.challenge, self.identifier)
 
     @property
     def state(self):
@@ -86,15 +101,15 @@ class GeoTask(Task):
     geographies = db.DictField()
     instruction = db.StringField()
 
-class TaskAction(db.DynamicDocument):
+class TaskAction(db.DynamicEmbeddedDocument):
     ACTIONS = ('assigned', 'edited', 'reviewed', 'deleted',
                'notanerrored', 'skipped', 'alreadyfixed')
     ACTIONS_MAXLENGTH = max([len(i) for i in ACTIONS])
-    action = db.StringField(choices = ACTIONS, max_length = ACTIONS_MAXLENGTH)
-    task = db.ReferenceField(Task)
-    timestamp = db.DateTimeField(default=datetime.datetime.now)
-    osmuser = db.ReferenceField(OSMUser)
+    action = db.StringField(choices = ACTIONS, max_length = ACTIONS_MAXLENGTH,
+                            required = True)
+    task = db.ReferenceField(Task, required = True)
+    timestamp = db.DateTimeField(default=datetime.datetime.now, required = True)
+    osmuser = db.ReferenceField(OSMUser, required = True)
     meta = {
         'ordering': ['timestamp']
         }
- 
