@@ -46,25 +46,29 @@ class Challenge(db.Document):
     help = db.StringField()
     tasks = db.ListField(db.EmbeddedDocumentField('Task'))
     instruction = db.StringField()
-    run_id = db.StringField(max_length=64)
+    run = SlugField(max_length=64)
     active = db.BooleanField()
     meta = {
-        'indexes': ['*polygon'],
+        'indexes': ['*polygon', 'run'],
     }
     
     def __unicode__(self):
         return self.slug
     
+    def contains(self, point):
+        """Test if a point (lat, lng) is inside the polygon of this challenge"""
+        poly = Polygon(self.polygon)
+        return poly.contains(point)
+
 class Task(db.Document):
-    identifier = IDField(max_length = 182, unique_with='challenge',
-                         primary_key=True)
+    identifier = IDField(max_length = 182, unique_with='challenge')
     challenge = db.ReferenceField(Challenge, required=True)
     location = db.GeoPointField()
-    taskactions = db.ListField(db.ReferenceField('TaskAction'))
+    actions = db.EmbeddedDocumentField('TaskAction')
     run  = SlugField(max_length = 64)
     meta = {
         'allow_inheritance': True,
-        'indexes': ['location']
+        'indexes': ['location', 'identifier', 'challenge']
         }
 
     def __unicode__(self):
@@ -101,7 +105,7 @@ class GeoTask(Task):
     geographies = db.DictField()
     instruction = db.StringField()
 
-class TaskAction(db.DynamicEmbeddedDocument):
+class Action(db.DynamicEmbeddedDocument):
     ACTIONS = ('assigned', 'edited', 'reviewed', 'deleted',
                'notanerrored', 'skipped', 'alreadyfixed')
     ACTIONS_MAXLENGTH = max([len(i) for i in ACTIONS])
