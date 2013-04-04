@@ -14,5 +14,11 @@ manager.add_command("runserver", Server(
     host = '0.0.0.0')
 )
 
+@manager.command
+def clean_pyc():
+    """Removes all *.pyc files from the project folder"""
+    clean_command = "find . -name *.pyc -delete".split()
+    subprocess.call(clean_command)
+
 if __name__ == "__main__":
     manager.run()
