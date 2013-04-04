@@ -67,9 +67,10 @@ class Task(db.Document):
     location = db.GeoPointField()
     actions = db.EmbeddedDocumentField('TaskAction')
     run  = SlugField(max_length = 64)
+    random = db.FloatField(default = random())
     meta = {
         'allow_inheritance': True,
-        'indexes': ['location', 'identifier', 'challenge']
+        'indexes': ['location', 'identifier', 'challenge', 'random']
         }
 
     def __unicode__(self):
