@@ -5,6 +5,7 @@ from maproulette import db
 import re
 from mongoengine.base import ValidationError
 from mongoengine.fields import StringField
+from shapely.geometry import Polygon
 
 """This module contains the various ORM models"""
 
