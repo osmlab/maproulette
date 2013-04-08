@@ -1,121 +1,62 @@
-import datetime
-from flask import url_for
-from maproulette import db
+#!/usr/bin/python
 
-import re
-from mongoengine.base import ValidationError
-from mongoengine.fields import StringField
+from sqlalchemy import Column, Integer, String, Boolean, Float, Index, Sequence, ForeignKey, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects import postgresql
+from geoalchemy2 import Geometry
 from shapely.geometry import Polygon
+from random import random
 
-"""This module contains the various ORM models"""
+Base = declarative_base()
 
-# Mostly taken from
-# https://github.com/bennylope/mongoengine-extras/blob/master/mongoengine_extras/fields.py
-class SlugField(db.StringField):
-    """A slug field"""
-    slug_regex = re.compile(r"^[-\w]+$")
-    def validate(self, s):
-        # 72 + 182 (id length) + ':' = 255 total length for id 
-        if not SlugField.slug_regex.match(s):
-            raise ValidationError("This string is not a slug: %s" % s)
-        return super(SlugField, self).validate(s)
-
-class IDField(db.StringField):
-    """An ID field"""
-    id_regex = re.compile(r"^[-_#\w]+$")
-    def validate(self, s):
-        # 72 + 182 (id length) + ':' = 255 total length for id 
-        if not SlugField.slug_regex.match(s):
-            raise ValidationError("This string is not a slug: %s" % s)
-        return super(IDField, self).validate(s)
-
-class OSMUser(db.Document):
-    user_id = db.IntField(primary_key=True)
-    oauth_token = db.StringField()
-    display_name = db.StringField()
-    home_location = db.GeoPointField()
+class OSMUser(Base):
+    __tablename__ = 'users'
+    osmid = Column(Integer, primary_key=True)
+    oauth_token = Column(String)
+    display_name = Column(String)
+    home_location = Column(Geometry('POINT'))
 
     def __unicode__(self):
         return self.display_name
 
-class Challenge(db.Document):
-    slug = SlugField(primary_key = True, max_length = 72)
-    title = db.StringField(max_length=128)
-    description = db.StringField()
-    blurb = db.StringField()
-    polygon = db.ListField(field=db.GeoPointField)
-    help = db.StringField()
-    tasks = db.ListField(db.EmbeddedDocumentField('Task'))
-    instruction = db.StringField()
-    run = SlugField(max_length=64)
-    active = db.BooleanField()
-    meta = {
-        'indexes': ['*polygon', 'run'],
-    }
-    
+class Challenge(Base):
+    __tablename__ = 'challenges'
+    id = Column(Integer, Sequence('seq_id'), primary_key=True)
+    slug = Column(String(72), primary_key=True)
+    title = Column(String(128))
+    description = Column(String)
+    blurb = Column(String)
+    polygon = Column(Geometry('POLYGON'))
+    help = Column(String)
+    instruction = Column(String)
+    run = Column(String)
+    active = Column(Boolean)
+    Index('idx_geom', polygon, postgresql_using='gist')
+    Index('idx_run', run)
+
     def __unicode__(self):
         return self.slug
-    
+
     def contains(self, point):
         """Test if a point (lat, lng) is inside the polygon of this challenge"""
         poly = Polygon(self.polygon)
         return poly.contains(point)
 
-class Task(db.Document):
-    identifier = IDField(max_length = 182, unique_with='challenge')
-    challenge = db.ReferenceField(Challenge, required=True)
-    location = db.GeoPointField()
-    actions = db.EmbeddedDocumentField('TaskAction')
-    run  = SlugField(max_length = 64)
-    random = db.FloatField(default = random())
-    meta = {
-        'allow_inheritance': True,
-        'indexes': ['location', 'identifier', 'challenge', 'random']
-        }
+class Task(Base):
+    __tablename__ = 'tasks'
+    id = Column(Integer, Sequence('seq_id'), primary_key=True)
+    challenge = Column(Integer, ForeignKey('challenges.id'))
+    location = Column(Geometry('POINT'))
+    run  = Column(String)
+    random = Column(Float, default=random())
+    Index('idx_location', location, postgresql_using='gist')
+    Index('idx_id', id)
+    Index('idx_challenge', challenge)
+    Index('idx_random', random)
 
-    def __unicode__(self):
-        return "%s:%s" % (self.challenge, self.identifier)
 
-    @property
-    def state(self):
-        """Return the state of the task
-
-        Available states: "available", "locked", "done", "deleted"
-        """
-        # First check for deletion or completion (this may need some
-        # adjusting in the future, this is probably far too
-        # complicated)
-        for ts in self.taskactions:
-            if ts.action == 'deleted':
-                return 'deleted'
-            elif ts.action == 'reviewed' or ts.action == 'edited':
-                return 'done'
-        # If none of those are the case, then we only need the most
-        # recent taskaction
-        ts = self.taskactions[0]
-        if ts.action == 'available' or ts.action == 'skipped':
-            return 'available'
-        if ts.action == 'locked':
-            now = datetime.datetime.now()
-            if now - ts.timestamp > datetime.timedelta(minutes=30):
-                # We should actually make a new TaskAction and set it here...
-                return 'available'
-            else:
-                return 'locked'
-
-class GeoTask(Task):
-    geographies = db.DictField()
-    instruction = db.StringField()
-
-class Action(db.DynamicEmbeddedDocument):
-    ACTIONS = ('assigned', 'edited', 'reviewed', 'deleted',
-               'notanerrored', 'skipped', 'alreadyfixed')
-    ACTIONS_MAXLENGTH = max([len(i) for i in ACTIONS])
-    action = db.StringField(choices = ACTIONS, max_length = ACTIONS_MAXLENGTH,
-                            required = True)
-    task = db.ReferenceField(Task, required = True)
-    timestamp = db.DateTimeField(default=datetime.datetime.now, required = True)
-    osmuser = db.ReferenceField(OSMUser, required = True)
-    meta = {
-        'ordering': ['timestamp']
-        }
+if __name__ == "__main__":
+	'''Create all tables'''
+	engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
+	Base.metadata.drop_all(engine)
+	Base.metadata.create_all(engine)
