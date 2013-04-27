@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
-from sqlalchemy import Column, Integer, String, Boolean, Float, Index, Sequence, ForeignKey, create_engine
+from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
+    Sequence, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
+import sqlalchemy.types as types
 from geoalchemy2 import Geometry
 from shapely.geometry import Polygon
 from random import random
@@ -54,9 +56,16 @@ class Task(Base):
     Index('idx_challenge', challenge)
     Index('idx_random', random)
 
+class Status(Base):
+    __tablename__ = 'status'
+    timestamp = Column(DateTime, default = datetime.datetime.now())
+    task = Column(ForeignKey('task.id'))
+    user = Column(ForeignKey('osmuser.id'))
+    status = Column(String)
 
 if __name__ == "__main__":
 	'''Create all tables'''
-	engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
+	engine = create_engine('postgresql://osm:osm@localhost/maproulette',
+                               echo=True)
 	Base.metadata.drop_all(engine)
 	Base.metadata.create_all(engine)
