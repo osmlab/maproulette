@@ -1,20 +1,23 @@
 #!/usr/bin/python
 
 from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
-    Sequence, ForeignKey, create_engine
+    ForeignKey, DateTime, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import relationship
 import sqlalchemy.types as types
 from geoalchemy2 import Geometry
 from shapely.geometry import Polygon
 from random import random
+import datetime
 
 Base = declarative_base()
 
 class OSMUser(Base):
     __tablename__ = 'users'
-    osmid = Column(Integer, primary_key=True)
+    id = Column(Integer, unique=True, primary_key=True)
     oauth_token = Column(String)
+    oauth_secret = Column(String)
     display_name = Column(String)
     home_location = Column(Geometry('POINT'))
 
@@ -23,7 +26,7 @@ class OSMUser(Base):
 
 class Challenge(Base):
     __tablename__ = 'challenges'
-    id = Column(Integer, Sequence('seq_id'), primary_key=True)
+    id = Column(Integer, unique=True, primary_key=True)
     slug = Column(String(72), primary_key=True)
     title = Column(String(128))
     description = Column(String)
@@ -46,8 +49,8 @@ class Challenge(Base):
 
 class Task(Base):
     __tablename__ = 'tasks'
-    id = Column(Integer, Sequence('seq_id'), primary_key=True)
-    challenge = Column(Integer, ForeignKey('challenges.id'))
+    id = Column(Integer, unique=True, primary_key=True)
+    challenge_id = Column(Integer, ForeignKey('challenges.id'))
     location = Column(Geometry('POINT'))
     run  = Column(String)
     random = Column(Float, default=random())
@@ -55,15 +58,15 @@ class Task(Base):
     actions = relationship("Action")
     Index('idx_location', location, postgresql_using='gist')
     Index('idx_id', id)
-    Index('idx_challenge', challenge)
+    Index('idx_challenge', challenge_id)
     Index('idx_random', random)
 
 class Action(Base):
     __tablename__ = 'actions'
-    id = Column(Integer, Sequence('seq_id'), primary_key=True)
+    id = Column(Integer, unique=True, primary_key=True)
     timestamp = Column(DateTime, default = datetime.datetime.now())
-    task = Column(ForeignKey('task.id'))
-    user = Column(ForeignKey('osmuser.id'))
+    task_id = Column(Integer, ForeignKey('tasks.id'))
+    user_id = Column(Integer, ForeignKey('users.id'))
     status = Column(String)
     
 if __name__ == "__main__":

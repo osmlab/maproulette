@@ -2,11 +2,11 @@
 {% block html %}
 <head>
     <title>MapRoulette</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="static/css/style.css">
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css">
     <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
-    <script src="js/maproulette.js"></script>
+    <script src="static/js/maproulette.js"></script>
 <body onload="init()">
     <div id="map.fullscreen"></div>
     <div id="msgBox"></div>
@@ -14,9 +14,8 @@
 <div class="banner">
         <strong>OPENSTREETMAP <em>MAPROULETTE</em></strong>
         <div>
-            {{ session }}
             {%- if session.osm_token -%}
-            logged in as . <a href="{{ url_for('logout') }}">log out</a>
+            logged in as {{ user.display_name }}. <a href="{{ url_for('logout') }}">log out</a>
             {%- else -%}
             not logged in. <a href="{{ url_for('oauth_authorize') }}">log in</a>
             {%- endif -%}
