@@ -1,6 +1,6 @@
 from flask import Flask, session, request, send_from_directory, jsonify, \
     render_template, url_for, redirect
-from helpers import make_json_response, parse_user_details
+from helpers import make_json_response
 from flask_oauth import OAuth
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
@@ -122,31 +122,21 @@ def oauth_authorized(resp):
       resp['oauth_token'],
       resp['oauth_token_secret']
     )
-    init_user()
-    return redirect(next_url)
-
-def init_user():
+    data = osm.get('user/details').data
     print 'getting user data from osm'
-    osmuserresp = osm.get('user/details')
-    if osmuserresp.status == 200:
-        if not osmuserresp.data:
-            return False
+    if not data:
+        return False
+    else:
+        osmid = data.find('user').attrib['id']
+        # query for existing user
+        if bool(sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).count()):
+            #user exists
+            user = sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).first()
+            print('user found')
         else:
-            print('getting user details')
-            usertree = osmuserresp.data.find('user')
-            if not usertree:
-                return False
-            user.osmid = usertree.attrib['id']
-            osmid = usertree.attrib['id']
-            # query for existing user
-            if bool(sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).count()):
-                #user exists
-                user = sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).first()
-                print('user found')
-            else:
-                user = OSMUser()
-                print('user created')
-            user.id = osmid
+            # create new user
+            user = OSMUser()
+            user.id = usertree.attrib['id']
             user.display_name = usertree.attrib['display_name']
             hometree = usertree.find('home')
             if hometree is not None:
@@ -155,11 +145,8 @@ def init_user():
                 print('no home for this user')
             sqlalchemy_session.add(user)
             sqlalchemy_session.commit()
-    else:
-        print 'not able to get osm user data'
-        print osmuserresp.status
-        return False
-    return True
+            print('user created')
+    return redirect(next_url)
         
 if __name__ == '__main__':
     import argparse
