@@ -9,7 +9,6 @@ from random import choice
 import xml.etree.ElementTree as ET
 from models import OSMUser
 import sys
-from flask.ext.mongoengine import MongoEngine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
@@ -40,9 +39,6 @@ app.secret_key = app.config['SECRET_KEY']
 coffee(app)
 
 app.debug = True
-
-# Adding MongoDB configs
-db = MongoEngine(app)
 
 # instantite OAuth object
 oauth = OAuth()
