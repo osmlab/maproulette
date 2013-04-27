@@ -51,18 +51,21 @@ class Task(Base):
     location = Column(Geometry('POINT'))
     run  = Column(String)
     random = Column(Float, default=random())
+    manifest = Column(String)
+    actions = relationship("Action")
     Index('idx_location', location, postgresql_using='gist')
     Index('idx_id', id)
     Index('idx_challenge', challenge)
     Index('idx_random', random)
 
-class Status(Base):
-    __tablename__ = 'status'
+class Action(Base):
+    __tablename__ = 'actions'
+    id = Column(Integer, Sequence('seq_id'), primary_key=True)
     timestamp = Column(DateTime, default = datetime.datetime.now())
     task = Column(ForeignKey('task.id'))
     user = Column(ForeignKey('osmuser.id'))
     status = Column(String)
-
+    
 if __name__ == "__main__":
 	'''Create all tables'''
 	engine = create_engine('postgresql://osm:osm@localhost/maproulette',
