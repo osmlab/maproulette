@@ -17,7 +17,7 @@ from sqlalchemy import create_engine
 engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
 Session = sessionmaker(bind=engine)
 sqlalchemy_session = Session()
-user = OSMUser()
+user = None
 
 # initialize server KV session store
 store = FilesystemStore('./sessiondata')
@@ -25,7 +25,8 @@ store = FilesystemStore('./sessiondata')
 # instantiate flask app
 app = Flask(__name__,
            static_folder = 'static',
-           template_folder = 'templates')
+           template_folder = 'templates',
+           static_url_path = '/static')
 
 app.config.from_pyfile('maproulette.cfg')
 
@@ -47,10 +48,10 @@ db = MongoEngine(app)
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
-    base_url='http://api.openstreetmap.org/api/0.6/',
-    request_token_url = 'http://www.openstreetmap.org/oauth/request_token',
-    authorize_url = 'http://www.openstreetmap.org/oauth/authorize',
-    access_token_url = 'http://www.openstreetmap.org/oauth/access_token',
+    base_url='http://master.apis.dev.openstreetmap.org/api/0.6/',
+    request_token_url = 'http://master.apis.dev.openstreetmap.org/oauth/request_token',
+    access_token_url = 'http://master.apis.dev.openstreetmap.org/oauth/access_token',
+    authorize_url = 'http://master.apis.dev.openstreetmap.org/oauth/authorize',
     consumer_key = app.config['OAUTH_KEY'],
     consumer_secret = app.config['OAUTH_SECRET']
 )
@@ -65,7 +66,7 @@ def get_osm_token(token=None):
 @app.route('/')
 def index():
     "Display the index.html"
-    return render_template('index.html')
+    return render_template('index.html', user=user)
 
 @app.route('/api/challenges')
 def challenges_api():
@@ -142,6 +143,16 @@ def init_user():
             if not usertree:
                 return False
             user.osmid = usertree.attrib['id']
+            osmid = usertree.attrib['id']
+            # query for existing user
+            if bool(sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).count()):
+                #user exists
+                user = sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).first()
+                print('user found')
+            else:
+                user = OSMUser()
+                print('user created')
+            user.id = osmid
             user.display_name = usertree.attrib['display_name']
             hometree = usertree.find('home')
             if hometree is not None:
