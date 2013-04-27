@@ -5,8 +5,6 @@ from flask_oauth import OAuth
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee
-from random import choice
-import xml.etree.ElementTree as ET
 from models import OSMUser
 import sys
 from sqlalchemy.orm import sessionmaker
