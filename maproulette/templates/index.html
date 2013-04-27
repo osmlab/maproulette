@@ -16,7 +16,7 @@
         <div>
             {{ session }}
             {%- if session.osm_token -%}
-            logged in as {{ user.display_name }}. <a href="{{ url_for('logout') }}">log out</a>
+            logged in as {{ user['display_name'] }}. <a href="{{ url_for('logout') }}">log out</a>
             {%- else -%}
             not logged in. <a href="{{ url_for('oauth_authorize') }}">log in</a>
             {%- endif -%}

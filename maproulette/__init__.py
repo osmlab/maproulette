@@ -16,7 +16,7 @@ from sqlalchemy import create_engine
 engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
 Session = sessionmaker(bind=engine)
 sqlalchemy_session = Session()
-user = None
+user = OSMUser()
 
 # initialize server KV session store
 store = FilesystemStore('./sessiondata')
@@ -62,7 +62,7 @@ def get_osm_token(token=None):
 @app.route('/')
 def index():
     "Display the index.html"
-    return render_template('index.html', user=user)
+    return render_template('index.html')
 
 @app.route('/api/challenges')
 def challenges_api():
