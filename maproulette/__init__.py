@@ -14,7 +14,6 @@ from sqlalchemy import create_engine
 engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
 Session = sessionmaker(bind=engine)
 sqlalchemy_session = Session()
-user = OSMUser()
 
 # initialize server KV session store
 store = FilesystemStore('./sessiondata')
@@ -146,6 +145,8 @@ def oauth_authorized(resp):
             sqlalchemy_session.add(user)
             sqlalchemy_session.commit()
             print('user created')
+    session['display_name'] = user.display_name
+    session['osm_id'] = user.id
     return redirect(next_url)
         
 if __name__ == '__main__':
