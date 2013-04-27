@@ -6,19 +6,18 @@ from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee
 from random import choice
-import geojson
-
+import xml.etree.ElementTree as ET
+from models import OSMUser
 import sys
 from flask.ext.mongoengine import MongoEngine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 
-try:
-    import settings
-    settings_keys = dir(settings)
-except ImportError:
-    sys.stderr.write("""There must be a settings.py file with a secret_key.
-    Run bin/make_secret.py
-    """)
-    sys.exit(2)
+# ininiate database engine and create ORM session
+engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
+Session = sessionmaker(bind=engine)
+sqlalchemy_session = Session()
+user = OSMUser()
 
 # initialize server KV session store
 store = FilesystemStore('./sessiondata')
@@ -34,7 +33,7 @@ app.config.from_pyfile('maproulette.cfg')
 KVSessionExtension(store, app)
 
 # Apps need a secret key
-app.secret_key = settings.secret_key
+app.secret_key = app.config['SECRET_KEY']
 
 # Coffeescript enable the app
 coffee(app)
@@ -48,10 +47,10 @@ db = MongoEngine(app)
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
-    base_url='http://openstreetmap.org/',
+    base_url='http://api.openstreetmap.org/api/0.6/',
     request_token_url = 'http://www.openstreetmap.org/oauth/request_token',
-    access_token_url = 'http://www.openstreetmap.org/oauth/access_token',
     authorize_url = 'http://www.openstreetmap.org/oauth/authorize',
+    access_token_url = 'http://www.openstreetmap.org/oauth/access_token',
     consumer_key = app.config['OAUTH_KEY'],
     consumer_secret = app.config['OAUTH_SECRET']
 )
@@ -128,14 +127,35 @@ def oauth_authorized(resp):
       resp['oauth_token'],
       resp['oauth_token_secret']
     )
+    init_user()
+    return redirect(next_url)
+
+def init_user():
     print 'getting user data from osm'
     osmuserresp = osm.get('user/details')
     if osmuserresp.status == 200:
-        session['user'] = get_user_attribs(osmuserresp.data)
+        if not osmuserresp.data:
+            return False
+        else:
+            print('getting user details')
+            usertree = osmuserresp.data.find('user')
+            if not usertree:
+                return False
+            user.osmid = usertree.attrib['id']
+            user.display_name = usertree.attrib['display_name']
+            hometree = usertree.find('home')
+            if hometree is not None:
+                user.home_location = 'POINT(%s %s)' % (hometree.attrib['lon'], hometree.attrib['lat'])
+            else:
+                print('no home for this user')
+            sqlalchemy_session.add(user)
+            sqlalchemy_session.commit()
     else:
         print 'not able to get osm user data'
-    return redirect(next_url)
-
+        print osmuserresp.status
+        return False
+    return True
+        
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
