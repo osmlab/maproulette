@@ -54,7 +54,6 @@ def get_osm_token(token=None):
     session.regenerate()
     return session.get('osm_token')
 
-
 # By default, send out the standard client
 @app.route('/')
 def index():
@@ -64,7 +63,7 @@ def index():
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
-    pass
+    return jsonify(challenges=[i.slug for i in Challenges.objects()])
 
 @app.route('/api/task')
 def task():
@@ -122,7 +121,7 @@ def oauth_authorized(resp):
       resp['oauth_token_secret']
     )
     data = osm.get('user/details').data
-    print 'getting user data from osm'
+    app.logger.debug("Getting user data from osm")
     if not data:
         return False
     else:
