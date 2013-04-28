@@ -6,8 +6,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import relationship
 import sqlalchemy.types as types
+from sqlalchemy.schema import UniqueConstraint
 from geoalchemy2 import Geometry
-from shapely.geometry import Polygon
 from random import random
 import datetime
 
@@ -49,13 +49,17 @@ class Challenge(Base):
 
 class Task(Base):
     __tablename__ = 'tasks'
-    id = Column(Integer, unique=True, primary_key=True)
-    challenge_id = Column(Integer, ForeignKey('challenges.id'))
+    id = Column(String(80), primary_key=True)
+    challenge_id = Column(Integer, ForeignKey('challenges.id'),
+                          primary_key=True)
     location = Column(Geometry('POINT'))
     run  = Column(String)
     random = Column(Float, default=random())
     manifest = Column(String)
     actions = relationship("Action")
+    __table_args__ = (
+        UniqueConstraint("id", "challenge_id"),
+        )
     Index('idx_location', location, postgresql_using='gist')
     Index('idx_id', id)
     Index('idx_challenge', challenge_id)
