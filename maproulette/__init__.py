@@ -61,7 +61,6 @@ def get_osm_token(token=None):
     session.regenerate()
     return session.get('osm_token')
 
-
 # By default, send out the standard client
 @app.route('/')
 def index():
@@ -71,36 +70,44 @@ def index():
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
-    pass
+    return jsonify(challenges=[i.slug for i in Challenges.objects()])
 
 @app.route('/api/task')
 def task():
     """Returns an appropriate task based on parameters"""
-    # We need to find a task for the user to work on, based (as much
-    # as possible)
-    difficulty = request.args.get('difficulty', 'easy')
-    near = request.args.get('near')
-    if near:
-        lat, lon = near.split(',')
-    else:
-        point = None
     pass
     
-@app.route('/api/c/<challenge>/meta')
-def challenge_meta(challenge):
+@app.route('/api/c/<slug>/meta')
+def challenge_meta(slug):
     "Returns the metadata for a challenge"
-    pass
+    challenge = get_challenge_or_404(slug)
+    return jsonify(challenge = {
+            'slug': challenge.slug,
+            'title': challenge.title,
+            'description': challenge.description,
+            'blurb': challenge.blurb,
+            'help': challenge.help,
+            'instruction': challenge.instruction})
 
 @app.route('/api/c/<challenge>/stats')
 def challenge_stats(challenge):
     "Returns stat data for a challenge"
-    pass
+    ## THIS IS FAKE RIGHT NOW
+    return jsonify({'total': 100, 'done': 50})
 
-@app.route('/api/c/<challenge>/task')
-def challenge_task(challenge):
+@app.route('/api/c/<slug>/task')
+def challenge_task(slug):
     "Returns a task for specified challenge"
-    pass
-
+    challenge = get_challenge_or_404(slug)
+    # Grab a random task (not very random right now)
+    query = session.query(challenge.tasks)
+    task = query.first()
+    return jsonify({
+            'challenge': challenge.slug,
+            'id': challenge.id,
+            'features': task.manifest,
+            'text': task.instruction})
+ 
 @app.route('/api/c/<challenge>/task/<id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
     "Accepts data for completed task"
@@ -129,7 +136,7 @@ def oauth_authorized(resp):
       resp['oauth_token_secret']
     )
     data = osm.get('user/details').data
-    print 'getting user data from osm'
+    app.logger.debug("Getting user data from osm")
     if not data:
         return False
     else:
