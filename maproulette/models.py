@@ -64,7 +64,7 @@ class Task(Base):
     Index('idx_id', id)
     Index('idx_challenge', challenge_id)
     Index('idx_random', random)
-
+    
 class Action(Base):
     __tablename__ = 'actions'
     id = Column(Integer, unique=True, primary_key=True)
@@ -79,6 +79,12 @@ class Action(Base):
         {})    
     status = Column(String)
     
+    def __init__(self, task_id, status, user_id = None):
+        self.task_id = task_id
+        self.status = status
+        if user_id:
+            self.user_id = user_id
+
 if __name__ == "__main__":
 	'''Create all tables'''
 	engine = create_engine('postgresql://osm:osm@localhost/maproulette',
