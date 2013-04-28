@@ -31,6 +31,10 @@ def get_challenge_or_404(slug):
         abort(404)
     return challenge
 
-def get_task_or_404(challenge, id):
+def get_task_or_404(challenge_slug, task_identifier):
     """Return a task or a 404"""
-    pass
+    challenge = get_challenge_or_404(challenge_slug)
+    task = Task.get(challenge, task_identifier)
+    if not task:
+        abort(404)
+    return task
