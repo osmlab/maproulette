@@ -102,6 +102,9 @@ def challenge_task(slug):
     # Grab a random task (not very random right now)
     query = session.query(challenge.tasks)
     task = query.first()
+    # Create a new status for this task
+    action = Action(task, "assigned")
+    action.save()
     return jsonify({
             'challenge': challenge.slug,
             'id': challenge.id,
