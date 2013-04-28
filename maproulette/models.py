@@ -39,6 +39,9 @@ class Challenge(Base):
     Index('idx_geom', polygon, postgresql_using='gist')
     Index('idx_run', run)
 
+    def __init__(self, slug):
+        self.slug = slug
+
     def __unicode__(self):
         return self.slug
 
@@ -64,7 +67,10 @@ class Task(Base):
     Index('idx_id', id)
     Index('idx_challenge', challenge_id)
     Index('idx_random', random)
-    
+
+    def __init__(self, challenge_id):
+        self.challenge_id = challenge_id
+
 class Action(Base):
     __tablename__ = 'actions'
     id = Column(Integer, unique=True, primary_key=True)
