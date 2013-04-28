@@ -4,7 +4,7 @@ import os
 
 secret = os.urandom(24).encode('hex')
 
-fd = open('settings.py', 'w')
+fd = open('secret.cfg', 'w')
 fd.write("""
-secret_key = "%(secret)s"
-""" % { 'secret': secret})
+SECRET_KEY = "%(secret)s"
+""" % {'secret': secret})

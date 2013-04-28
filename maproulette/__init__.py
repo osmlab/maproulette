@@ -1,3 +1,4 @@
+import os, sys
 from flask import Flask, session, request, send_from_directory, jsonify, \
     render_template, url_for, redirect
 from helpers import make_json_response
@@ -6,14 +7,19 @@ from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee
 from models import OSMUser
-import sys
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
+# check if secret.cfg exists
+if not os.path.exists('secret.cfg'):
+    print('''secret.cfg not found. You need to generate an app secret by
+running ../bin/make_secret.py from the MR root directory''')
+    exit()
+    
 # ininiate database engine and create ORM session
 engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
 Session = sessionmaker(bind=engine)
-sqlalchemy_session = Session()
+db = Session()
 
 # initialize server KV session store
 store = FilesystemStore('./sessiondata')
@@ -25,6 +31,7 @@ app = Flask(__name__,
            static_url_path = '/static')
 
 app.config.from_pyfile('maproulette.cfg')
+app.config.from_pyfile('../secret.cfg')
 
 # connect flask app to server KV session store
 KVSessionExtension(store, app)
@@ -128,9 +135,9 @@ def oauth_authorized(resp):
     else:
         osmid = data.find('user').attrib['id']
         # query for existing user
-        if bool(sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).count()):
+        if bool(db.query(OSMUser).filter(OSMUser.id==osmid).count()):
             #user exists
-            user = sqlalchemy_session.query(OSMUser).filter(OSMUser.id==osmid).first()
+            user = db.query(OSMUser).filter(OSMUser.id==osmid).first()
             print('user found')
         else:
             # create new user
@@ -142,8 +149,8 @@ def oauth_authorized(resp):
                 user.home_location = 'POINT(%s %s)' % (hometree.attrib['lon'], hometree.attrib['lat'])
             else:
                 print('no home for this user')
-            sqlalchemy_session.add(user)
-            sqlalchemy_session.commit()
+            db.add(user)
+            db.commit()
             print('user created')
     session['display_name'] = user.display_name
     session['osm_id'] = user.id
