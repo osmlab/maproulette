@@ -140,7 +140,8 @@ def oauth_authorized(resp):
     if not data:
         return False
     else:
-        osmid = data.find('user').attrib['id']
+        userxml = data.find('user')
+        osmid = userxml.attrib['id']
         # query for existing user
         if bool(db.query(OSMUser).filter(OSMUser.id==osmid).count()):
             #user exists
@@ -149,11 +150,11 @@ def oauth_authorized(resp):
         else:
             # create new user
             user = OSMUser()
-            user.id = usertree.attrib['id']
-            user.display_name = usertree.attrib['display_name']
-            hometree = usertree.find('home')
-            if hometree is not None:
-                user.home_location = 'POINT(%s %s)' % (hometree.attrib['lon'], hometree.attrib['lat'])
+            user.id = osmid
+            user.display_name = userxml.attrib['display_name']
+            homexml = userxml.find('home')
+            if homexml is not None:
+                user.home_location = 'POINT(%s %s)' % (homexml.attrib['lon'], homexml.attrib['lat'])
             else:
                 print('no home for this user')
             db.add(user)

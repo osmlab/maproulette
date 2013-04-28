@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
-    ForeignKey, DateTime, create_engine
+    ForeignKey, ForeignKeyConstraint, DateTime, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import relationship
@@ -69,8 +69,14 @@ class Action(Base):
     __tablename__ = 'actions'
     id = Column(Integer, unique=True, primary_key=True)
     timestamp = Column(DateTime, default = datetime.datetime.now())
-    task_id = Column(Integer, ForeignKey('tasks.id'))
+    task_id = Column(String(80))
+    challenge_id = Column(Integer)
     user_id = Column(Integer, ForeignKey('users.id'))
+    __table_args__ = (
+        ForeignKeyConstraint(
+            [task_id, challenge_id],
+            [Task.id, Task.challenge_id]),
+        {})    
     status = Column(String)
     
 if __name__ == "__main__":
