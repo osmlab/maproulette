@@ -178,14 +178,3 @@ def oauth_authorized(resp):
     session['display_name'] = user.display_name
     session['osm_id'] = user.id
     return redirect(next_url)
-        
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type = int, help = "the port to bind to",
-                        default = 8080)
-    parser.add_argument("--host", help = "the host to bind to",
-                        default = "localhost")
-    args = parser.parse_args()
-    app.run(port=args.port)
-    app.run(host=args.host, port=args.port)
