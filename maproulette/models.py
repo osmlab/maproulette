@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
-    ForeignKey, ForeignKeyConstraint, DateTime, create_engine
+    ForeignKey, ForeignKeyConstraint, DateTime, create_engine, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import relationship
@@ -36,6 +36,9 @@ class Challenge(Base):
     instruction = Column(String)
     run = Column(String)
     active = Column(Boolean)
+    difficulty = Column(SmallInteger)
+    actions = Column(String)
+    editors = Column(String)
     Index('idx_geom', polygon, postgresql_using='gist')
     Index('idx_run', run)
 
