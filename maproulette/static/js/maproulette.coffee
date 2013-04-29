@@ -143,7 +143,7 @@ msgTaskText = ->
   ###
   msg currentTask.text if currentTask.text
 
-dlg = (h) ->
+dlgOpen = (h) ->
   ###
   #  Display the data (html) in a dialog box. Must be closed with dlgClose()
   ###
