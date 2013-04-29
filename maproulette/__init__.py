@@ -48,10 +48,10 @@ app.debug = True
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
-    base_url='http://master.apis.dev.openstreetmap.org/api/0.6/',
-    request_token_url = 'http://master.apis.dev.openstreetmap.org/oauth/request_token',
-    access_token_url = 'http://master.apis.dev.openstreetmap.org/oauth/access_token',
-    authorize_url = 'http://master.apis.dev.openstreetmap.org/oauth/authorize',
+    base_url = app.config['OSM_URL'] + 'api/0.6/',
+    request_token_url = app.config['OSM_URL'] + 'oauth/request_token',
+    access_token_url = app.config['OSM_URL'] + 'oauth/access_token',
+    authorize_url = app.config['OSM_URL'] + 'oauth/authorize',
     consumer_key = app.config['OAUTH_KEY'],
     consumer_secret = app.config['OAUTH_SECRET']
 )
@@ -72,9 +72,21 @@ def challenges_api():
     "Returns a list of challenges as json"
     return jsonify(challenges=[i.slug for i in Challenges.objects()])
 
-@app.route('/api/task')
+@app.route('/api/challenge/<difficulty>')
+def pick_challenge(difficulty):
+    "Returns a random challenge based on the preferred difficulty"
+    # I don't know if there is really a random() method..
+    challenge = db.query(Challenge).filter(Challenge.difficulty==difficulty).random()
+    return jsonify(challenge)
+    
+@app.route('/api/task/<challenge>/<lon>/<lat>/<distance>')
 def task():
-    """Returns an appropriate task based on parameters"""
+    if not challenge:
+        # we will need something real here
+        return None
+    if lon and lat:
+        db.query(Task).filter(Task.challenge_id == challenge)
+    "Returns an appropriate task based on parameters"
     pass
     
 @app.route('/api/c/<slug>/meta')
