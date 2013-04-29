@@ -1,1 +1,3 @@
-This is the Maproulette frontend code
+This is MapRoulette. 
+
+And here are some [https://github.com/mvexel/maproulette/wiki/Setup-Instructions](setup instructions).

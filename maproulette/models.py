@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
-    ForeignKey, ForeignKeyConstraint, DateTime, create_engine
+    ForeignKey, ForeignKeyConstraint, DateTime, create_engine, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import relationship
@@ -36,6 +36,7 @@ class Challenge(Base):
     instruction = Column(String)
     run = Column(String)
     active = Column(Boolean)
+    difficulty = Column(SmallInteger)
     Index('idx_geom', polygon, postgresql_using='gist')
     Index('idx_run', run)
 
@@ -70,6 +71,9 @@ class Task(Base):
 
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
+        
+    def near(lon,lat,distance):
+        "Returns a task closer than <distance> (in deg) to a point"
 
 class Action(Base):
     __tablename__ = 'actions'
