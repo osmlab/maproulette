@@ -38,11 +38,10 @@ mr_attrib = """
   <p>
 </small>"""
 
-
 setDelay = (seconds, func) ->
   ###
   # Wraps setTimeout to make it easiet to write in Coffeescript
-    ###
+  ###
   # setTimeout takes miliseconds, so we multiply them by 1000
   setTimeout func, seconds * 1000
 
@@ -302,6 +301,8 @@ addGeoJSONLayer = ->
   # the result of the confirmation dialog in the database, and load
   # the next challenge
   ###
+  # This should be harmless if the dialog box is already closed
+  dlgClose()
   msg msgMovingOnToTheNextChallenge
   setDelay 1, msgClose()
   payload = {
@@ -373,10 +374,10 @@ Come back here after you do your edits.<br />
   <br />
   Did you fix it?
   <p>
-  <div class=button onClick=nextUp("fixed");$('#dlgBox').fadeOut()>YES</div>
-  <div class=button onClick=nextUp("notfixed");$('#dlgBox').fadeOut()>NO :(</div>
-  <div class=button onClick=nextUp("someonebeatme");$('#dlgBox').fadeOut()>SOMEONE BEAT ME TO IT</div>
-  <div class=button onClick=nextUp("noerrorafterall");$('#dlgBox').fadeOut()>IT WAS NOT AN ERROR AFTER ALL</div>
+  <div class=button onClick=nextUp("fixed")>YES</div>
+  <div class=button onClick=nextUp("notfixed")>NO :(</div>
+  <div class=button onClick=nextUp("someonebeatme")>SOMEONE BEAT ME TO IT</div>
+  <div class=button onClick=nextUp("noerrorafterall")>IT WAS NOT AN ERROR AFTER ALL</div>
   </p>
   """)
 
