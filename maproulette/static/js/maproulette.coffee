@@ -369,7 +369,7 @@ addGeoJSONLayer = ->
   else if editor == 'id'
     editorText = 'iD'
 
-  dlg("""
+  dlgOpen("""
 The area is being loaded in #{editorText} now.
 Come back here after you do your edits.<br />
   <br />
@@ -382,39 +382,11 @@ Come back here after you do your edits.<br />
   </p>
   """)
 
-@confirmFixed = () ->
-  ###
-  # Show the mapping fixed confirmation dialog
-  ###
-  if editor == 'josm'
-    editorText = 'JOSM'
-  else if editor == 'potlatch'
-    editorText = 'Potlatch'
-  else if editor == 'id'
-    editorText = 'iD'
-
-  dlg("""
-The area is being loaded in #{editorText} now.
-Come back here after checking the area.<br />
-  <br />
-  Was it fixed?
-  <p>
-  <div class=button onClick=nextUp("wasfixed");$('#dlgBox').fadeOut()>
-    YES
-  </div>
-  <div class=button onClick=nextUp("notfixed");$('#dlgBox').fadeOut()>
-    NO (AND I DIDN'T FIX IT)
-  </div>
-  <div class=button onClick=nextUp("fixed");$('#dlgBox').fadeOut()>
-    NO, BUT I FIXED IT</div>
-  </p>
-  """)
-
 @showHelp = ->
   ###
   # Show the about window
   ###
-  dlg """#{currentChallenge.help}
+  dlgOpen """#{currentChallenge.help}
   <p>#{mr_attrib}</p>
   <p><div class='button' onClick="dlgClose()">OK</div></p>""", 0
 
