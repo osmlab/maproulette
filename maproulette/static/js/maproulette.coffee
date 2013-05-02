@@ -142,6 +142,18 @@ msgTaskText = ->
   ###
   msg currentTask.text if currentTask.text
 
+nextUpDlg = (dlgList) ->
+  ###
+  # Takes a list of options and returns a dialog box for nextUp actions
+  ###
+  ### FIXME
+  buttons = $().createElement('div', class="buttons")
+  for item in dlgList
+    button = $().createElement('div', class="button")
+    button.onClick='nextUp("#{item.action}")'
+    button.text="#{item.text}"
+
+
 dlgOpen = (h) ->
   ###
   #  Display the data (html) in a dialog box. Must be closed with dlgClose()
