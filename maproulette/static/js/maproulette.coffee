@@ -220,27 +220,6 @@ revGeocode = ->
     # display a message saying where we are in the world
     msg locstr
 
-@getInitialTask = (difficulty = "easy", near) ->
-  ###
-  # Gets a new task and challenge and displays it
-  ###
-  args = ""
-  args = "?difficulty=#{difficulty}" if difficulty?
-  if near?
-    if args
-      args = "#{args}&near=#{near}"
-    else
-      args = "#{args}&near=#{near}"
-  $.getJSON "/task#{args}", (data) ->
-    currentTask = data
-    currentTask.startTime = new Date.getTime()
-    # Since this is out first task, we'll need to grab the metadata
-    # from the task and use that to populate the page
-    challenge = currentTask.challenge
-    updateChallenge(challenge)
-    updateStats(challenge)
-    showTask(data)
-
 drawFeatures = (features) ->
   ###
   # Draw the features onto the current geojson layer. Also pulls out
@@ -262,18 +241,37 @@ showTask = (task) ->
   setDelay 3, msgClose()
   msgTaskText()
 
-@getTask = (challenge = currentChallenge.slug, near = null) ->
+getChallenge = (slug)
+  ###
+  # Sets a specific challenge
+  ###
+  $.getJSON "/api/challenges/#{slug}/meta", (data) ->
+    challenge = data
+    updateChallenge(challenge)
+    updateStats(challenge)
+    getTask(challenge, near)
+
+getNewChallenge = (difficulty = "1", near = map.getCenter()) ->
+  ###
+  # Sets a challenge based on difficulty and location
+  ###
+  url = "/api/challenges?difficulty=#{difficulty}&near=#{near}"
+  $.getJSON url, (data) ->
+    challenge = data.challenges[0]
+    updateChallenge(challenge)
+    updateStats(challenge)
+    getTask(near)
+
+@getTask = (near = map.getCenter())) ->
   ###
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
-  if not currentChallenge? or currentChallenge.slug != challenge
-    updateChallengechallenge()
-  $.getJSON "c/#{challenge}/task", (data) ->
+  url = "/api/challenges/#{challenge.slug}/tasks?near=#{near}"
+  $.getJSON url, (data) ->
     currentTask = data
     currentTask.startTime = new Date.getTime()
     showTask(data)
-  updateStats(challenge)
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
   ###
@@ -440,9 +438,18 @@ enableKeyboardShortcuts = ->
   challenge = $(document).getUrlParam("challenge")
   difficulty = $(document).getUrlParam("difficulty")
   near = $(document).getUrlParam("near")
+  # Or try to load them from user preferences
+  #
+  # INSERT CODE PERFERENCE LOADING CODE HERE
+  #
+  #
   if challenge?
     updateChallenge(challenge)
     updateStats(challenge)
     getTask(challenge, near)
   else
-    getInitialTask(difficulty, near)
+    if not difficulty
+      difficulty = 1
+    if not near
+      near = map.getCenter()
+    getNewChallenge(difficulty, near)
