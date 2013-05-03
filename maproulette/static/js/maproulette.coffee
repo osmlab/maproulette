@@ -243,18 +243,19 @@ showTask = (task) ->
 
 getChallenge = (slug)
   ###
-  # Sets a specific challenge
+  # Gets a specific challenge
   ###
   $.getJSON "/api/challenges/#{slug}/meta", (data) ->
     challenge = data
     updateChallenge(challenge)
     updateStats(challenge)
-    getTask(challenge, near)
+    getTask()
 
-getNewChallenge = (difficulty = "1", near = map.getCenter()) ->
+getNewChallenge = (difficulty, near) ->
   ###
-  # Sets a challenge based on difficulty and location
+  # Gets a challenge based on difficulty and location
   ###
+  near = "#{map.getCenter().lat},#{map.getCenter().lon}" if not near
   url = "/api/challenges?difficulty=#{difficulty}&near=#{near}"
   $.getJSON url, (data) ->
     challenge = data.challenges[0]
@@ -262,11 +263,12 @@ getNewChallenge = (difficulty = "1", near = map.getCenter()) ->
     updateStats(challenge)
     getTask(near)
 
-@getTask = (near = map.getCenter())) ->
+@getTask = (near = null) ->
   ###
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
+  near = "#{map.getCenter().lat},#{map.getCenter().lon}" if not near
   url = "/api/challenges/#{challenge.slug}/tasks?near=#{near}"
   $.getJSON url, (data) ->
     currentTask = data
@@ -307,15 +309,13 @@ addGeoJSONLayer = ->
       "editor": editor,
       "startTime": currentTask.startTime,
       "endTime": new Date.getTime() }
-  # Find the map centroid for our next near
-  center = map.getCenter()
-  near = "#{center.lat},#{center.lon}"
+  near = currentTask.center
   challenge = currentChallenge.slug
   task_id = currentTask.id
   $.post "/c/#{challenge}/task/#{task_id}", payload, ->
     setDelay 1, ->
       clearTask()
-      getTask(challenge, near)
+      getTask(near)
 
 @openIn = (e) ->
   ###
@@ -446,7 +446,7 @@ enableKeyboardShortcuts = ->
   if challenge?
     updateChallenge(challenge)
     updateStats(challenge)
-    getTask(challenge, near)
+    getTask(near)
   else
     if not difficulty
       difficulty = 1
