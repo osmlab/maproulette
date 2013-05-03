@@ -73,6 +73,9 @@ class Task(Base):
 
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
+        
+    def near(lon,lat,distance):
+        "Returns a task closer than <distance> (in deg) to a point"
 
 class Action(Base):
     __tablename__ = 'actions'
