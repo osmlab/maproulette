@@ -14,7 +14,7 @@ import datetime
 Base = declarative_base()
 
 class OSMUser(Base):
-    __tablename__ = 'users'
+    __tablename__ = 'osmusers'
     id = Column(Integer, unique=True, primary_key=True)
     oauth_token = Column(String)
     oauth_secret = Column(String)
@@ -37,7 +37,7 @@ class Challenge(Base):
     run = Column(String)
     active = Column(Boolean)
     difficulty = Column(SmallInteger)
-    actions = Column(String)
+    done_dialog = Column(String)
     editors = Column(String)
     Index('idx_geom', polygon, postgresql_using='gist')
     Index('idx_run', run)
@@ -48,11 +48,18 @@ class Challenge(Base):
     def __unicode__(self):
         return self.slug
 
-    def contains(self, point):
-        """Test if a point (lat, lng) is inside the polygon of this challenge"""
-        poly = Polygon(self.polygon)
-        return poly.contains(point)
-
+    @property
+    def meta(self):
+        """Return a dictionary of metadata for the challenge"""
+        return {'slug': self.slug,
+                'description': self.description,
+                'help': self.help,
+                'blurb': self.blurb,
+                'instruction': self.instruction,
+                'doneDlg': self.done_dialog,
+                'editors': self.editors
+                }
+        
 class Task(Base):
     __tablename__ = 'tasks'
     id = Column(String(80), primary_key=True)
@@ -63,6 +70,7 @@ class Task(Base):
     random = Column(Float, default=random())
     manifest = Column(String)
     actions = relationship("Action")
+    current_action = Column(Integer, ForeignKey('actions.id'))
     __table_args__ = (
         UniqueConstraint("id", "challenge_id"),
         )
@@ -77,13 +85,20 @@ class Task(Base):
     def near(lon,lat,distance):
         "Returns a task closer than <distance> (in deg) to a point"
 
+    def checkout(osmid):
+        """Checks out a task for a particular user"""
+        action = Action(self.id, "assigned", osmid)
+        self.current_action = action
+        action.save()
+        self.save()
+
 class Action(Base):
     __tablename__ = 'actions'
     id = Column(Integer, unique=True, primary_key=True)
     timestamp = Column(DateTime, default = datetime.datetime.now())
     task_id = Column(String(80))
     challenge_id = Column(Integer)
-    user_id = Column(Integer, ForeignKey('users.id'))
+    user_id = Column(Integer, ForeignKey('osmusers.id'))
     __table_args__ = (
         ForeignKeyConstraint(
             [task_id, challenge_id],

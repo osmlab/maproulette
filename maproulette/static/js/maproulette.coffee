@@ -142,17 +142,20 @@ msgTaskText = ->
   ###
   msg currentTask.text if currentTask.text
 
-nextUpDlg = (dlgList) ->
+nextUpDlg = (dlgData) ->
   ###
-  # Takes a list of options and returns a dialog box for nextUp actions
+  # Takes dialog box data and returns a dialog box for nextUp actions
   ###
-  ### FIXME
-  buttons = $().createElement('div', class="buttons")
-  for item in dlgList
-    button = $().createElement('div', class="button")
-    button.onClick='nextUp("#{item.action}")'
-    button.text="#{item.text}"
-
+  dlg = $('<div></div>').addclass("dlg")
+  dlg.append(dlgData.text)
+  buttons = $('div').addclass("buttons")
+  for item in dlgData.buttons
+    button = $('div').addclass("button")
+    button.attr {onclick: "#{item.action}"}
+    button.content(item.label)
+    buttons.append(button)
+  dlg.append(buttons)
+  return dlg
 
 dlgOpen = (h) ->
   ###
@@ -380,18 +383,7 @@ addGeoJSONLayer = ->
   else if editor == 'id'
     editorText = 'iD'
 
-  dlgOpen("""
-The area is being loaded in #{editorText} now.
-Come back here after you do your edits.<br />
-  <br />
-  Did you fix it?
-  <p>
-  <div class=button onClick=nextUp("fixed")>YES</div>
-  <div class=button onClick=nextUp("notfixed")>NO :(</div>
-  <div class=button onClick=nextUp("someonebeatme")>SOMEONE BEAT ME TO IT</div>
-  <div class=button onClick=nextUp("noerrorafterall")>IT WAS NOT AN ERROR AFTER ALL</div>
-  </p>
-  """)
+  dlgOpen(currentChallenge.doneDlg)
 
 @showHelp = ->
   ###
@@ -421,6 +413,8 @@ updateChallenge = (challenge) ->
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
+    currentChallenge.doneDlg = nextUpDlg(data.doneDlg)
+
 
 enableKeyboardShortcuts = ->
   ###
