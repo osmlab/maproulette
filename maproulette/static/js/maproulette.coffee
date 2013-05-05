@@ -3,6 +3,9 @@
 ###
 root = exports ? this
 
+# Make the Markdown client converter
+markdown = new Showdown.converter()
+
 # Map variables
 map = undefined
 geojsonLayer = null
@@ -142,12 +145,12 @@ msgTaskText = ->
   ###
   msg currentTask.text if currentTask.text
 
-nextUpDlg = (dlgData) ->
+makeDlg = (dlgData) ->
   ###
   # Takes dialog box data and returns a dialog box for nextUp actions
   ###
   dlg = $('<div></div>').addclass("dlg")
-  dlg.append(dlgData.text)
+  dlg.append(markdown.toHTML(dlgData.text))
   buttons = $('div').addclass("buttons")
   for item in dlgData.buttons
     button = $('div').addclass("button")
@@ -413,7 +416,8 @@ updateChallenge = (challenge) ->
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
-    currentChallenge.doneDlg = nextUpDlg(data.doneDlg)
+    currentChallenge.help = markdown.makeHTML(data.help)
+    currentChallenge.doneDlg = makeDlg(data.doneDlg)
 
 
 enableKeyboardShortcuts = ->
