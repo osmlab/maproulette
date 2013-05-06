@@ -22,6 +22,8 @@ Session = sessionmaker(bind=engine)
 db = Session()
 
 # initialize server KV session store
+if not os.path.exists('./sessiondata'):
+	os.makedirs('./sessiondata')
 store = FilesystemStore('./sessiondata')
 
 # instantiate flask app
