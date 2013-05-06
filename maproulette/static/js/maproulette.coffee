@@ -3,6 +3,9 @@
 ###
 root = exports ? this
 
+# Make the Markdown client converter
+markdown = new Showdown.converter()
+
 # Map variables
 map = undefined
 geojsonLayer = null
@@ -38,11 +41,10 @@ mr_attrib = """
   <p>
 </small>"""
 
-
 setDelay = (seconds, func) ->
   ###
   # Wraps setTimeout to make it easiet to write in Coffeescript
-    ###
+  ###
   # setTimeout takes miliseconds, so we multiply them by 1000
   setTimeout func, seconds * 1000
 
@@ -142,6 +144,21 @@ msgTaskText = ->
   # Display the current task text in the msgbox
   ###
   msg currentTask.text if currentTask.text
+
+makeDlg = (dlgData) ->
+  ###
+  # Takes dialog box data and returns a dialog box for nextUp actions
+  ###
+  dlg = $('<div></div>').addclass("dlg")
+  dlg.append(markdown.toHTML(dlgData.text))
+  buttons = $('div').addclass("buttons")
+  for item in dlgData.buttons
+    button = $('div').addclass("button")
+    button.attr {onclick: "#{item.action}"}
+    button.content(item.label)
+    buttons.append(button)
+  dlg.append(buttons)
+  return dlg
 
 dlgOpen = (h) ->
   ###
@@ -302,6 +319,8 @@ addGeoJSONLayer = ->
   # the result of the confirmation dialog in the database, and load
   # the next challenge
   ###
+  # This should be harmless if the dialog box is already closed
+  dlgClose()
   msg msgMovingOnToTheNextChallenge
   setDelay 1, msgClose()
   payload = {
@@ -367,18 +386,7 @@ addGeoJSONLayer = ->
   else if editor == 'id'
     editorText = 'iD'
 
-  dlgOpen("""
-The area is being loaded in #{editorText} now.
-Come back here after you do your edits.<br />
-  <br />
-  Did you fix it?
-  <p>
-  <div class=button onClick=nextUp("fixed");$('#dlgBox').fadeOut()>YES</div>
-  <div class=button onClick=nextUp("notfixed");$('#dlgBox').fadeOut()>NO :(</div>
-  <div class=button onClick=nextUp("someonebeatme");$('#dlgBox').fadeOut()>SOMEONE BEAT ME TO IT</div>
-  <div class=button onClick=nextUp("noerrorafterall");$('#dlgBox').fadeOut()>IT WAS NOT AN ERROR AFTER ALL</div>
-  </p>
-  """)
+  dlgOpen(currentChallenge.doneDlg)
 
 @showHelp = ->
   ###
@@ -408,6 +416,9 @@ updateChallenge = (challenge) ->
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
+    currentChallenge.help = markdown.makeHTML(data.help)
+    currentChallenge.doneDlg = makeDlg(data.doneDlg)
+
 
 enableKeyboardShortcuts = ->
   ###
