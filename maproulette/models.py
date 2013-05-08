@@ -5,8 +5,6 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import relationship
-import sqlalchemy.types as types
-from sqlalchemy.schema import UniqueConstraint
 from geoalchemy2 import Geometry
 from random import random
 import datetime
@@ -24,6 +22,12 @@ class OSMUser(Base):
     def __unicode__(self):
         return self.display_name
 
+# challenge
+#  -tasks
+#    -actions
+
+# a challenge is like 'fix all highway tags' and does not belong to anything
+# else - it has no foreign keys
 class Challenge(Base):
     __tablename__ = 'challenges'
     id = Column(Integer, unique=True, primary_key=True)
@@ -60,20 +64,18 @@ class Challenge(Base):
                 'editors': self.editors
                 }
 
+# a task is like 'fix this highway here' and belongs to a challenge
+# and has actions associated with it
 class Task(Base):
     __tablename__ = 'tasks'
-    id = Column(String(80), primary_key=True)
-    challenge_id = Column(Integer, ForeignKey('challenges.id'),
-                          primary_key=True)
+    id = Column(Integer, unique=True, primary_key=True)
+    challenge_id = Column(Integer, ForeignKey('challenges.id'))
     location = Column(Geometry('POINT'))
     run  = Column(String)
     random = Column(Float, default=random())
     manifest = Column(String)
     actions = relationship("Action")
     current_action = Column(Integer, ForeignKey('actions.id'))
-    __table_args__ = (
-        UniqueConstraint("id", "challenge_id"),
-        )
     Index('idx_location', location, postgresql_using='gist')
     Index('idx_id', id)
     Index('idx_challenge', challenge_id)
@@ -92,18 +94,13 @@ class Task(Base):
         action.save()
         self.save()
 
+# actions are associated with tasks and belong to users
 class Action(Base):
     __tablename__ = 'actions'
     id = Column(Integer, unique=True, primary_key=True)
     timestamp = Column(DateTime, default = datetime.datetime.now())
-    task_id = Column(String(80))
-    challenge_id = Column(Integer)
+    challenge_id = Column(Integer, ForeignKey('challenges.id'))
     user_id = Column(Integer, ForeignKey('osmusers.id'))
-    __table_args__ = (
-        ForeignKeyConstraint(
-            [task_id, challenge_id],
-            [Task.id, Task.challenge_id]),
-        {})
     status = Column(String)
 
     def __init__(self, task_id, status, user_id = None):
