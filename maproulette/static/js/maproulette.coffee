@@ -439,6 +439,7 @@ enableKeyboardShortcuts = ->
   ###
   # First create the map
   map = new L.Map "map"
+  map.attributionControl.setPrefix('')
   tileLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
   map.setView new L.LatLng(40.0, -90.0), 17
   map.addLayer tileLayer

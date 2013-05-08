@@ -1,11 +1,10 @@
-body {
-    height:100%;
-    line-height:200%;
-    font:16px bold 'Helvetica Neue', arial, sans-serif;
-}
-
 .xhair {
     cursor:crosshair;
+}
+
+em {
+    font-style:normal;
+    color:#44cc33;
 }
 
 #msgBox {
@@ -58,7 +57,6 @@ div.fullscreen {
 }
 
 div.banner {
-    text-align:center;
     border: 1px solid #aaa;
     z-index:15;
     position:absolute;
@@ -76,6 +74,7 @@ div.button {
     padding:5px;
     background-color:#cbeea7;
     border: 1px solid #AED1A0;
+    font-size:14px;
     border-bottom: 0;
 }
 
@@ -95,16 +94,15 @@ div.button:hover {
     background-color: #AED1A0;
 }
 
-div.button#about {
-    background-color:white;
-    font-style:italic;2.2
+div.button.about {
+    background-color:#f4f4ff;
 }
 
-div.button#noterror {
+div.button.noterror {
     background-color:#4c3;
 }
 
-div.button#skip {
+div.button.skip {
     background-color:#aaa;
 }
 
@@ -112,28 +110,24 @@ div#challenge {
     font-size:10px;
 }
 
-div#challengeDetails {
-    text-transform:uppercase;
-}
-
-span.#counter {
+span#counter {
     font-weight:bold;
 }
 
 .key {
     margin:0px 6px;
     font-size:10px;
-    line-height:14px;
+    line-height:6px;
     display: inline-block;
     width: 14px;
     height:14px;
     padding:2px;
-    border:1px solid black;
+    border:1px solid #555;
     text-align:center;
     background-color:white;
     color:black;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
 }
 
 #announce {
