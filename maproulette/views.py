@@ -24,7 +24,7 @@ def task():
     else:
         point = None
     pass
-    
+
 @app.route('/api/c/<challenge>/meta')
 def challenge_meta(challenge):
     "Returns the metadata for a challenge"

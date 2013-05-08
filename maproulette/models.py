@@ -59,7 +59,7 @@ class Challenge(Base):
                 'doneDlg': self.done_dialog,
                 'editors': self.editors
                 }
-        
+
 class Task(Base):
     __tablename__ = 'tasks'
     id = Column(String(80), primary_key=True)
@@ -81,11 +81,11 @@ class Task(Base):
 
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
-        
-    def near(lon,lat,distance):
+
+    def near(self, lon,lat,distance):
         "Returns a task closer than <distance> (in deg) to a point"
 
-    def checkout(osmid):
+    def checkout(self, osmid):
         """Checks out a task for a particular user"""
         action = Action(self.id, "assigned", osmid)
         self.current_action = action
@@ -103,9 +103,9 @@ class Action(Base):
         ForeignKeyConstraint(
             [task_id, challenge_id],
             [Task.id, Task.challenge_id]),
-        {})    
+        {})
     status = Column(String)
-    
+
     def __init__(self, task_id, status, user_id = None):
         self.task_id = task_id
         self.status = status

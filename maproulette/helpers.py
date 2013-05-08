@@ -13,9 +13,10 @@ def parse_user_details(s):
     if not root:
         print 'aaaargh'
         return None
-    user = {}
-    user['id'] = root.attrib['id']
-    user['username'] = root.attrib['display_name']
+    user = {
+        'id': root.attrib['id'],
+        'username': root.attrib['display_name']
+    }
     try:
         user['lat'] = float(root.find('./home').attrib['lat'])
         user['lon'] = float(root.find('./home').attrib['lon'])
