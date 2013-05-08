@@ -2,6 +2,7 @@
 {% block html %}
 <head>
     <title>MapRoulette</title>
+    <link rel="stylesheet" href="static/css/base.css">
     <link rel="stylesheet" href="static/css/style.css">
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css">
     <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script>
@@ -9,27 +10,29 @@
     <script src="static/js/showdown.js" ></script>
     <script src="static/js/maproulette.js"></script>
 <body onload="init()">
-    <div id="map.fullscreen"></div>
+    <div id="map" class="fullscreen"></div>
     <div id="msgBox"></div>
 <div id="dlgBox"></div>
-<div class="banner">
-        <strong>OPENSTREETMAP <em>MAPROULETTE</em></strong>
-        <div>
-            {%- if session.osm_token -%}
-            logged in as {{ session.display_name }}. <a href="{{ url_for('logout') }}">log out</a>
-            {%- else -%}
-            not logged in. <a href="{{ url_for('oauth_authorize') }}">log in</a>
-            {%- endif -%}
-        </div>
-        <div id="challenge">CURRENT CHALLENGE</div>
-        <div id="challengeDetails"></div>
-        <div class="about.button" onclick='showHelp()'>about/help</div>
-        <div style="font-size:10px">we're down to <span id="counter"></span> connectivity errors. Thanks!</div>
-        <div class="noterror.button" onclick='nextUp("noterror")'>THIS IS NOT AN ERROR:/ <span class="key">q</span></div>
+<div class="banner pad1">
+    <strong>OpenStreetMap <em>MAPROULETTE</em></strong>
+    <div>
+        {%- if session.osm_token -%}
+        logged in as {{ session.display_name }}. <a href="{{ url_for('logout') }}">log out</a>
+        {%- else -%}
+        not logged in. <a href="{{ url_for('oauth_authorize') }}">log in</a>
+        {%- endif -%}
+    </div>
+    <div id="challenge">CURRENT CHALLENGE</div>
+    <div id="challengeDetails"></div>
+    <div style="font-size:10px">we're down to <span id="counter"></span> connectivity errors. Thanks!</div>
+    <div class='buttons'>
+        <div class="about button" onclick='showHelp()'>about/help</div>
+        <div class="noterror button" onclick='nextUp("noterror")'>THIS IS NOT AN ERROR:/ <span class="key">q</span></div>
         <div class="button" onclick='nextUp("skip")'>I'M NOT SURE / SKIP <span class="key">w</span></div>
         <div class="button" onclick='openIn("josm")'>EDIT IN JOSM <span class="key">e</span></div>
         <div class="button" onclick='openIn("potlatch")'>EDIT IN POTLATCH <span class="key">r</span></div>
         <div class="button" onclick='openIn("id")'>EDIT IN ID <span class="key">i</span></div>
     </div>
+</div>
 </body>
 {% endblock %}

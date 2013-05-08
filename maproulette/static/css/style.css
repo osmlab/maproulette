@@ -1,7 +1,7 @@
-body { 
+body {
     height:100%;
     line-height:200%;
-    font:16px bold arial,sans-serif;
+    font:16px bold 'Helvetica Neue', arial, sans-serif;
 }
 
 .xhair {
@@ -48,46 +48,51 @@ body {
     font-size:1em;
 }
 
-div.fullscreen{
+div.fullscreen {
     display:block;
     position:absolute;
     top:0;
-    left:0;    
+    left:0;
     width:100%;
     height:100%;
 }
 
 div.banner {
     text-align:center;
-    border: 1px solid #666;
-    padding:4px;
+    border: 1px solid #aaa;
     z-index:15;
     position:absolute;
     right:10px;
-    width:250px;
     top:10px;
+    width:250px;
     background-color:#fff;
-    -moz-border-radius: 4px;
-    border-radius: 4px;
+}
+
+.buttons {
+    padding:5px 0;
 }
 
 div.button {
-    font-size:14px;
-    line-height:20px;
-    /*font-weight:bold;*/
-    color:black;
-    padding:4px;
-    margin:4px;
-    background-color:#6cf;
-    border: 1px solid black;
-    -moz-border-radius: 4px;
-    border-radius: 4px;
+    padding:5px;
+    background-color:#cbeea7;
+    border: 1px solid #AED1A0;
+    border-bottom: 0;
+}
+
+div.button:first-child {
+    -moz-border-radius:4px 4px 0 0;
+    border-radius:4px 4px 0 0;
+}
+
+div.button:last-child {
+    border-bottom: 1px solid #AED1A0;
+    -moz-border-radius:0 0 4px 4px;
+    border-radius:0 0 4px 4px;
 }
 
 div.button:hover {
     cursor:pointer;
-    background-color:#666!important;
-    color:#fff!important;
+    background-color: #AED1A0;
 }
 
 div.button#about {
@@ -112,7 +117,7 @@ div#challengeDetails {
 }
 
 span.#counter {
-    style="font-weight:bold";
+    font-weight:bold;
 }
 
 .key {

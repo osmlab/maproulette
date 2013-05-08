@@ -258,7 +258,7 @@ showTask = (task) ->
   setDelay 3, msgClose()
   msgTaskText()
 
-getChallenge = (slug)
+getChallenge = (slug) ->
   ###
   # Gets a specific challenge
   ###
