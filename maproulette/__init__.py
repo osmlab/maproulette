@@ -1,14 +1,11 @@
 import os, sys
 from flask import Flask, session, request, send_from_directory, jsonify, \
     render_template, url_for, redirect
-from helpers import make_json_response
 from flask_oauth import OAuth
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee
-from models import OSMUser
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
+from flask.ext.sqlalchemy import SQLAlchemy
 
 # check if secret.cfg exists
 if not os.path.exists('secret.cfg'):
@@ -16,11 +13,6 @@ if not os.path.exists('secret.cfg'):
 running ../bin/make_secret.py from the MR root directory''')
     exit()
     
-# ininiate database engine and create ORM session
-engine = create_engine('postgresql://osm:osm@localhost/maproulette', echo=True)
-Session = sessionmaker(bind=engine)
-db = Session()
-
 # initialize server KV session store
 if not os.path.exists('./sessiondata'):
 	os.makedirs('./sessiondata')
@@ -34,19 +26,23 @@ app = Flask(__name__,
 
 app.config.from_pyfile('maproulette.cfg')
 app.config.from_pyfile('../secret.cfg')
+app.secret_key = app.config['SECRET_KEY']
+app.debug = True
+
+db = SQLAlchemy(app)
+
+#from maproulette import views, models
+from maproulette import models
+from helpers import make_json_response
 
 # connect flask app to server KV session store
 KVSessionExtension(store, app)
 
-# Apps need a secret key
-app.secret_key = app.config['SECRET_KEY']
-
 # Coffeescript enable the app
 coffee(app)
 
-app.debug = True
-
 # instantite OAuth object
+# FIXME this should go into a separate oauth.py file.
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
@@ -58,6 +54,7 @@ osm = oauth.remote_app(
     consumer_secret = app.config['OAUTH_SECRET']
 )
 
+# FIXME this should go into a separate oauth.py file.
 @osm.tokengetter
 def get_osm_token(token=None):
     session.regenerate()
@@ -72,13 +69,13 @@ def index():
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
-    return jsonify(challenges=[i.slug for i in Challenges.objects()])
+    return jsonify(challenges=[i.slug for i in models.Challenges.objects()])
 
 @app.route('/api/challenge/<difficulty>')
 def pick_challenge(difficulty):
     "Returns a random challenge based on the preferred difficulty"
     # I don't know if there is really a random() method..
-    challenge = db.query(Challenge).filter(Challenge.difficulty==difficulty).random()
+    challenge = models.Challenge.query.filter(models.Challenge.difficulty==difficulty).random()
     return jsonify(challenge)
     
 @app.route('/api/task/<challenge>/<lon>/<lat>/<distance>')
@@ -87,7 +84,7 @@ def task():
         # we will need something real here
         return None
     if lon and lat:
-        db.query(Task).filter(Task.challenge_id == challenge)
+        models.Task.query.filter(models.Task.challenge_id == challenge)
     "Returns an appropriate task based on parameters"
     pass
     
@@ -135,12 +132,14 @@ def logout():
     session.destroy()
     return redirect('/')
 
+# FIXME this should go into a separate oauth.py file.
 @app.route('/oauth/authorize')
 def oauth_authorize():
     """Initiates OAuth authorization agains the OSM server"""
     return osm.authorize(callback=url_for('oauth_authorized',
       next=request.args.get('next') or request.referrer or None))
 
+# FIXME this should go into a separate oauth.py file.
 @app.route('/oauth/callback')
 @osm.authorized_handler
 def oauth_authorized(resp):
@@ -160,13 +159,13 @@ def oauth_authorized(resp):
         userxml = data.find('user')
         osmid = userxml.attrib['id']
         # query for existing user
-        if bool(db.query(OSMUser).filter(OSMUser.id==osmid).count()):
+        if bool(models.OSMUser.query.filter(models.OSMUser.id==osmid).count()):
             #user exists
-            user = db.query(OSMUser).filter(OSMUser.id==osmid).first()
+            user = OSMUser.query.filter(OSMUser.id==osmid).first()
             print('user found')
         else:
             # create new user
-            user = OSMUser()
+            user = models.OSMUser()
             user.id = osmid
             user.display_name = userxml.attrib['display_name']
             homexml = userxml.find('home')
@@ -174,8 +173,8 @@ def oauth_authorized(resp):
                 user.home_location = 'POINT(%s %s)' % (homexml.attrib['lon'], homexml.attrib['lat'])
             else:
                 print('no home for this user')
-            db.add(user)
-            db.commit()
+            db.session.add(user)
+            db.session.commit()
             print('user created')
     session['display_name'] = user.display_name
     session['osm_id'] = user.id

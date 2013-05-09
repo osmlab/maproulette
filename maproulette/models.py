@@ -11,7 +11,7 @@ db = SQLAlchemy(app)
 class OSMUser(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
     oauth_token = db.Column(db.String)
-    oauth_secret = Column(db.String)
+    oauth_secret = db.Column(db.String)
     display_name = db.Column(db.String)
     home_location = db.Column(Geometry('POINT'))
 
@@ -63,13 +63,12 @@ class Challenge(db.Model):
 # and has actions associated with it
 class Task(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
     location = db.Column(Geometry('POINT'))
     run  = db.Column(db.String)
     random = db.Column(db.Float, default=random())
     manifest = db.Column(db.String)
-    actions = db.relationship("Action")
-    current_action = db.Column(db.Integer, db.ForeignKey('actions.id'))
+    actions = db.relationship("Action", lazy = 'dynamic')
     db.Index('idx_location', location, postgresql_using='gist')
     db.Index('idx_id', id)
     db.Index('idx_challenge', challenge_id)
@@ -91,9 +90,10 @@ class Task(db.Model):
 # actions are associated with tasks and belong to users
 class Action(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
-    timestamp = db.Column(db.DateTime, default = datetime.datetime.now())
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('osmusers.id'))
+    timestamp = db.Column(db.DateTime, default = datetime.now())
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('osm_user.id'))
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
     status = db.Column(db.String)
 
     def __init__(self, task_id, status, user_id = None):
