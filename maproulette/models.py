@@ -1,23 +1,19 @@
 #!/usr/bin/python
 
-from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
-    ForeignKey, ForeignKeyConstraint, DateTime, create_engine, SmallInteger
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.orm import relationship
-from geoalchemy2 import Geometry
+from maproulette import app
+from flask.ext.sqlalchemy import SQLAlchemy
+from geoalchemy2.types import Geometry
 from random import random
-import datetime
+from datetime import datetime
 
-Base = declarative_base()
+db = SQLAlchemy(app)
 
-class OSMUser(Base):
-    __tablename__ = 'osmusers'
-    id = Column(Integer, unique=True, primary_key=True)
-    oauth_token = Column(String)
-    oauth_secret = Column(String)
-    display_name = Column(String)
-    home_location = Column(Geometry('POINT'))
+class OSMUser(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    oauth_token = db.Column(db.String)
+    oauth_secret = Column(db.String)
+    display_name = db.Column(db.String)
+    home_location = db.Column(Geometry('POINT'))
 
     def __unicode__(self):
         return self.display_name
@@ -28,23 +24,22 @@ class OSMUser(Base):
 
 # a challenge is like 'fix all highway tags' and does not belong to anything
 # else - it has no foreign keys
-class Challenge(Base):
-    __tablename__ = 'challenges'
-    id = Column(Integer, unique=True, primary_key=True)
-    slug = Column(String(72), primary_key=True)
-    title = Column(String(128))
-    description = Column(String)
-    blurb = Column(String)
-    polygon = Column(Geometry('POLYGON'))
-    help = Column(String)
-    instruction = Column(String)
-    run = Column(String)
-    active = Column(Boolean)
-    difficulty = Column(SmallInteger)
-    done_dialog = Column(String)
-    editors = Column(String)
-    Index('idx_geom', polygon, postgresql_using='gist')
-    Index('idx_run', run)
+class Challenge(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    slug = db.Column(db.String(72), primary_key=True)
+    title = db.Column(db.String(128))
+    description = db.Column(db.String)
+    blurb = db.Column(db.String)
+    polygon = db.Column(Geometry('POLYGON'))
+    help = db.Column(db.String)
+    instruction = db.Column(db.String)
+    run = db.Column(db.String)
+    active = db.Column(db.Boolean)
+    difficulty = db.Column(db.SmallInteger)
+    done_dialog = db.Column(db.String)
+    editors = db.Column(db.String)
+    db.Index('idx_geom', polygon, postgresql_using='gist')
+    db.Index('idx_run', run)
 
     def __init__(self, slug):
         self.slug = slug
@@ -66,20 +61,19 @@ class Challenge(Base):
 
 # a task is like 'fix this highway here' and belongs to a challenge
 # and has actions associated with it
-class Task(Base):
-    __tablename__ = 'tasks'
-    id = Column(Integer, unique=True, primary_key=True)
-    challenge_id = Column(Integer, ForeignKey('challenges.id'))
-    location = Column(Geometry('POINT'))
-    run  = Column(String)
-    random = Column(Float, default=random())
-    manifest = Column(String)
-    actions = relationship("Action")
-    current_action = Column(Integer, ForeignKey('actions.id'))
-    Index('idx_location', location, postgresql_using='gist')
-    Index('idx_id', id)
-    Index('idx_challenge', challenge_id)
-    Index('idx_random', random)
+class Task(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'))
+    location = db.Column(Geometry('POINT'))
+    run  = db.Column(db.String)
+    random = db.Column(db.Float, default=random())
+    manifest = db.Column(db.String)
+    actions = db.relationship("Action")
+    current_action = db.Column(db.Integer, db.ForeignKey('actions.id'))
+    db.Index('idx_location', location, postgresql_using='gist')
+    db.Index('idx_id', id)
+    db.Index('idx_challenge', challenge_id)
+    db.Index('idx_random', random)
 
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
@@ -95,23 +89,15 @@ class Task(Base):
         self.save()
 
 # actions are associated with tasks and belong to users
-class Action(Base):
-    __tablename__ = 'actions'
-    id = Column(Integer, unique=True, primary_key=True)
-    timestamp = Column(DateTime, default = datetime.datetime.now())
-    challenge_id = Column(Integer, ForeignKey('challenges.id'))
-    user_id = Column(Integer, ForeignKey('osmusers.id'))
-    status = Column(String)
+class Action(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    timestamp = db.Column(db.DateTime, default = datetime.datetime.now())
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('osmusers.id'))
+    status = db.Column(db.String)
 
     def __init__(self, task_id, status, user_id = None):
         self.task_id = task_id
         self.status = status
         if user_id:
             self.user_id = user_id
-
-if __name__ == "__main__":
-	'''Create all tables'''
-	engine = create_engine('postgresql://osm:osm@localhost/maproulette',
-                               echo=True)
-	Base.metadata.drop_all(engine)
-	Base.metadata.create_all(engine)
