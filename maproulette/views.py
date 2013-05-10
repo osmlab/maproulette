@@ -1,5 +1,5 @@
 from maproulette import app, oauth, models
-from flask import render_template, redirect, request, session, jsonify
+from flask import render_template, redirect, request, session, jsonify, abort
 
 # By default, send out the standard client
 @app.route('/')
@@ -10,7 +10,16 @@ def index():
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
-    return jsonify(challenges=[i.slug for i in models.Challenge.query.all()])
+    challenges = [i.slug for i in models.Challenge.query.all()]
+    return jsonify(challenges)
+
+@app.route('/api/challenges/<id>')
+def challenge_details(id):
+    "Returns details on the challenge"
+    challenge = models.Challenge.query.filter(models.Challenge.id==id).first()
+    if challenge:
+        return jsonify(challenge)
+    abort(404)
 
 @app.route('/api/challenge/<difficulty>')
 def pick_challenge(difficulty):
