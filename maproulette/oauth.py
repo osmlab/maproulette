@@ -51,7 +51,7 @@ def oauth_authorized(resp):
         # query for existing user
         if bool(models.OSMUser.query.filter(models.OSMUser.id==osmid).count()):
             #user exists
-            user = OSMUser.query.filter(OSMUser.id==osmid).first()
+            user = models.OSMUser.query.filter(models.OSMUser.id==osmid).first()
             print('user found')
         else:
             # create new user
