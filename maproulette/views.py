@@ -1,4 +1,4 @@
-from maproulette import app
+from maproulette import app, oauth
 from flask import render_template, redirect, request, session
 
 # By default, send out the standard client
@@ -49,28 +49,3 @@ def challenge_post(challenge, task_id):
 def logout():
     session.destroy()
     return redirect('/')
-
-@app.route('/oauth/authorize')
-def oauth_authorize():
-    """Initiates OAuth authorization agains the OSM server"""
-    return osm.authorize(callback=url_for('oauth_authorized',
-      next=request.args.get('next') or request.referrer or None))
-
-@app.route('/oauth/callback')
-@osm.authorized_handler
-def oauth_authorized(resp):
-    """Receives the OAuth callback from OSM"""
-    next_url = request.args.get('next') or url_for('index')
-    if resp is None:
-        return redirect(next_url)
-    session['osm_token'] = (
-      resp['oauth_token'],
-      resp['oauth_token_secret']
-    )
-    print 'getting user data from osm'
-    osmuserresp = osm.get('user/details')
-    if osmuserresp.status == 200:
-        session['user'] = get_user_attribs(osmuserresp.data)
-    else:
-        print 'not able to get osm user data'
-    return redirect(next_url)
