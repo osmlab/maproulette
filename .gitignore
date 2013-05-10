@@ -6,5 +6,6 @@
 *.conf
 *.log
 *.swp
-./sessiondata/*
+sessiondata/*
 build/
+secret.cfg
