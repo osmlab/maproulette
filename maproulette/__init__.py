@@ -1,6 +1,5 @@
 import os, sys
-from flask import Flask, session, jsonify, \
-    render_template, redirect
+from flask import Flask, session, render_template, redirect
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee

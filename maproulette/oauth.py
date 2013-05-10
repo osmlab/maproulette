@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from maproulette import app
+from maproulette import app, models
 from flask_oauth import OAuth
-from flask import request, url_for, redirect
+from flask import request, url_for, redirect, session
 from flask.ext.sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy(app)
