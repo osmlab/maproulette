@@ -10,15 +10,15 @@ def index():
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
-    challenges = [i.slug for i in models.Challenge.query.all()]
-    return jsonify(challenges)
+    return jsonify(challenges = 
+        [i.slug for i in models.Challenge.query.all()])
 
 @app.route('/api/challenges/<id>')
 def challenge_details(id):
     "Returns details on the challenge"
     challenge = models.Challenge.query.filter(models.Challenge.id==id).first()
     if challenge:
-        return jsonify(challenge)
+        return jsonify(challenge=challenge)
     abort(404)
 
 @app.route('/api/challenge/<difficulty>')
@@ -26,7 +26,7 @@ def pick_challenge(difficulty):
     "Returns a random challenge based on the preferred difficulty"
     # I don't know if there is really a random() method..
     challenge = models.Challenge.query.filter(models.Challenge.difficulty==difficulty).random()
-    return jsonify(challenge)
+    return jsonify(challenge=challenge)
     
 @app.route('/api/task/<challenge>/<lon>/<lat>/<distance>')
 def task():
@@ -54,7 +54,7 @@ def challenge_meta(slug):
 def challenge_stats(challenge):
     "Returns stat data for a challenge"
     ## THIS IS FAKE RIGHT NOW
-    return jsonify({'total': 100, 'done': 50})
+    return jsonify(stats={'total': 100, 'done': 50})
 
 @app.route('/api/c/<slug>/task')
 def challenge_task(slug):
@@ -66,7 +66,7 @@ def challenge_task(slug):
     # Create a new status for this task
     action = Action(task, "assigned")
     action.save()
-    return jsonify({
+    return jsonify(task = {
             'challenge': challenge.slug,
             'id': challenge.id,
             'features': task.manifest,
