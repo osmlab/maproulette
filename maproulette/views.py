@@ -38,7 +38,7 @@ def task():
     "Returns an appropriate task based on parameters"
     pass
     
-@app.route('/api/c/<slug>/meta')
+@app.route('/api/challenges/<slug>/meta')
 def challenge_meta(slug):
     "Returns the metadata for a challenge"
     challenge = get_challenge_or_404(slug)
@@ -50,13 +50,13 @@ def challenge_meta(slug):
             'help': challenge.help,
             'instruction': challenge.instruction})
 
-@app.route('/api/c/<challenge>/stats')
+@app.route('/api/challenges/<challenge>/stats')
 def challenge_stats(challenge):
     "Returns stat data for a challenge"
     ## THIS IS FAKE RIGHT NOW
     return jsonify(stats={'total': 100, 'done': 50})
 
-@app.route('/api/c/<slug>/task')
+@app.route('/api/challenges/<slug>/task')
 def challenge_task(slug):
     "Returns a task for specified challenge"
     challenge = get_challenge_or_404(slug)
@@ -72,7 +72,12 @@ def challenge_task(slug):
             'features': task.manifest,
             'text': task.instruction})
  
-@app.route('/api/c/<challenge>/task/<id>', methods = ['POST'])
+@app.route('/api/challenges/<challenge>/task/<id>')
+def get_task_by_id(challenge, task_id):
+    "Gets a specific task by ID"
+    pass
+
+@app.route('/api/challenges/<challenge>/task/<id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
     "Accepts data for completed task"
     pass
