@@ -5,6 +5,7 @@ This is MapRoulette.
 ## Installation
 
 Note that there is also an Amazon EC2 AMI that has all the requirements for MapRoulette already installed and configured. To use, just fire up an instance of `ami-8985f0e0` and 
+
     cd maproulette
     git pull
     workon maproulette
