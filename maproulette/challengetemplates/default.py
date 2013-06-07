@@ -9,7 +9,8 @@ class Default(Challenge):
         'text': "This area is being loaded in your editor.\n\nDid you fix it?",
         'buttons': [buttons.fixed, buttons.skipped]}
 
-    def set_task_status(task):
+    @task_status.setter
+    def set_task_status(self, task):
         current = task.current
         if current.status == 'skipped':
             task.setavailable()

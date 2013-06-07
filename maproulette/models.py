@@ -87,6 +87,7 @@ class Task(db.Model):
         action.save()
         self.save()
 
+
 # actions are associated with tasks and belong to users
 class Action(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
