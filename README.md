@@ -64,6 +64,10 @@ Install the python requirements:
     cd maproulette/
     pip install -r requirements.txt
 
+Ensure that maproulette will be accessible to python:
+
+    add2virtualenv .
+
 Generate a Flask application secret:
 
     python bin/make_secret.py
