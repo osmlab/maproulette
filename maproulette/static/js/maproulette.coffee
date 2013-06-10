@@ -152,7 +152,7 @@ makeDlg = (dlgData) ->
   ###
   dlg = $('<div></div>').addClass("dlg")
   dlg.append(markdown.makeHtml(dlgData.text))
-  buttons = $('div').addClass("buttons")
+  buttons = $('<div></div>').addClass("buttons")
   for item in dlgData.buttons
     button = $('div').addClass("button")
     button.attr {onclick: "#{item.action}"}
