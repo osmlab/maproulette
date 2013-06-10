@@ -149,11 +149,11 @@ makeDlg = (dlgData) ->
   ###
   # Takes dialog box data and returns a dialog box for nextUp actions
   ###
-  dlg = $('<div></div>').addclass("dlg")
-  dlg.append(markdown.toHTML(dlgData.text))
-  buttons = $('div').addclass("buttons")
+  dlg = $('<div></div>').addClass("dlg")
+  dlg.append(markdown.makeHtml(dlgData.text))
+  buttons = $('div').addClass("buttons")
   for item in dlgData.buttons
-    button = $('div').addclass("button")
+    button = $('div').addClass("button")
     button.attr {onclick: "#{item.action}"}
     button.content(item.label)
     buttons.append(button)
@@ -253,7 +253,7 @@ showTask = (task) ->
   ###
   # Displays a task to the display and waits for the user prompt
   ###
-  drawFeaures(task.features)
+  drawFeatures(task.features)
   revGeocode()
   setDelay 3, msgClose()
   msgTaskText()
@@ -285,11 +285,11 @@ getNewChallenge = (difficulty, near) ->
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
-  near = "#{map.getCenter().lat},#{map.getCenter().lon}" if not near
-  url = "/api/challenges/#{challenge.slug}/tasks?near=#{near}"
+  near = "#{map.getCenter().lat},#{map.getCenter().lng}" if not near
+  url = "/api/challenges/#{challenge}/task?near=#{near}"
   $.getJSON url, (data) ->
     currentTask = data
-    currentTask.startTime = new Date.getTime()
+    currentTask.startTime = new Date().getTime()
     showTask(data)
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
@@ -401,23 +401,23 @@ updateStats = (challenge) ->
   # Get the stats for the challenge and display the count of remaining
   # tasks
   ###
-  $.getJSON "c/#{challenge}/stats", (data) ->
-    remaining = data.total - data.done
+  $.getJSON "/api/challenges/#{challenge}/stats", (data) ->
+    remaining = data.stats.total - data.stats.done
     $("#counter").text remaining
 
 updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
-  $.getJSON "/c/#{challenge}/meta", (data) ->
-    currentChallenge = data
+  $.getJSON "/api/challenges/#{challenge}/meta", (data) ->
+    currentChallenge = data.challenge
     $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL
       tileURL = data.tileurl
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
-    currentChallenge.help = markdown.makeHTML(data.help)
-    currentChallenge.doneDlg = makeDlg(data.doneDlg)
+    currentChallenge.help = markdown.makeHtml(currentChallenge.help)
+    currentChallenge.doneDlg = makeDlg(currentChallenge.doneDlg)
 
 
 enableKeyboardShortcuts = ->
