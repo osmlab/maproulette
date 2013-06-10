@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import json
 
 from maproulette import app, models
 from flask_oauth import OAuth
@@ -30,6 +31,24 @@ def oauth_authorize():
     return osm.authorize(callback=url_for('oauth_authorized',
       next=request.args.get('next') or request.referrer or None))
 
+def set_preferences(preferences):
+    """Set the user preferences with our prefix"""
+    for k, v in preferences.items():
+        url = 'user/preferences/%s%s' % (app.config['OAUTH_PREFERENCE_PREFIX'], k)
+        # Using json as the format because other oauth data was added otherwise
+        osm.put(url, data=v, format='json')
+
+def get_preferences():
+    """Get user preferences with our prefix"""
+    preferences = osm.get('user/preferences').data.find('preferences')
+    preference_dict = {}
+    prefix = app.config['OAUTH_PREFERENCE_PREFIX']
+    for preference in preferences.getchildren():
+        k, v = preference.attrib['k'], preference.attrib['v']
+        if k.startswith(prefix):
+            preference_dict[k.replace(prefix, '')] = json.loads(v)
+    return preference_dict
+
 @app.route('/oauth/callback')
 @osm.authorized_handler
 def oauth_authorized(resp):
@@ -48,11 +67,11 @@ def oauth_authorized(resp):
     else:
         userxml = data.find('user')
         osmid = userxml.attrib['id']
+
         # query for existing user
         if bool(models.OSMUser.query.filter(models.OSMUser.id==osmid).count()):
             #user exists
             user = models.OSMUser.query.filter(models.OSMUser.id==osmid).first()
-            print('user found')
         else:
             # create new user
             user = models.OSMUser()
