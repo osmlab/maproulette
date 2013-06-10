@@ -11,6 +11,12 @@ Note that there is also an Amazon EC2 AMI that has all the requirements for MapR
     workon maproulette
     python manage.py runserver
 
+### Dependencies: General
+
+MapRoulette requires [CoffeeScript](http://coffeescript.org/), which can easily be installed using `npm`:
+
+    npm install coffee-script -g
+
 ### Dependencies: Linux
 
 On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
@@ -57,12 +63,16 @@ Set up the virtual environment and activate it:
 
 Clone the repo:
 
-    git clone git://github.com/mvexel/maproulette-front.git
+    git clone git://github.com/osmlab/maproulette.git
 
 Install the python requirements:
 
     cd maproulette/
     pip install -r requirements.txt
+
+Ensure that maproulette will be accessible to python:
+
+    add2virtualenv .
 
 Generate a Flask application secret:
 
