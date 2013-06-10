@@ -21,6 +21,7 @@ currentTask = null
 selectedFeature = null
 
 # User variables
+loggedIn = false
 editor = ""
 difficulty = null
 location = null
@@ -321,13 +322,17 @@ addGeoJSONLayer = ->
   ###
   # This should be harmless if the dialog box is already closed
   dlgClose()
+
+  if not loggedIn
+    window.location.pathname = '/oauth/authorize'
+
   msg msgMovingOnToTheNextChallenge
   setDelay 1, msgClose()
   payload = {
       "action": action,
       "editor": editor,
       "startTime": currentTask.startTime,
-      "endTime": new Date.getTime() }
+      "endTime": new Date().getTime() }
   near = currentTask.center
   challenge = currentChallenge.slug
   task_id = currentTask.id
@@ -340,6 +345,9 @@ addGeoJSONLayer = ->
   ###
   # Open the currently displayed OSM objects in the selected editor (e)
   ###
+  if not loggedIn
+    window.location.pathname = '/oauth/authorize'
+
   editor = e
   if map.getZoom() < 14
     msg msgZoomInForEdit, 3
@@ -433,7 +441,7 @@ enableKeyboardShortcuts = ->
       when "r" then openIn('potlatch')
       when "i" then openIn('id')
 
-@init = ->
+@init = (isLoggedIn) ->
   ###
   # Find a challenge and set the map up
   ###
@@ -445,6 +453,9 @@ enableKeyboardShortcuts = ->
   map.addLayer tileLayer
   addGeoJSONLayer()
   enableKeyboardShortcuts()
+
+  # Remember whether user is logged in
+  loggedIn = isLoggedIn
 
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
