@@ -11,6 +11,12 @@ Note that there is also an Amazon EC2 AMI that has all the requirements for MapR
     workon maproulette
     python manage.py runserver
 
+### Dependencies: General
+
+MapRoulette requires [CoffeeScript](http://coffeescript.org/), which can easily be installed using `npm`:
+
+    npm install coffee-script -g
+
 ### Dependencies: Linux
 
 On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
