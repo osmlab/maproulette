@@ -10,7 +10,7 @@
         <script src="static/js/showdown.js" ></script>
         <script src="static/js/maproulette.js"></script>
     </head>
-    <body onload="init()">
+    <body onload="init({%- if session.osm_token -%}true{%- else -%}false{%- endif -%})">
         <div id="map" class="fullscreen"></div>
         <div id="msgBox"></div>
         <div id="dlgBox"></div>
