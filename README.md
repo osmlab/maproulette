@@ -57,7 +57,7 @@ Set up the virtual environment and activate it:
 
 Clone the repo:
 
-    git clone git://github.com/mvexel/maproulette-front.git
+    git clone git://github.com/osmlab/maproulette.git
 
 Install the python requirements:
 
