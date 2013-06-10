@@ -1,7 +1,7 @@
 import json
 
-from maproulette import app, oauth, models
-from flask import render_template, redirect, request, session, jsonify, abort
+from maproulette import app, models
+from flask import render_template, redirect, session, jsonify, abort
 
 # By default, send out the standard client
 @app.route('/')
