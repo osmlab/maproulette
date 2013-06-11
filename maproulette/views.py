@@ -1,5 +1,7 @@
-from maproulette import app, oauth, models
-from flask import render_template, redirect, request, session, jsonify, abort
+import json
+
+from maproulette import app, models
+from flask import render_template, redirect, session, jsonify, abort
 
 # By default, send out the standard client
 @app.route('/')
@@ -7,10 +9,13 @@ def index():
     "Display the index.html"
     return render_template('index.html')
 
+def get_challenge_or_404(slug):
+    return models.Challenge.query.filter_by(slug=slug).first_or_404()
+
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
-    return jsonify(challenges = 
+    return jsonify(challenges =
         [i.slug for i in models.Challenge.query.all()])
 
 @app.route('/api/challenges/<id>')
@@ -27,7 +32,7 @@ def pick_challenge(difficulty):
     # I don't know if there is really a random() method..
     challenge = models.Challenge.query.filter(models.Challenge.difficulty==difficulty).random()
     return jsonify(challenge=challenge)
-    
+
 @app.route('/api/task/<challenge>/<lon>/<lat>/<distance>')
 def task():
     if not challenge:
@@ -37,7 +42,7 @@ def task():
         models.Task.query.filter(models.Task.challenge_id == challenge)
     "Returns an appropriate task based on parameters"
     pass
-    
+
 @app.route('/api/challenges/<slug>/meta')
 def challenge_meta(slug):
     "Returns the metadata for a challenge"
@@ -48,6 +53,7 @@ def challenge_meta(slug):
             'description': challenge.description,
             'blurb': challenge.blurb,
             'help': challenge.help,
+            'doneDlg': json.loads(challenge.done_dialog),
             'instruction': challenge.instruction})
 
 @app.route('/api/challenges/<challenge>/stats')
@@ -61,17 +67,17 @@ def challenge_task(slug):
     "Returns a task for specified challenge"
     challenge = get_challenge_or_404(slug)
     # Grab a random task (not very random right now)
-    query = session.query(challenge.tasks)
-    task = query.first()
+    task = challenge.tasks.first()
     # Create a new status for this task
-    action = Action(task, "assigned")
-    action.save()
+    action = models.Action(task.id, "assigned")
+    models.db.session.add(action)
+    models.db.session.commit()
     return jsonify(task = {
             'challenge': challenge.slug,
             'id': challenge.id,
             'features': task.manifest,
-            'text': task.instruction})
- 
+            'text': challenge.instruction})
+
 @app.route('/api/challenges/<challenge>/task/<id>')
 def get_task_by_id(challenge, task_id):
     "Gets a specific task by ID"
