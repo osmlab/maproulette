@@ -5,12 +5,6 @@ from flaskext.kvsession import KVSessionExtension
 from flaskext.coffee import coffee
 from flask.ext.sqlalchemy import SQLAlchemy
 
-# check if secret.cfg exists
-if not os.path.exists('secret.cfg'):
-    print('''secret.cfg not found. You need to generate an app secret by
-running ../bin/make_secret.py from the MR root directory''')
-    exit()
-    
 # initialize server KV session store
 if not os.path.exists('./sessiondata'):
 	os.makedirs('./sessiondata')
@@ -23,7 +17,6 @@ app = Flask(__name__,
            static_url_path = '/static')
 
 app.config.from_pyfile('maproulette.cfg')
-app.config.from_pyfile('../secret.cfg')
 app.secret_key = app.config['SECRET_KEY']
 app.debug = True
 
