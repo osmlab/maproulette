@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from maproulette import app
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
