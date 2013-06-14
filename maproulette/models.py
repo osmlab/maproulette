@@ -3,7 +3,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from random import random
 from datetime import datetime
-from maproulette.models import db
+from maproulette.database import db
 
 class OSMUser(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
