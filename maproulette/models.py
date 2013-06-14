@@ -7,7 +7,7 @@ from maproulette.database import db
 class OSMUser(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
     oauth_token = db.Column(db.String)
-    oauth_secret = db.Column(db.String)
+    oauth_secret = db.Column(dmb.String)
     display_name = db.Column(db.String)
     home_location = db.Column(Geometry('POINT'))
 
@@ -104,9 +104,6 @@ class Task(db.Model):
 
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
-
-    def near(self, lon,lat,distance):
-        "Returns a task closer than <distance> (in deg) to a point"
 
     def checkout(self, osmid):
         """Checks out a task for a particular user"""
