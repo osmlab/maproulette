@@ -5,8 +5,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from random import random
 from datetime import datetime
-
-db = SQLAlchemy(app)
+from maproulette.models import db
 
 class OSMUser(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
@@ -33,11 +32,13 @@ class Challenge(db.Model):
     polygon = db.Column(Geometry('POLYGON'))
     help = db.Column(db.String)
     instruction = db.Column(db.String)
-    run = db.Column(db.String)
+    run = db.Column(db.String(72))
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
     done_dialog = db.Column(db.String)
     editors = db.Column(db.String)
+    template = db.Column(db.String, default = 'Default')
+    templates = []
     db.Index('idx_geom', polygon, postgresql_using='gist')
     db.Index('idx_run', run)
 
@@ -47,6 +48,35 @@ class Challenge(db.Model):
     def __unicode__(self):
         return self.slug
 
+    def _get_task_available(self, task):
+        """The function for a task to determine if it's available or not."""
+        # Most tasks will use this method
+        action = task.current_action
+        if action.status = 'available':
+            return True
+        else:
+            return False
+    
+    def _set_task_status(self, task):
+        """This is the function that runs after a task action is set,
+        to set its secondary availability."""
+        current = task.current
+        if current.status == 'skipped':
+            task.state = 'available'
+        elif current.status == 'fixed':
+            task.state = 'done'
+        elif (current.status = 'alreadyfixed' or
+            current.status = 'falsepositive'):
+            l = [i for i in task.actions where i.status == "falsepositive" \
+                     or i.status == "alreadyfixed"]
+            if len(l) >= 2:
+                task.status = 'done'
+            else:
+                task.status = 'available'
+        else:
+            # This is a catchall that a task should never get to
+            task.status = 'available'
+    
     @property
     def meta(self):
         """Return a dictionary of metadata for the challenge"""
@@ -63,9 +93,10 @@ class Challenge(db.Model):
 # and has actions associated with it
 class Task(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
+    identifier = db.Column(db.String(72))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
     location = db.Column(Geometry('POINT'))
-    run  = db.Column(db.String)
+    run  = db.Column(db.String(72))
     random = db.Column(db.Float, default=random())
     manifest = db.Column(db.String)
     actions = db.relationship("Action", lazy = 'dynamic')
@@ -95,7 +126,7 @@ class Action(db.Model):
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('osm_user.id'))
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
-    status = db.Column(db.String)
+    status = db.Column(db.String(32))
 
     def __init__(self, task_id, status, user_id = None):
         self.task_id = task_id
