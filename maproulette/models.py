@@ -36,8 +36,11 @@ class Challenge(db.Model):
     editors = db.Column(db.String)
     template = db.Column(db.String, default = 'Default')
     templates = []
-    db.Index('idx_geom', polygon, postgresql_using='gist')
-    db.Index('idx_run', run)
+    
+    __table_args__ = (
+        db.Index('idx_geom', polygon, postgresql_using='gist')
+        db.Index('idx_run', run)
+        )
 
     def __init__(self, slug):
         self.slug = slug
@@ -97,27 +100,35 @@ class Task(db.Model):
     random = db.Column(db.Float, default=random())
     manifest = db.Column(db.String)
     actions = db.relationship("Action", lazy = 'dynamic')
-    db.Index('idx_location', location, postgresql_using='gist')
-    db.Index('idx_id', id)
-    db.Index('idx_challenge', challenge_id)
-    db.Index('idx_random', random)
+
+    __table_args__ = (
+        db.Index('idx_location', location, postgresql_using='gist')
+        db.Index('idx_id', id)
+        db.Index('idx_challenge', challenge_id)
+        db.Index('idx_random', random)
+        )
 
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
+    
+    @property
+    def current_state(self):
+        """Displays the current state of a task"""
+        return self.current_action.state
 
-    def checkout(self, osmid):
-        """Checks out a task for a particular user"""
-        action = Action(self.id, "assigned", osmid)
+    @current_state.setter
+    def current_state(self, newstate, osmid = None):
+        """Shortcut for creating a new action"""
+        action = Action(self.id, newstate, osmid)
         self.current_action = action
-        action.save()
-        self.save()
-
+        db.session.add(action)
+        db.session.add(self)
+        bb.session.commit()
 
 # actions are associated with tasks and belong to users
 class Action(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
-    timestamp = db.Column(db.DateTime, default = datetime.now())
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
+    timestamp = db.Column(db.DateTime, default = datetime.now)
     user_id = db.Column(db.Integer, db.ForeignKey('osm_user.id'))
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
     status = db.Column(db.String(32))
