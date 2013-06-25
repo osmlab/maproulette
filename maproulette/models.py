@@ -1,23 +1,17 @@
-#!/usr/bin/python
-
-from sqlalchemy import Column, Integer, String, Boolean, Float, Index, \
-    ForeignKey, ForeignKeyConstraint, DateTime, create_engine, SmallInteger
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.orm import relationship
-from geoalchemy2 import Geometry
+from maproulette import app
+from geoalchemy2.types import Geometry
 from random import random
-import datetime
+from datetime import datetime
+from maproulette.database import db
 
-Base = declarative_base()
+challenge_types = {}
 
-class OSMUser(Base):
-    __tablename__ = 'osmusers'
-    id = Column(Integer, unique=True, primary_key=True)
-    oauth_token = Column(String)
-    oauth_secret = Column(String)
-    display_name = Column(String)
-    home_location = Column(Geometry('POINT'))
+class OSMUser(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    oauth_token = db.Column(db.String)
+    oauth_secret = db.Column(dmb.String)
+    display_name = db.Column(db.String)
+    home_location = db.Column(Geometry('POINT'))
 
     def __unicode__(self):
         return self.display_name
@@ -28,23 +22,26 @@ class OSMUser(Base):
 
 # a challenge is like 'fix all highway tags' and does not belong to anything
 # else - it has no foreign keys
-class Challenge(Base):
-    __tablename__ = 'challenges'
-    id = Column(Integer, unique=True, primary_key=True)
-    slug = Column(String(72), primary_key=True)
-    title = Column(String(128))
-    description = Column(String)
-    blurb = Column(String)
-    polygon = Column(Geometry('POLYGON'))
-    help = Column(String)
-    instruction = Column(String)
-    run = Column(String)
-    active = Column(Boolean)
-    difficulty = Column(SmallInteger)
-    done_dialog = Column(String)
-    editors = Column(String)
-    Index('idx_geom', polygon, postgresql_using='gist')
-    Index('idx_run', run)
+class Challenge(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    slug = db.Column(db.String(72), primary_key=True)
+    title = db.Column(db.String(128))
+    description = db.Column(db.String)
+    blurb = db.Column(db.String)
+    polygon = db.Column(Geometry('POLYGON'))
+    help = db.Column(db.String)
+    instruction = db.Column(db.String)
+    run = db.Column(db.String(72))
+    active = db.Column(db.Boolean)
+    difficulty = db.Column(db.SmallInteger)
+    done_dialog = db.Column(db.String)
+    editors = db.Column(db.String)
+    type = db.Column(db.String, default = 'Default')
+    
+    __table_args__ = (
+        db.Index('idx_geom', polygon, postgresql_using='gist')
+        db.Index('idx_run', run)
+        )
 
     def __init__(self, slug):
         self.slug = slug
@@ -52,6 +49,35 @@ class Challenge(Base):
     def __unicode__(self):
         return self.slug
 
+    def _get_task_available(self, task):
+        """The function for a task to determine if it's available or not."""
+        # Most tasks will use this method
+        action = task.current_action
+        if action.status = 'available':
+            return True
+        else:
+            return False
+    
+    def _set_task_status(self, task):
+        """This is the function that runs after a task action is set,
+        to set its secondary availability."""
+        current = task.current
+        if current.status == 'skipped':
+            task.state = 'available'
+        elif current.status == 'fixed':
+            task.state = 'done'
+        elif (current.status = 'alreadyfixed' or
+            current.status = 'falsepositive'):
+            l = [i for i in task.actions where i.status == "falsepositive" \
+                     or i.status == "alreadyfixed"]
+            if len(l) >= 2:
+                task.status = 'done'
+            else:
+                task.status = 'available'
+        else:
+            # This is a catchall that a task should never get to
+            task.status = 'available'
+    
     @property
     def meta(self):
         """Return a dictionary of metadata for the challenge"""
@@ -63,55 +89,59 @@ class Challenge(Base):
                 'doneDlg': self.done_dialog,
                 'editors': self.editors
                 }
-
+    
 # a task is like 'fix this highway here' and belongs to a challenge
 # and has actions associated with it
-class Task(Base):
-    __tablename__ = 'tasks'
-    id = Column(Integer, unique=True, primary_key=True)
-    challenge_id = Column(Integer, ForeignKey('challenges.id'))
-    location = Column(Geometry('POINT'))
-    run  = Column(String)
-    random = Column(Float, default=random())
-    manifest = Column(String)
-    actions = relationship("Action")
-    current_action = Column(Integer, ForeignKey('actions.id'))
-    Index('idx_location', location, postgresql_using='gist')
-    Index('idx_id', id)
-    Index('idx_challenge', challenge_id)
-    Index('idx_random', random)
+class Task(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    identifier = db.Column(db.String(72))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
+    location = db.Column(Geometry('POINT'))
+    run  = db.Column(db.String(72))
+    random = db.Column(db.Float, default=random())
+    manifest = db.Column(db.String)
+    actions = db.relationship("Action", lazy = 'dynamic')
+
+    __table_args__ = (
+        db.Index('idx_location', location, postgresql_using='gist')
+        db.Index('idx_id', id)
+        db.Index('idx_challenge', challenge_id)
+        db.Index('idx_random', random)
+        )
 
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
+    
+    def __repr__(self):
+        return '<Task %d>' % (self.id)
+        
+    @property
+    def current_state(self):
+        """Displays the current state of a task"""
+        return self.current_action.state
 
-    def near(self, lon,lat,distance):
-        "Returns a task closer than <distance> (in deg) to a point"
-
-    def checkout(self, osmid):
-        """Checks out a task for a particular user"""
-        action = Action(self.id, "assigned", osmid)
+    @current_state.setter
+    def current_state(self, state, osmid = None):
+        """Shortcut for creating a new action"""
+        if osmid:
+            action = Action(self.id, state, osmid)
+        else:
+            action = Action(self.id, state)
         self.current_action = action
-        action.save()
-        self.save()
+        db.session.add(action)
+        db.session.add(self)
+        bb.session.commit()
 
 # actions are associated with tasks and belong to users
-class Action(Base):
-    __tablename__ = 'actions'
-    id = Column(Integer, unique=True, primary_key=True)
-    timestamp = Column(DateTime, default = datetime.datetime.now())
-    challenge_id = Column(Integer, ForeignKey('challenges.id'))
-    user_id = Column(Integer, ForeignKey('osmusers.id'))
-    status = Column(String)
+class Action(db.Model):
+    id = db.Column(db.Integer, unique=True, primary_key=True)
+    timestamp = db.Column(db.DateTime, default = datetime.now)
+    user_id = db.Column(db.Integer, db.ForeignKey('osm_user.id'))
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
+    status = db.Column(db.String(32))
 
     def __init__(self, task_id, status, user_id = None):
         self.task_id = task_id
         self.status = status
         if user_id:
             self.user_id = user_id
-
-if __name__ == "__main__":
-	'''Create all tables'''
-	engine = create_engine('postgresql://osm:osm@localhost/maproulette',
-                               echo=True)
-	Base.metadata.drop_all(engine)
-	Base.metadata.create_all(engine)

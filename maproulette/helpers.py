@@ -1,7 +1,9 @@
 """Some helper functions"""
 from xml.etree import ElementTree as ET
 from flask import Response
-from models import Challenge, Task
+from maproulette.models import Challenge, Task
+from maproulette import app
+from maproulette.database import db
 
 def make_json_response(json):
     """Takes text and returns it as a JSON response"""
@@ -25,18 +27,3 @@ def parse_user_details(s):
         pass
     user['changesets'] = int(root.find('./changesets').attrib['count'])
     return user
-
-def get_challenge_or_404(slug):
-    """Return a challenge or 404"""
-    challenge = Challenge.get(slug)
-    if not challenge:
-        abort(404)
-    return challenge
-
-def get_task_or_404(challenge_slug, task_identifier):
-    """Return a task or a 404"""
-    challenge = get_challenge_or_404(challenge_slug)
-    task = Task.get(challenge, task_identifier)
-    if not task:
-        abort(404)
-    return task
