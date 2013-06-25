@@ -4,6 +4,8 @@ from random import random
 from datetime import datetime
 from maproulette.database import db
 
+challenge_types = {}
+
 class OSMUser(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
     oauth_token = db.Column(db.String)
@@ -35,7 +37,6 @@ class Challenge(db.Model):
     done_dialog = db.Column(db.String)
     editors = db.Column(db.String)
     type = db.Column(db.String, default = 'Default')
-    types = {}
     
     __table_args__ = (
         db.Index('idx_geom', polygon, postgresql_using='gist')
@@ -88,7 +89,7 @@ class Challenge(db.Model):
                 'doneDlg': self.done_dialog,
                 'editors': self.editors
                 }
-
+    
 # a task is like 'fix this highway here' and belongs to a challenge
 # and has actions associated with it
 class Task(db.Model):

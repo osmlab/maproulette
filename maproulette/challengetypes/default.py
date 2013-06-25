@@ -1,7 +1,7 @@
 """This module contains the data for a GeoError, the most common type
 of MapRoulette Challenge"""
 
-from models import Challenge
+from models import Challenge, challenge_types
 import buttons
 
 class Default(Challenge):
@@ -31,4 +31,4 @@ class Default(Challenge):
             task.setavailable()
 
 # Now register this class with the Challenge
-Challenge.types['Default'] = Default
+challenge_types['Default'] = Default
