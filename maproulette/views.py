@@ -59,8 +59,14 @@ def challenge_meta(slug):
 @app.route('/api/challenges/<challenge>/stats')
 def challenge_stats(challenge):
     "Returns stat data for a challenge"
-    ## THIS IS FAKE RIGHT NOW
-    return jsonify(stats={'total': 100, 'done': 50})
+    c = models.Challenge.query.filter_by(slug=challenge).first_or_404()
+    # Grab the correct challenge type w/o the challenge itself (not necessary)
+    C = c.types[c.type](c.id) # Here is a bit of black magic
+    tasks = models.Tasks.query.filter_by(challenge_id=c.id)
+    total = len(tasks)
+    available = len([t for t in tasks if C._get_task_available(t)])
+    return jsonify(stats={'total': 100, 'available': available})
+
 
 @app.route('/api/challenges/<slug>/task')
 def challenge_task(slug):

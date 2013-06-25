@@ -34,8 +34,8 @@ class Challenge(db.Model):
     difficulty = db.Column(db.SmallInteger)
     done_dialog = db.Column(db.String)
     editors = db.Column(db.String)
-    template = db.Column(db.String, default = 'Default')
-    templates = []
+    type = db.Column(db.String, default = 'Default')
+    types = {}
     
     __table_args__ = (
         db.Index('idx_geom', polygon, postgresql_using='gist')
@@ -111,15 +111,21 @@ class Task(db.Model):
     def __init__(self, challenge_id):
         self.challenge_id = challenge_id
     
+    def __repr__(self):
+        return '<Task %d>' % (self.id)
+        
     @property
     def current_state(self):
         """Displays the current state of a task"""
         return self.current_action.state
 
     @current_state.setter
-    def current_state(self, newstate, osmid = None):
+    def current_state(self, state, osmid = None):
         """Shortcut for creating a new action"""
-        action = Action(self.id, newstate, osmid)
+        if osmid:
+            action = Action(self.id, state, osmid)
+        else:
+            action = Action(self.id, state)
         self.current_action = action
         db.session.add(action)
         db.session.add(self)
