@@ -9,7 +9,7 @@ challenge_types = {}
 class OSMUser(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True)
     oauth_token = db.Column(db.String)
-    oauth_secret = db.Column(dmb.String)
+    oauth_secret = db.Column(db.String)
     display_name = db.Column(db.String)
     home_location = db.Column(Geometry('POINT'))
 
@@ -39,7 +39,7 @@ class Challenge(db.Model):
     type = db.Column(db.String, default = 'Default')
     
     __table_args__ = (
-        db.Index('idx_geom', polygon, postgresql_using='gist')
+        db.Index('idx_geom', polygon, postgresql_using='gist'),
         db.Index('idx_run', run)
         )
 
@@ -53,7 +53,7 @@ class Challenge(db.Model):
         """The function for a task to determine if it's available or not."""
         # Most tasks will use this method
         action = task.current_action
-        if action.status = 'available':
+        if action.status == 'available':
             return True
         else:
             return False
@@ -66,9 +66,9 @@ class Challenge(db.Model):
             task.state = 'available'
         elif current.status == 'fixed':
             task.state = 'done'
-        elif (current.status = 'alreadyfixed' or
-            current.status = 'falsepositive'):
-            l = [i for i in task.actions where i.status == "falsepositive" \
+        elif (current.status == 'alreadyfixed' or
+            current.status == 'falsepositive'):
+            l = [i for i in task.actions if i.status == "falsepositive" \
                      or i.status == "alreadyfixed"]
             if len(l) >= 2:
                 task.status = 'done'
@@ -103,9 +103,9 @@ class Task(db.Model):
     actions = db.relationship("Action", lazy = 'dynamic')
 
     __table_args__ = (
-        db.Index('idx_location', location, postgresql_using='gist')
-        db.Index('idx_id', id)
-        db.Index('idx_challenge', challenge_id)
+        db.Index('idx_location', location, postgresql_using='gist'),
+        db.Index('idx_id', id),
+        db.Index('idx_challenge', challenge_id),
         db.Index('idx_random', random)
         )
 

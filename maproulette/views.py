@@ -53,9 +53,9 @@ def challenge_meta(challenge_id):
 @app.route('/api/challenges/<challenge_id>/stats')
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
-    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    c = Challenge.query.filter_by(Challenge.slug==challenge_id).first_or_404()
     challenge_obj = models.types[c.type](c.id)
-    tasks = Tasks.query.filter_by(challenge_id=c.id)
+    tasks = Tasks.query.filter_by(challenge_id==c.id)
     total = len(tasks)
     available = len([t for t in tasks if challenge_obj._get_task_available(t)])
     return jsonify(stats={'total': 100, 'available': available})
@@ -69,7 +69,7 @@ def challenge_task(challenge_id):
     num = request.args.get('num', 1)
     # If we don't have a "near", we'll use a random function
     near = request.args.get('near')
-    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    c = Challenge.query.filter_by(Challenge.slug==challenge_id).first_or_404()
     # Each task we give should also be assigned
     assign(task, osmid)
     return jsonify(tasks = [])
