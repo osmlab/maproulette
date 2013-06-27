@@ -80,14 +80,14 @@ def challenge_task(challenge_id):
 @app.route('/api/challenges/<challenge_id>/tasks/<task_id>')
 def get_task_by_id(challenge, task_id):
     "Gets a specific task by ID"
-    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    c = Challenge.query.filter_by(Challenge.slug==challenge_id).first_or_404()
     if not c.active:
         abort(503)
 
 @app.route('/api/challenges/<challenge_id>/task/<task_id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
     "Accepts data for completed task"
-    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    c = Challenge.query.filter_by(Challenge.slug==challenge_id).first_or_404()
     if not c.active:
         abort(503)
 
@@ -99,7 +99,7 @@ def challenge_settings(self, challenge_id):
     changeable = ['title', 'description', 'blurb', 'polygon', 'help',
                   'instruction', 'run', 'active']
     content = request.json['content']
-    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    c = Challenge.query.filter_by(Challenge.slug==challenge_id).first_or_404()
     # NEED SECURITY HERE!!!
     for k,v in content.items():
         if k in changeable:
@@ -108,7 +108,7 @@ def challenge_settings(self, challenge_id):
 @app.route('/api/challenges/<challenge_id>/tasks/<task_id>',
            methods = ['PUT', 'POST'])
 def edit_task(self, challenge_id, task_id):
-    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    c = Challenge.query.filter_by(Challenge.slug==challenge_id).first_or_404()
     pass
 
 

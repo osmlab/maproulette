@@ -105,8 +105,8 @@ class Task(db.Model):
     random = db.Column(db.Float, default=random())
     manifest = db.Column(db.String)
     actions = db.relationship("Action", lazy = 'dynamic')
-    challenge = relationship("Challenge",
-                             backref=backref('tasks', order_by=id))
+    challenge = db.relationship("Challenge",
+                             backref=db.backref('tasks', order_by=id))
     __table_args__ = (
         db.Index('idx_location', location, postgresql_using='gist'),
         db.Index('idx_id', id),
