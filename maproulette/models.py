@@ -7,6 +7,8 @@ from maproulette.database import db
 challenge_types = {}
 
 class OSMUser(db.Model):
+    __tablename__ = 'osmusers'
+
     id = db.Column(db.Integer, unique=True, primary_key=True)
     oauth_token = db.Column(db.String)
     oauth_secret = db.Column(db.String)
@@ -23,6 +25,8 @@ class OSMUser(db.Model):
 # a challenge is like 'fix all highway tags' and does not belong to anything
 # else - it has no foreign keys
 class Challenge(db.Model):
+    __tablename__ = 'challenges'
+
     id = db.Column(db.Integer, unique=True, primary_key=True)
     slug = db.Column(db.String(72), primary_key=True)
     title = db.Column(db.String(128))
@@ -34,8 +38,6 @@ class Challenge(db.Model):
     run = db.Column(db.String(72))
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
-    done_dialog = db.Column(db.String)
-    editors = db.Column(db.String)
     type = db.Column(db.String, default = 'Default')
     
     __table_args__ = (
@@ -93,6 +95,8 @@ class Challenge(db.Model):
 # a task is like 'fix this highway here' and belongs to a challenge
 # and has actions associated with it
 class Task(db.Model):
+    __tablename__ = 'tasks'
+
     id = db.Column(db.Integer, unique=True, primary_key=True)
     identifier = db.Column(db.String(72))
     challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
@@ -101,7 +105,8 @@ class Task(db.Model):
     random = db.Column(db.Float, default=random())
     manifest = db.Column(db.String)
     actions = db.relationship("Action", lazy = 'dynamic')
-
+    challenge = relationship("Challenge",
+                             backref=backref('tasks', order_by=id))
     __table_args__ = (
         db.Index('idx_location', location, postgresql_using='gist'),
         db.Index('idx_id', id),
@@ -134,6 +139,8 @@ class Task(db.Model):
 
 # actions are associated with tasks and belong to users
 class Action(db.Model):
+    __tablename__ = 'actions'
+
     id = db.Column(db.Integer, unique=True, primary_key=True)
     timestamp = db.Column(db.DateTime, default = datetime.now)
     user_id = db.Column(db.Integer, db.ForeignKey('osm_user.id'))
