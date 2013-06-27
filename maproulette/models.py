@@ -35,7 +35,6 @@ class Challenge(db.Model):
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
     done_dialog = db.Column(db.String)
-    editors = db.Column(db.String)
     type = db.Column(db.String, default = 'Default')
     
     __table_args__ = (
