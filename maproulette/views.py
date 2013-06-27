@@ -10,6 +10,8 @@ def index():
     "Display the index.html"
     return render_template('index.html')
 
+### CLIENT API ###
+
 @app.route('/api/challenges')
 def challenges_api():
     "Returns a list of challenges as json"
@@ -29,7 +31,7 @@ def challenges_api():
     else:
         challenges = Challenges.query.all()
     return jsonify(challenges =
-        [i.slug for i in challenges])
+        [i.slug for i in challenges if i.active])
 
 @app.route('/api/challenges/<challenge_id>')
 def challenge_details(challenge_id):
@@ -60,8 +62,7 @@ def challenge_stats(challenge_id):
     available = len([t for t in tasks if challenge_obj._get_task_available(t)])
     return jsonify(stats={'total': 100, 'available': available})
 
-
-### THIS FUNCTION IS NOT COMPLETE!!! ###
+# THIS FUNCTION IS NOT COMPLETE!!! #
 @app.route('/api/challenges/<challenge_id>/tasks')
 def challenge_task(challenge_id):
     "Returns a task for specified challenge"
@@ -70,22 +71,49 @@ def challenge_task(challenge_id):
     # If we don't have a "near", we'll use a random function
     near = request.args.get('near')
     c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    if not c.active:
+        abort(503)
     # Each task we give should also be assigned
     assign(task, osmid)
     return jsonify(tasks = [])
 
-
 @app.route('/api/challenges/<challenge_id>/tasks/<task_id>')
 def get_task_by_id(challenge, task_id):
     "Gets a specific task by ID"
-    pass
+    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    if not c.active:
+        abort(503)
 
 @app.route('/api/challenges/<challenge_id>/task/<task_id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
     "Accepts data for completed task"
+    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    if not c.active:
+        abort(503)
+
+### CHALLENGE API ###
+
+# List of items 
+@app.route('/api/challenges/<challenge_id>', methods = ['POST'])
+def challenge_settings(self, challenge_id):
+    changeable = ['title', 'description', 'blurb', 'polygon', 'help',
+                  'instruction', 'run', 'active']
+    content = request.json['content']
+    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
+    # NEED SECURITY HERE!!!
+    for k,v in content.items():
+        if k in changeable:
+            setattr(c,k,v)
+
+@app.route('/api/challenges/<challenge_id>/tasks/<task_id>',
+           methods = ['PUT', 'POST'])
+def edit_task(self, challenge_id, task_id):
+    c = Challenge.query.filter_by(Challenge.slug=challenge_id).first_or_404()
     pass
+
 
 @app.route('/logout')
 def logout():
     session.destroy()
     return redirect('/')
+
