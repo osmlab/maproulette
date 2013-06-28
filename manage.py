@@ -21,5 +21,12 @@ def clean_pyc():
     clean_command = "find . -name *.pyc -delete".split()
     subprocess.call(clean_command)
 
+@manager.command
+def create_db():
+    """Creates the database tables"""
+    from maproulette import database
+    database.db_init()
+
 if __name__ == "__main__":
     manager.run()
+    
