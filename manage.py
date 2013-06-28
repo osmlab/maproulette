@@ -25,7 +25,7 @@ def clean_pyc():
 def create_db():
     """Creates the database tables"""
     from maproulette import database
-    database.db_init()
+    database.init_db()
 
 if __name__ == "__main__":
     manager.run()
