@@ -19,17 +19,17 @@ def challenges_api():
     ### THIS USE OF NEAR IS PROBABLY BROKEN!!! ###
     near = request.args.get('near')
     if difficulty and near:
-        challenges =  Challenges.query.filter_by(
+        challenges =  Challenge.query.filter_by(
             Challenges.difficulty==difficulty,
             Challenges.near == near).all()
     elif difficulty:
-        challenges = Challenges.query.filter_by(
+        challenges = Challenge.query.filter_by(
             Challenges.difficulty == difficulty).all()
     elif near:
-        challenges = Challenges.query.filter_by(
+        challenges = Challenge.query.filter_by(
             Challenges.near == near).all()
     else:
-        challenges = Challenges.query.all()
+        challenges = Challenge.query.all()
     return jsonify(challenges =
         [i.slug for i in challenges if i.active])
 
