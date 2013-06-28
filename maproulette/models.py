@@ -99,12 +99,12 @@ class Task(db.Model):
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
     identifier = db.Column(db.String(72))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenge.id'))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'))
     location = db.Column(Geometry('POINT'))
     run  = db.Column(db.String(72))
     random = db.Column(db.Float, default=random())
     manifest = db.Column(db.String)
-    actions = db.relationship("Action", lazy = 'dynamic')
+    actions = db.relationship("Action", backref = db.backref("task"))
     challenge = db.relationship("Challenge",
                              backref=db.backref('tasks', order_by=id))
     __table_args__ = (
@@ -143,8 +143,8 @@ class Action(db.Model):
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
     timestamp = db.Column(db.DateTime, default = datetime.now)
-    user_id = db.Column(db.Integer, db.ForeignKey('osm_user.id'))
-    task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('osmusers.id'))
+    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'))
     status = db.Column(db.String(32))
 
     def __init__(self, task_id, status, user_id = None):

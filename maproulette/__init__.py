@@ -17,6 +17,7 @@ app = Flask(__name__,
            static_url_path = '/static')
 
 app.config.from_pyfile('maproulette.cfg')
+app.config.from_pyfile('secret.cfg')
 app.secret_key = app.config['SECRET_KEY']
 app.debug = True
 

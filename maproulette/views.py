@@ -20,14 +20,14 @@ def challenges_api():
     near = request.args.get('near')
     if difficulty and near:
         challenges =  Challenge.query.filter_by(
-            Challenges.difficulty==difficulty,
-            Challenges.near == near).all()
+            Challenge.difficulty==difficulty,
+            Challenge.near == near).all()
     elif difficulty:
         challenges = Challenge.query.filter_by(
-            Challenges.difficulty == difficulty).all()
+            Challenge.difficulty == difficulty).all()
     elif near:
         challenges = Challenge.query.filter_by(
-            Challenges.near == near).all()
+            Challenge.near == near).all()
     else:
         challenges = Challenge.query.all()
     return jsonify(challenges =
