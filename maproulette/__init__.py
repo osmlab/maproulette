@@ -16,8 +16,7 @@ app = Flask(__name__,
            static_url_path = '/static')
 
 app.config.from_pyfile('maproulette.cfg')
-app.config.from_pyfile('secret.cfg')
-app.secret_key = app.config['SECRET_KEY']
+app.config['SECRET_KEY'] = os.urandom(24)
 app.debug = True
 
 #from maproulette import views, models
