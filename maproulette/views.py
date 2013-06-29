@@ -24,11 +24,10 @@ def challenges_api():
     example: /get/challenges?contains=-100.22|40.45&difficulty=2
     """    
     difficulty = request.args.get('difficulty')
-    ### THIS USE OF NEAR IS PROBABLY BROKEN!!! ###
     contains = request.args.get('contains')
     if contains:
         try:
-            coordWKT = 'POINT(%s %s)' % contains.split()
+            coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
         except:
             contains = None
     if difficulty and contains:
@@ -44,7 +43,7 @@ def challenges_api():
     else:
         challenges = Challenge.query.all()
     return jsonify(challenges =
-        [i.slug for i in challenges if i.active])
+        [(i.id) for i in challenges if i.active])
 
 @app.route('/api/challenges/<challenge_id>')
 def challenge_details(challenge_id):
@@ -61,18 +60,18 @@ def challenge_meta(challenge_id):
             'title': c.title,
             'description': c.description,
             'blurb': c.blurb,
-            'help': challenge.help,
+            'help': c.help,
             'doneDlg': json.loads(c.done_dialog),
             'instruction': c.instruction})
 
 @app.route('/api/challenges/<challenge_id>/stats')
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
-    c = Challenge.query.filter(Challenge.slug==challenge_id).first_or_404()
-    challenge_obj = models.types[c.type](c.id)
-    tasks = Tasks.query.filter(challenge_id==c.id)
+    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
+    #challenge_obj = models.types[c.type](c.id)
+    tasks = Task.query.filter(challenge_id==c.id).all()
     total = len(tasks)
-    available = len([t for t in tasks if challenge_obj._get_task_available(t)])
+    available = len([t for t in tasks if c._get_task_available(t)])
     return jsonify(stats={'total': 100, 'available': available})
 
 # THIS FUNCTION IS NOT COMPLETE!!! #
@@ -83,7 +82,7 @@ def challenge_task(challenge_id):
     num = request.args.get('num', 1)
     # If we don't have a "near", we'll use a random function
     near = request.args.get('near')
-    c = Challenge.query.filter(Challenge.slug==challenge_id).first_or_404()
+    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     if not c.active:
         abort(503)
     # Each task we give should also be assigned
@@ -93,14 +92,14 @@ def challenge_task(challenge_id):
 @app.route('/api/challenges/<challenge_id>/tasks/<task_id>')
 def get_task_by_id(challenge, task_id):
     "Gets a specific task by ID"
-    c = Challenge.query.filter(Challenge.slug==challenge_id).first_or_404()
+    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     if not c.active:
         abort(503)
 
 @app.route('/api/challenges/<challenge_id>/task/<task_id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
     "Accepts data for completed task"
-    c = Challenge.query.filter(Challenge.slug==challenge_id).first_or_404()
+    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     if not c.active:
         abort(503)
 
@@ -112,7 +111,7 @@ def challenge_settings(self, challenge_id):
     changeable = ['title', 'description', 'blurb', 'polygon', 'help',
                   'instruction', 'run', 'active']
     content = request.json['content']
-    c = Challenge.query.filter(Challenge.slug==challenge_id).first_or_404()
+    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     # NEED SECURITY HERE!!!
     for k,v in content.items():
         if k in changeable:
@@ -121,7 +120,7 @@ def challenge_settings(self, challenge_id):
 @app.route('/api/challenges/<challenge_id>/tasks/<task_id>',
            methods = ['PUT', 'POST'])
 def edit_task(self, challenge_id, task_id):
-    c = Challenge.query.filter(Challenge.slug==challenge_id).first_or_404()
+    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     pass
 
 

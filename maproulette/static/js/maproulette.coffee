@@ -110,21 +110,21 @@ getExtent = (feature) ->
     feature.geometry.coordinates.length > 0)
   if feature.geometry.type is "Point"
     # This function is pointless for a point, but we'll support it anyway
-    lng = feature.geometry.coordinates[0]
+    lon = feature.geometry.coordinates[0]
     lat = feature.geometry.coordinates[1]
-    latlng = new L.LatLng(lat, lng)
-    bounds = new L.LatLngBounds(latlng)
-    bounds.extend(latlng)
+    latlon = new L.LatLng(lat, lon)
+    bounds = new L.LatLngBounds(latlon)
+    bounds.extend(latlon)
     bounds
   else
     lats = []
-    lngs = []
+    lons = []
     for coordinates in feature.geometry.coordinates
       lats.push coordinates[1]
-      lngs.push coordinates[0]
+      lons.push coordinates[0]
     minlat = Math.min.apply(Math, lats)
-    sw = new L.LatLng(Math.min.apply(Math, lats), Math.min.apply(Math, lngs))
-    ne = new L.LatLng(Math.max.apply(Math, lats), Math.max.apply(Math, lngs))
+    sw = new L.LatLng(Math.min.apply(Math, lats), Math.min.apply(Math, lons))
+    ne = new L.LatLng(Math.max.apply(Math, lats), Math.max.apply(Math, lons))
     new L.LatLngBounds(sw, ne)
 
 @msgClose = ->
@@ -259,34 +259,33 @@ showTask = (task) ->
   setDelay 3, msgClose()
   msgTaskText()
 
-getChallenge = (slug) ->
+getChallenge = (id) ->
   ###
   # Gets a specific challenge
   ###
-  $.getJSON "/api/challenges/#{slug}/meta", (data) ->
+  $.getJSON "/api/challenges/#{id}/meta", (data) ->
     challenge = data
     updateChallenge(challenge)
     updateStats(challenge)
     getTask()
 
-getNewChallenge = (difficulty, near) ->
+getNewChallenge = (difficulty, contains) ->
   ###
   # Gets a challenge based on difficulty and location
   ###
-  near = "#{map.getCenter().lat},#{map.getCenter().lon}" if not near
-  url = "/api/challenges?difficulty=#{difficulty}&near=#{near}"
-  $.getJSON url, (data) ->
-    challenge = data.challenges[0]
-    updateChallenge(challenge)
-    updateStats(challenge)
-    getTask(near)
+  contains = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not contains
+  url = "/api/challenges?difficulty=#{difficulty}&contains=#{contains}"
+  $.getJSON url, (data) -> 
+    updateChallenge(data.challenges[0])
+    updateStats(data.challenges[0])
+    getTask(data.challenges[0])
 
 @getTask = (near = null) ->
   ###
   # Gets another task from the current challenge, close to the
   # location (if supplied)
   ###
-  near = "#{map.getCenter().lat},#{map.getCenter().lng}" if not near
+  near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/challenges/#{challenge}/task?near=#{near}"
   $.getJSON url, (data) ->
     currentTask = data
@@ -334,7 +333,7 @@ addGeoJSONLayer = ->
       "startTime": currentTask.startTime,
       "endTime": new Date().getTime() }
   near = currentTask.center
-  challenge = currentChallenge.slug
+  challenge = currentChallenge.id
   task_id = currentTask.id
   $.post "/c/#{challenge}/task/#{task_id}", payload, ->
     setDelay 1, ->
@@ -379,7 +378,7 @@ addGeoJSONLayer = ->
     else if selectedFeatureType == "way"
       id = "w#{selectedFeatureId}"
     # Sorry, no relation support in iD (yet?)
-    loc = "#{map.getZoom()}/#{map.getCenter().lat}/#{map.getCenter().lng}"
+    loc = "#{map.getZoom()}/#{map.getCenter().lng}/#{map.getCenter().lat}"
     window.open "http://geowiki.com/iD/#id=#{id}&map=#{loc}"
     confirmMapped()
 
@@ -460,7 +459,7 @@ enableKeyboardShortcuts = ->
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
   difficulty = $(document).getUrlParam("difficulty")
-  near = $(document).getUrlParam("near")
+  contains = $(document).getUrlParam("contains")
   # Or try to load them from user preferences
   #
   # INSERT CODE PERFERENCE LOADING CODE HERE
@@ -473,6 +472,6 @@ enableKeyboardShortcuts = ->
   else
     if not difficulty
       difficulty = 1
-    if not near
-      near = map.getCenter()
-    getNewChallenge(difficulty, near)
+    if not contains
+      contains = "#{map.getCenter().lng}|#{map.getCenter().lat}"
+    getNewChallenge(difficulty, contains)

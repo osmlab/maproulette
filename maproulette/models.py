@@ -51,6 +51,7 @@ class Challenge(db.Model):
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
     type = db.Column(db.String, default = 'Default')
+    done_dialog = db.Column(db.String, default = '{"Done": "I am Done!","Skipped": "Did not do it."}') # no idea if this is an appropriate default
     
     __table_args__ = (
         db.Index('idx_geom', polygon, postgresql_using='gist'),
