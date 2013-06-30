@@ -276,9 +276,10 @@ getNewChallenge = (difficulty, contains) ->
   contains = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not contains
   url = "/api/challenges?difficulty=#{difficulty}&contains=#{contains}"
   $.getJSON url, (data) -> 
-    updateChallenge(data.challenges[0])
-    updateStats(data.challenges[0])
-    getTask(data.challenges[0])
+    challenge = data.challenges[0]
+    updateChallenge(challenge)
+    updateStats(challenge)
+    getTask()
 
 @getTask = (near = null) ->
   ###
