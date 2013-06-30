@@ -8,4 +8,4 @@
 *.swp
 sessiondata/*
 build/
-secret.cfg
+*.cfg
