@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import json
-
 from maproulette import app, models
 from flask_oauth import OAuth
 from flask import request, url_for, redirect, session
@@ -62,11 +61,11 @@ def oauth_authorized(resp):
     data = osm.get('user/details').data
     app.logger.debug("Getting user data from osm")
     if not data:
+        # FIXME this requires handling
         return False
     else:
         userxml = data.find('user')
         osmid = userxml.attrib['id']
-
         # query for existing user
         if bool(models.OSMUser.query.filter(models.OSMUser.id==osmid).count()):
             #user exists
@@ -80,10 +79,10 @@ def oauth_authorized(resp):
             if homexml is not None:
                 user.home_location = 'POINT(%s %s)' % (homexml.attrib['lon'], homexml.attrib['lat'])
             else:
-                print('no home for this user')
+                app.logger.debug('no home for this user')
             db.session.add(user)
             db.session.commit()
-            print('user created')
+            app.logger.debug('user created')
     session['display_name'] = user.display_name
     session['osm_id'] = user.id
     return redirect(next_url)
