@@ -10,6 +10,11 @@
 # field, the location as WKT point as the second field, and a
 # thrid field containing a string descriptor which will be loaded
 # to the manifest field
+#
+# use with sample data in this directory:
+#
+# python import_tasks_fromcsv.py sampledata.csv sample 1 1
+
 
 import csv, json, os, sys, psycopg2
 
@@ -18,6 +23,7 @@ dbport = '5432'
 dbname = 'maproulette'
 dbuser = 'osm'
 dbpass = 'osm'
+cnt = 0
 
 if __name__ == "__main__":
     if not len(sys.argv) == 5:
@@ -43,6 +49,8 @@ if __name__ == "__main__":
             if len(row) != 3:
                 continue
             cur.execute(sqlstub, (prefix + "_" + row[0], row[1], row[2], challenge_id, run_id))
+            cnt += 1
     conn.commit()
     cur.close()
     conn.close()
+    print "done. %i tasks added for challenge_id %s" % (cnt, challenge_id,)
