@@ -269,17 +269,17 @@ getChallenge = (id) ->
     updateStats(challenge)
     getTask()
 
-getNewChallenge = (difficulty, contains) ->
+getNewChallenge = (difficulty, near) ->
   ###
   # Gets a challenge based on difficulty and location
   ###
-  contains = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not contains
-  url = "/api/challenges?difficulty=#{difficulty}&contains=#{contains}"
+  near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
+  url = "/api/challenges?difficulty=#{difficulty}&contains=#{near}"
   $.getJSON url, (data) -> 
     challenge = data.challenges[0]
     updateChallenge(challenge)
     updateStats(challenge)
-    getTask()
+    getTask(near)
 
 @getTask = (near = null) ->
   ###
@@ -287,7 +287,7 @@ getNewChallenge = (difficulty, contains) ->
   # location (if supplied)
   ###
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
-  url = "/api/challenges/#{challenge}/task?near=#{near}"
+  url = "/api/challenges/#{challenge}/tasks?near=#{near}"
   $.getJSON url, (data) ->
     currentTask = data
     currentTask.startTime = new Date().getTime()
@@ -460,7 +460,7 @@ enableKeyboardShortcuts = ->
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")
   difficulty = $(document).getUrlParam("difficulty")
-  contains = $(document).getUrlParam("contains")
+  near = $(document).getUrlParam("near")
   # Or try to load them from user preferences
   #
   # INSERT CODE PERFERENCE LOADING CODE HERE
@@ -473,6 +473,6 @@ enableKeyboardShortcuts = ->
   else
     if not difficulty
       difficulty = 1
-    if not contains
-      contains = "#{map.getCenter().lng}|#{map.getCenter().lat}"
-    getNewChallenge(difficulty, contains)
+    if not near
+      near = "#{map.getCenter().lng}|#{map.getCenter().lat}"
+    getNewChallenge(difficulty, near)

@@ -3,8 +3,11 @@ import json
 from maproulette import app, models
 from maproulette.models import Challenge, Task, Action
 from flask import render_template, redirect, session, jsonify, abort, request
-from geoalchemy2.functions import ST_Contains
+from flask.ext.sqlalchemy import get_debug_queries
+from geoalchemy2.functions import ST_Contains, ST_Intersects, ST_Buffer, ST_AsText
+from geoalchemy2.shape import to_shape
 from sqlalchemy import and_
+from shapely.wkt import dumps
 
 # By default, send out the standard client
 @app.route('/')
@@ -82,12 +85,29 @@ def challenge_task(challenge_id):
     num = request.args.get('num', 1)
     # If we don't have a "near", we'll use a random function
     near = request.args.get('near')
-    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
-    if not c.active:
+    try:
+        coordWKT = 'POINT(%s %s)' % tuple(near.split("|"))
+    except:
+        near = None
+    if near is not None:
+        t = Task.query.filter(Task.location.ST_Intersects(ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).first()
+    else:
+        # FIXME return random tast
+        abort(500)
+    if not t.active:
         abort(503)
     # Each task we give should also be assigned
-    assign(task, osmid)
-    return jsonify(tasks = [])
+    # assign(task, osmid)
+
+    for query in get_debug_queries():
+        app.logger.debug(query)
+        
+    return jsonify(task = {
+        'id': t.id,
+        'identifier': t.identifier,
+        'location': dumps(to_shape(t.location)),
+        'manifest': t.manifest
+        })
 
 @app.route('/api/challenges/<challenge_id>/tasks/<task_id>')
 def get_task_by_id(challenge, task_id):
