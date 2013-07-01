@@ -46,7 +46,7 @@ def challenges_api():
     else:
         challenges = Challenge.query.all()
     return jsonify(challenges =
-        [(i.id) for i in challenges if i.active])
+        [i.id for i in challenges if i.active])
 
 @app.route('/api/challenges/<challenge_id>')
 def challenge_details(challenge_id):
