@@ -17,7 +17,7 @@ def index():
 
 ### CLIENT API ###
 
-@app.route('/api/challenges')
+@app.route('/api/c/challenges')
 def challenges_api():
     """returns a list of challenges as json
     optional URL parameters are
@@ -48,15 +48,7 @@ def challenges_api():
     return jsonify(challenges =
         [i.id for i in challenges if i.active])
 
-# Is this not just a duplicate of the function below it?
-@app.route('/api/challenges/<challenge_id>')
-def challenge_details(challenge_id):
-    "Returns details on the challenge"
-    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
-    return jsonify(challenge=challenge)
-
-@app.route('/api/challenges/<challenge_id>/meta')
-def challenge_meta(challenge_id):
+@app.route('/api/c/challenges/<challenge_id>')
     "Returns the metadata for a challenge"
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     return jsonify(challenge = {
@@ -68,7 +60,7 @@ def challenge_meta(challenge_id):
             'doneDlg': json.loads(c.done_dialog),
             'instruction': c.instruction})
 
-@app.route('/api/challenges/<challenge_id>/stats')
+@app.route('/api/c/challenges/<challenge_id>/stats')
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
@@ -79,7 +71,7 @@ def challenge_stats(challenge_id):
     return jsonify(stats={'total': 100, 'available': available})
 
 # THIS FUNCTION IS NOT COMPLETE!!! #
-@app.route('/api/challenges/<challenge_id>/tasks')
+@app.route('/api/c/challenges/<challenge_id>/tasks')
 def challenge_task(challenge_id):
     "Returns a task for specified challenge"
     # By default, we return a single task
@@ -110,7 +102,7 @@ def challenge_task(challenge_id):
         'manifest': t.manifest
         })
 
-@app.route('/api/challenges/<challenge_id>/tasks/<task_id>')
+@app.route('/api/c/challenges/<challenge_id>/tasks/<task_id>')
 def get_task_by_id(challenge, task_id):
     "Gets a specific task by ID"
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
@@ -124,7 +116,7 @@ def get_task_by_id(challenge, task_id):
     if t.instructions:
         d['instructions'] = t.instructions
     return jsonify(d)
-@app.route('/api/challenges/<challenge_id>/task/<task_id>', methods = ['POST'])
+@app.route('/api/c/challenges/<challenge_id>/task/<task_id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
     "Accepts data for completed task"
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
@@ -132,11 +124,10 @@ def challenge_post(challenge, task_id):
         abort(503)
 
 
-
 ### CHALLENGE API ###
 
 # List of items 
-@app.route('/api/challenges/<challenge_id>', methods = ['POST'])
+@app.route('/api/c/challenges/<challenge_id>', methods = ['POST'])
 def challenge_settings(self, challenge_id):
     changeable = ['title', 'description', 'blurb', 'polygon', 'help',
                   'instruction', 'run', 'active']
@@ -147,7 +138,7 @@ def challenge_settings(self, challenge_id):
         if k in changeable:
             setattr(c,k,v)
 
-@app.route('/api/challenges/<challenge_id>/tasks/<task_id>',
+@app.route('/api/c/challenges/<challenge_id>/tasks/<task_id>',
            methods = ['PUT', 'POST'])
 def edit_task(self, challenge_id, task_id):
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
