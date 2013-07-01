@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # a script to load a CSV file into the MapRoulette tasks table.
 # this script takes four arguments:
