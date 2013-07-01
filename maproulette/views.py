@@ -115,13 +115,22 @@ def get_task_by_id(challenge, task_id):
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     if not c.active:
         abort(503)
-
+    t = Task.query.filter(Task.identifier==task_id).filter(Task.challenge_id==c.id).first_or_404()
+    d = {'id': t.identifier,
+         'center': t.location,
+         'features': t.manifest,
+         }
+    if t.instructions:
+        d['instructions'] = t.instructions
+    return jsonify(d)
 @app.route('/api/challenges/<challenge_id>/task/<task_id>', methods = ['POST'])
 def challenge_post(challenge, task_id):
     "Accepts data for completed task"
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     if not c.active:
         abort(503)
+
+
 
 ### CHALLENGE API ###
 
