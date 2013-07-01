@@ -118,7 +118,7 @@ class Task(db.Model):
     random = db.Column(db.Float, default=random())
     manifest = db.Column(db.String)
     actions = db.relationship("Action", backref = db.backref("task"))
-    active = db.Column(db.Boolean, default=True)
+    instructions = db.Column(db.String())
     challenge = db.relationship("Challenge",
                              backref=db.backref('tasks', order_by=id))
     __table_args__ = (
