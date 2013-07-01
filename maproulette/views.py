@@ -48,6 +48,7 @@ def challenges_api():
     return jsonify(challenges =
         [(i.id) for i in challenges if i.active])
 
+# Is this not just a duplicate of the function below it?
 @app.route('/api/challenges/<challenge_id>')
 def challenge_details(challenge_id):
     "Returns details on the challenge"
