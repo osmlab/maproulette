@@ -1,6 +1,6 @@
 This is MapRoulette. 
 
-### [API documentation](https://github.com/mvexel/maproulette/wiki/API-Documentation)
+### [API documentation](https://github.com/osmlab/maproulette/wiki/API-Documentation)
 
 ## Installation
 
