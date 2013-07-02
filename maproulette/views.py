@@ -64,11 +64,12 @@ def challenges_api():
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
-    #challenge_obj = models.types[c.type](c.id)
+    # Here be dragons. If you do not understand c vs chal, do not touch this!
+    chal = challenge_types[c.type]()
     tasks = Task.query.filter(challenge_id==c.id).all()
     total = len(tasks)
-    available = len([t for t in tasks if c._get_task_available(t)])
-    return jsonify(stats={'total': 100, 'available': available})
+    available = len([t for t in tasks if chal._get_task_available(t)])
+    rehyturn jsonify(stats={'total': 100, 'available': available})
 
 # THIS FUNCTION IS NOT COMPLETE!!! #
 @app.route('/api/c/challenges/<challenge_id>/tasks')
