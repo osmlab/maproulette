@@ -22,7 +22,6 @@ app.testing = True
 
 #from maproulette import views, models
 from maproulette import models, views, oauth
-from helpers import make_json_response
 
 # connect flask app to server KV session store
 KVSessionExtension(store, app)
