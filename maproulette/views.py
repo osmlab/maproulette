@@ -37,6 +37,7 @@ def challenges_api():
         challenges =  Challenge.query.filter(and_(
             Challenge.difficulty == difficulty,
             Challenge.polygon.ST_Contains(coordWKT))).all()
+        app.logger.debug('returning %i challenges' % (len(challenges)))
     elif difficulty:
         challenges = Challenge.query.filter(
             Challenge.difficulty == difficulty).all()
