@@ -1,29 +1,23 @@
 """Some helper functions"""
-from xml.etree import ElementTree as ET
-from flask import Response
+from flask import abort
 from maproulette.models import Challenge, Task
-from maproulette import app
-from maproulette.database import db
 
-def make_json_response(json):
-    """Takes text and returns it as a JSON response"""
-    return Response(json.encode('utf8'), 200, mimetype = 'application/json')
+def get_challenge_or_404(slug, instance_type=None):
+    """Return a challenge by its slug or return 404.
 
-def parse_user_details(s):
-    """Takes a string XML representation of a user's details and
-    returns a dictionary of values we care about"""
-    root = ET.find('./user')
-    if not root:
-        print 'aaaargh'
-        return None
-    user = {
-        'id': root.attrib['id'],
-        'username': root.attrib['display_name']
-    }
-    try:
-        user['lat'] = float(root.find('./home').attrib['lat'])
-        user['lon'] = float(root.find('./home').attrib['lon'])
-    except AttributeError:
-        pass
-    user['changesets'] = int(root.find('./changesets').attrib['count'])
-    return user
+    If instnance_type is True, return the correct Challenge Type
+    """
+    c = Challenge.query.filter(Challenge.slug==slug).first_or_404()
+    if not c.active:
+        abort(503)
+    if instance_type:
+        return challenge_types[c.type].query.get(c.id)
+    else:
+        return c
+
+def get_task_or_404(challenge_slug, task_identifier):
+    """Return a task based on its challenge slug and task identifier"""
+    c = get_challenge_or_404(challenge_slug)
+    t = Task.query.filter(Task.identifier==task_identifier).\
+        filter(Task.challenge_id==c.id).first_or_404()
+    return t

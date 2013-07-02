@@ -263,7 +263,7 @@ getChallenge = (id) ->
   ###
   # Gets a specific challenge
   ###
-  $.getJSON "/api/challenges/#{id}/meta", (data) ->
+  $.getJSON "/api/c/challenges/#{id}/meta", (data) ->
     challenge = data
     updateChallenge(challenge)
     updateStats(challenge)
@@ -274,8 +274,8 @@ getNewChallenge = (difficulty, near) ->
   # Gets a challenge based on difficulty and location
   ###
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
-  url = "/api/challenges?difficulty=#{difficulty}&contains=#{near}"
-  $.getJSON url, (data) -> 
+  url = "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"
+  $.getJSON url, (data) ->
     challenge = data.challenges[0]
     updateChallenge(challenge)
     updateStats(challenge)
@@ -287,7 +287,7 @@ getNewChallenge = (difficulty, near) ->
   # location (if supplied)
   ###
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
-  url = "/api/challenges/#{challenge}/tasks?near=#{near}"
+  url = "/api/c/challenges/#{challenge}/tasks?near=#{near}"
   $.getJSON url, (data) ->
     currentTask = data
     currentTask.startTime = new Date().getTime()
@@ -409,7 +409,7 @@ updateStats = (challenge) ->
   # Get the stats for the challenge and display the count of remaining
   # tasks
   ###
-  $.getJSON "/api/challenges/#{challenge}/stats", (data) ->
+  $.getJSON "/api/c/challenges/#{challenge}/stats", (data) ->
     remaining = data.stats.total - data.stats.done
     $("#counter").text remaining
 
@@ -417,7 +417,7 @@ updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
-  $.getJSON "/api/challenges/#{challenge}/meta", (data) ->
+  $.getJSON "/api/c/challenges/#{challenge}/meta", (data) ->
     currentChallenge = data.challenge
     $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL
