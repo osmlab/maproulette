@@ -97,7 +97,7 @@ def challenge_tasks(challenge_id):
         t.current_state = a
         db.session.add(a)
         db.session.add(t)
-        db.session.commit()
+    db.session.commit()
 
     tasks = [{'id': t.identifier,
               'location': dumps(to_shape(t.location)),
@@ -109,23 +109,48 @@ def challenge_tasks(challenge_id):
         app.logger.debug(query)
     return jsonify(tasks = tasks)
 
+
 @app.route('/api/c/challenges/<challenge_id>/tasks/<task_id>',
            methods=['GET', 'POST'])
 def task(challenge, task_id):
-    "Gets a specific task by ID"
+    "Either displays a task (assigning it) or else posts the commit"
+    c = get_challenge_or_404(challenge_id, True)
     t = get_task_or_404(challenge_id, task_id)
     if request.method == 'GET':
+        try:
+            assign = int(request.args.get('assign', 1))
+        except ValueError:
+            abort(417)
+        if assign:
+            a = Action(t.id, "assigned", osmid)
+            t.current_state = a
+            db.session.add(a)
+            db.session.add(t)
         d = {'id': t.identifier,
              'center': t.location,
-             'features': t.manifest,
-             }
+             'features': t.manifest}
         if t.instructions:
             d['instructions'] = t.instructions
         return jsonify(d)
     elif request.method == 'POST':
-        pass
-
-        
+        valid_actions = [i.action for i in c.dlg['buttons']]
+        a = None
+        for k in valid_actions:
+            if request.form.get(k):
+                a = Action(t.id, k, osmid)
+                t.current_action = a
+                db.session.add(a)
+                break
+        if not a:
+            # There was no valid action in the request
+            ### WE SHOULD HANDLE THIS!!!
+            return
+        new_state = c.task_status(t)
+        a = Action(t.id, new_state, osmid)
+        t.current_action = a
+        db.session.add(a)
+        db.session.add(t)
+        db.commit()
 
 ### ADMINISTRATIVE API ###
 
