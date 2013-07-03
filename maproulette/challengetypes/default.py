@@ -9,6 +9,25 @@ class Default(Challenge):
         'text': "This area is being loaded in your editor.\n\nDid you fix it?",
         'buttons': [buttons.fixed, buttons.skipped]}
 
+    def task_status(self, task):
+        current_state = task.current_action.state
+        if current_state == 'skipped':
+            return 'available'
+        elif current_state == 'fixed':
+            return 'done'
+        elif (current.status == 'alreadyfixed' or
+              current.status == 'falsepositive'):
+            l = [i for i in task.actions where i.status == "falsepositive" \
+                     or i.status == "alreadyfixed"]
+            if len(l) >= 2:
+                return 'done'
+            else:
+                return 'available'
+        else:
+            # A TASK SHOULD NEVER GET HERE- if it does, it's due to
+            # some illegal action. Throw the task back on the work pile
+            return 'available'
+
     @task_status.setter
     def set_task_status(self, task):
         current = task.current
