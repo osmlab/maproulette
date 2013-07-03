@@ -133,23 +133,10 @@ class Task(db.Model):
     
     def __repr__(self):
         return '<Task %d>' % (self.id)
-        
-    @property
+
     def current_state(self):
         """Displays the current state of a task"""
         return self.current_action.state
-
-    @current_state.setter
-    def current_state(self, state, osmid = None):
-        """Shortcut for creating a new action"""
-        if osmid:
-            action = Action(self.id, state, osmid)
-        else:
-            action = Action(self.id, state)
-        self.current_action = action
-        db.session.add(action)
-        db.session.add(self)
-        bb.session.commit()
 
 # actions are associated with tasks and belong to users
 class Action(db.Model):
