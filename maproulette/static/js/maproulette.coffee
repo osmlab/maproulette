@@ -263,7 +263,7 @@ getChallenge = (id) ->
   ###
   # Gets a specific challenge
   ###
-  $.getJSON "/api/c/challenges/#{id}/meta", (data) ->
+  $.getJSON "/api/c/challenges/#{id}", (data) ->
     challenge = data
     updateChallenge(challenge)
     updateStats(challenge)
@@ -417,7 +417,7 @@ updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
-  $.getJSON "/api/c/challenges/#{challenge}/meta", (data) ->
+  $.getJSON "/api/c/challenges/#{challenge}", (data) ->
     currentChallenge = data.challenge
     $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL

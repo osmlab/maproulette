@@ -18,6 +18,11 @@ def index():
     "Display the index.html"
     return render_template('index.html')
 
+### CLIENT API ###
+#
+# This part of the API serves the MapRoulette client. 
+# All calls require the caller being authenticated against OSM
+
 @app.route('/api/c/challenges')
 def challenges_api():
     """returns a list of challenges as json
@@ -27,8 +32,9 @@ def challenges_api():
     challenges whose bounding polygons contain this point)
     example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
     """    
-    if not session['osm_token']:
-        abort(401)
+    # make sure we're authenticated
+    if not 'osm_token' in session and not app.debug:
+        abort(403)
     difficulty = request.args.get('difficulty')
     contains = request.args.get('contains')
     if contains:
@@ -40,21 +46,24 @@ def challenges_api():
         challenges =  Challenge.query.filter(and_(
             Challenge.difficulty == difficulty,
             Challenge.polygon.ST_Contains(coordWKT))).all()
-        app.logger.debug('returning %i challenges' % (len(challenges)))
     elif difficulty:
         challenges = Challenge.query.filter(
             Challenge.difficulty == difficulty).all()
     elif contains:
         challenges = Challenge.query.filter(
             Challenge.polygon.ST_Contains(coordWKT)).all()
-    else:
+    if challenges == None or len(challenges) == 0:
         challenges = Challenge.query.all()
+    app.logger.debug('returning %i challenges' % (len(challenges)))
     return jsonify(challenges =
         [i.id for i in challenges if i.active])
 
-@app.route('/api/c/challenges/<challenge_id>')
+@app.route('/api/c/challenges/<int:challenge_id>')
 def challenge(challenge_id):
-    "Returns the metadata for a challenge"
+    """Returns the metadata for a challenge"""
+    # make sure we're authenticated
+    if not 'osm_token' in session and not app.debug:
+        abort(403)
     c = get_challenge_or_404(challenge_id)
     return jsonify(challenge = {
             'slug': c.slug,
@@ -65,9 +74,12 @@ def challenge(challenge_id):
             'doneDlg': json.loads(c.done_dialog),
             'instruction': c.instruction})
 
-@app.route('/api/c/challenges/<challenge_id>/stats')
+@app.route('/api/c/challenges/<int:challenge_id>/stats')
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
+    # make sure we're authenticated
+    if not 'osm_token' in session and not app.debug:
+        abort(403)
     c = get_challenge_or_404(challenge_id, True)
     total = Task.query.filter(challenge_id==c.id).count()
     tasks = Task.query.filter(challenge_id==c.id).all()
@@ -75,9 +87,12 @@ def challenge_stats(challenge_id):
     return jsonify(stats={'total': total, 'available': available})
 
 # THIS FUNCTION IS NOT COMPLETE!!! #
-@app.route('/api/c/challenges/<challenge_id>/tasks')
+@app.route('/api/c/challenges/<int:challenge_id>/tasks')
 def challenge_tasks(challenge_id):
     "Returns a task for specified challenge"
+    # make sure we're authenticated
+    if not 'osm_token' in session and not app.debug:
+        abort(403)
     c = get_challenge_or_404(challenge_id, True)
     # By default, we return a single task
     num = request.args.get('num', 1)
@@ -120,6 +135,9 @@ def challenge_tasks(challenge_id):
            methods=['GET', 'POST'])
 def task(challenge, task_id):
     "Either displays a task (assigning it) or else posts the commit"
+    # make sure we're authenticated
+    if not 'osm_token' in session and not app.debug:
+        abort(403)
     c = get_challenge_or_404(challenge_id, True)
     t = get_task_or_404(challenge_id, task_id)
     if request.method == 'GET':
@@ -162,6 +180,7 @@ def task(challenge, task_id):
 
 @app.route('/api/a/challenges/<challenge_id>', methods = ['POST'])
 def challenge_settings(challenge_id):
+    # FIXME other form of authentication required
     changeable = ['title', 'description', 'blurb', 'polygon', 'help',
                   'instruction', 'run', 'active']
     content = request.json['content']
@@ -173,11 +192,14 @@ def challenge_settings(challenge_id):
 @app.route('/api/a/challenges/<challenge_id>/tasks/<task_id>',
            methods = ['PUT', 'POST'])
 def edit_task(self, challenge_id, task_id):
+    # FIXME other form of authentication required
     c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
     pass
 
 
 @app.route('/logout')
 def logout():
-    session.destroy()
+    # make sure we're authenticated
+    if 'osm_token' in session or app.debug:
+        session.destroy()
     return redirect('/')
