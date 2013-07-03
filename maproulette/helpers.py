@@ -1,6 +1,6 @@
 """Some helper functions"""
 from flask import abort
-from maproulette.models import Challenge, Task
+from maproulette.models import Challenge, Task, challenge_types
 
 def get_challenge_or_404(id, instance_type=None):
     """Return a challenge by its id or return 404.
@@ -11,7 +11,6 @@ def get_challenge_or_404(id, instance_type=None):
     if not c.active:
         abort(503)
     if instance_type:
-        # FIXME what is this challenge_types and how do we make it actually work?
         return challenge_types[c.type].query.get(c.id)
     else:
         return c

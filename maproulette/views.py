@@ -35,8 +35,24 @@ def challenges_api():
     # make sure we're authenticated
     if not 'osm_token' in session and not app.debug:
         abort(403)
+    # get difficulty (FIXME this logic should probably
+    # partly be in the User model.
+    # first, get difficulty from URL parameter
     difficulty = request.args.get('difficulty')
-    contains = request.args.get('contains')
+    # if not overridden, get from stored preferences
+    if not difficulty:
+        difficulty = get_preferences('difficulty')
+    # or fall back to default difficulty
+    else:
+        difficulty = app.config['CHALLENGE_DEFAULTS']['difficulty']
+    
+    # get point of interest
+    # first, 
+    if 'home_location' in session:
+        contains = session('home_location')
+        app.logger.debug('home location retrieved from session')
+    else :
+        contains = request.args.get('contains')
     if contains:
         try:
             coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
@@ -167,7 +183,7 @@ def task(challenge, task_id):
                 break
         if not a:
             # There was no valid action in the request
-            ### WE SHOULD HANDLE THIS!!!
+            ### FIXME WE SHOULD HANDLE THIS!!!
             return
         new_state = c.task_status(t)
         a = Action(t.id, new_state, osmid)
@@ -175,7 +191,20 @@ def task(challenge, task_id):
         db.session.add(a)
         db.session.add(t)
         db.commit()
+        
+@app.route('/api/c/prefs/<string:pref>', methods = ['GET'])
+def preference_get(pref):
+    # make sure we're authenticated
+    if not 'osm_token' in session and not app.debug:
+        abort(403)
+    # get pref and return
+    return get_preferences()[pref]
 
+@app.route('/api/c/prefs/<string:pref>/<string:value>', methods = ['POST'])
+def preference_set(pref, value):
+        # set preference
+    return set_preferences({pref:value})
+        
 ### ADMINISTRATIVE API ###
 
 @app.route('/api/a/challenges/<challenge_id>', methods = ['POST'])

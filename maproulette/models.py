@@ -16,17 +16,25 @@ Base = declarative_base()
 Base.query = db_session.query_property()
 db = SQLAlchemy(app)
 
-challenge_types = {}
+challenge_types = {
+    'default': []}
 
-class OSMUser(db.Model):
-    __tablename__ = 'osmusers'
+class User(db.Model):
+    __tablename__ = 'users'
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
     oauth_token = db.Column(db.String)
     oauth_secret = db.Column(db.String)
     display_name = db.Column(db.String)
     home_location = db.Column(Geometry('POINT'))
-
+    languages = db.Column(db.String)
+    changeset_count = db.Column(db.Integer)
+    last_changeset_id = db.Column(db.Integer)
+    last_changeset_date = db.Column(db.DateTime)
+    last_changeset_bbox = db.Column(Geometry('POLYGON'))
+    osm_account_created = db.Column(db.DateTime)
+    difficulty = db.Column(db.SmallInteger)
+    
     def __unicode__(self):
         return self.display_name
 
@@ -50,8 +58,10 @@ class Challenge(db.Model):
     run = db.Column(db.String(72))
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
-    type = db.Column(db.String, default = 'Default')
-    done_dialog = db.Column(db.String, default = '{"Done": "I am Done!","Skipped": "Did not do it."}') # no idea if this is an appropriate default
+    type = db.Column(db.String, default = 'default')
+    done_dialog = db.Column(db.String, default = 
+'{"Done": "I am Done!","Skipped": "Did not do it."}') 
+# no idea if this is an appropriate default
     
     __table_args__ = (
         db.Index('idx_geom', polygon, postgresql_using='gist'),
@@ -65,7 +75,8 @@ class Challenge(db.Model):
         return self.slug
 
     def _get_task_available(self, task):
-        """The function for a task to determine if it's available or not."""
+        """The function for a task to determine 
+        if it's available or not."""
         # Most tasks will use this method
         action = task.current_action
         if action.status == 'available':
@@ -144,7 +155,7 @@ class Action(db.Model):
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
     timestamp = db.Column(db.DateTime, default = datetime.now)
-    user_id = db.Column(db.Integer, db.ForeignKey('osmusers.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'))
     status = db.Column(db.String(32))
 
