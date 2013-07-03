@@ -78,6 +78,7 @@ def challenge_stats(challenge_id):
 @app.route('/api/c/challenges/<challenge_id>/tasks')
 def challenge_tasks(challenge_id):
     "Returns a task for specified challenge"
+    c = get_challenge_or_404(challenge_id, True)
     # By default, we return a single task
     num = request.args.get('num', 1)
     # If we don't have a "near", we'll use a random function
@@ -87,25 +88,32 @@ def challenge_tasks(challenge_id):
     except:
         near = None
     if near is not None:
-        t = Task.query.filter(Task.location.ST_Intersects(\
-                ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(1)
+        tq = Task.query.filter(Task.location.ST_Intersects(\
+                ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
+        tq = [t for t in tq if c._get_task_available(t)]
     else:
         # FIXME return random tast
         abort(500)
     # FIXME need to check for active state.
     #if not t[0].current_state == 'active':
     #    abort(503)
+    # Any task given to the user should be assigned
+    for t in tq:
+        a = Action(t.id, "assigned", osmid)
+        t.current_state = a
+        db.session.add(a)
+        db.session.add(t)
+        db.session.commit()
+
+    tasks = [{'id': t.identifier,
+              'location': dumps(to_shape(t.location)),
+              'manifest': t.manifest} for t in tq]
     # Each task we give should also be assigned
     # assign(task, osmid)
-
+    
     for query in get_debug_queries():
         app.logger.debug(query)
-        
-    return jsonify(task = {
-        'id': t.identifier,
-        'location': dumps(to_shape(t.location)),
-        'manifest': t.manifest
-        })
+    return jsonify(tasks = tasks)
 
 @app.route('/api/c/challenges/<challenge_id>/tasks/<task_id>',
            methods=['GET', 'POST'])
