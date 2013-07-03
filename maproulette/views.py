@@ -25,7 +25,7 @@ def challenges_api():
     difficulty: the desired difficulty to filter on (1=easy, 2=medium, 3=hard)
     contains: the coordinate to filter on (as lon|lat, returns only 
     challenges whose bounding polygons contain this point)
-    example: /get/challenges?contains=-100.22|40.45&difficulty=2
+    example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
     """    
     if not session['osm_token']:
         abort(401)
@@ -126,7 +126,7 @@ def task(challenge, task_id):
         try:
             assign = int(request.args.get('assign', 1))
         except ValueError:
-            abort(417)
+            abort(400)
         if assign:
             a = Action(t.id, "assigned", osmid)
             t.current_state = a
