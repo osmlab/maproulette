@@ -67,11 +67,11 @@ def oauth_authorized(resp):
         #FIXME parse languages and add to user.languages string field
         user.changeset_count = userxml.find('changesets').attrib['count']
         # get last changeset info
+        changesetdata = osm.get('changesets?user=%s' % (user.id)).data
         try:
-            changesetdata = osm.get('changesets?user=%i' % (user.id)).data
             lastchangeset = changesetdata.find('changeset')
-            if 'min_lon' in lastchangeset:
-                user.last_changeset_bbox = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (
+            if 'min_lon' in lastchangeset.attrib:
+                wktbbox = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (
                         lastchangeset.attrib['min_lon'],
                         lastchangeset.attrib['min_lat'],
                         lastchangeset.attrib['min_lon'],
@@ -82,9 +82,12 @@ def oauth_authorized(resp):
                         lastchangeset.attrib['min_lat'],
                         lastchangeset.attrib['min_lon'],
                         lastchangeset.attrib['min_lat'])
+                app.logger.debug(wktbbox)
+                user.last_changeset_bbox = WKTElement(wktbbox)
                 user.last_changeset_date = lastchangeset.attrib['created_at']
+                user.last_changeset_id = lastchangeset.attrib['id']
         except:
-            app.logger.debug('could not get changeset data from osm.')
+            app.logger.debug('could not get changeset data from OSM')
         db.session.add(user)
         db.session.commit()
         app.logger.debug('user created')
