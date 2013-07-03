@@ -27,6 +27,8 @@ def challenges_api():
     challenges whose bounding polygons contain this point)
     example: /get/challenges?contains=-100.22|40.45&difficulty=2
     """    
+    if not session['osm_token']:
+        abort(401)
     difficulty = request.args.get('difficulty')
     contains = request.args.get('contains')
     if contains:
@@ -38,6 +40,7 @@ def challenges_api():
         challenges =  Challenge.query.filter(and_(
             Challenge.difficulty == difficulty,
             Challenge.polygon.ST_Contains(coordWKT))).all()
+        app.logger.debug('returning %i challenges' % (len(challenges)))
     elif difficulty:
         challenges = Challenge.query.filter(
             Challenge.difficulty == difficulty).all()
@@ -91,6 +94,9 @@ def challenge_tasks(challenge_id):
     else:
         # FIXME return random tast
         abort(500)
+    # FIXME need to check for active state.
+    #if not t[0].current_state == 'active':
+    #    abort(503)
     # Any task given to the user should be assigned
     for t in tq:
         a = Action(t.id, "assigned", osmid)

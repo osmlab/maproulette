@@ -42,13 +42,19 @@ if __name__ == "__main__":
         "host=%s port=%s dbname=%s user=%s password=%s" % 
         (dbhost, dbport, dbname, dbuser, dbpass))
     cur = conn.cursor()
-    sqlstub = "INSERT INTO tasks (identifier, location, manifest, challenge_id, run, active) VALUES (%s, ST_GeomFromText(%s), %s, %s, %s, %s)"
+    # check for challenge
+    cur.execute('SELECT id FROM challenges WHERE id = %s', (challenge_id))
+    c = cur.fetchall()
+    if c is None:
+        print "challenge %s does not exist, please create it first" % (challenge_id)
+        exit(1)
+    sqlstub = "INSERT INTO tasks (identifier, location, manifest, challenge_id, run) VALUES (%s, ST_GeomFromText(%s), %s, %s, %s)"
     with open(infile, 'rb') as f:
         r = csv.reader(f)
         for row in r:
             if len(row) != 3:
                 continue
-            cur.execute(sqlstub, (prefix + "_" + row[0], row[1], row[2], challenge_id, run_id, 'true'))
+            cur.execute(sqlstub, (prefix + "_" + row[0], row[1], row[2], challenge_id, run_id))
             cnt += 1
     conn.commit()
     cur.close()
