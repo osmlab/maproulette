@@ -1,13 +1,13 @@
 """MapRoulette Dialog Box Buttons"""
 
-YES = {'action': "fixed",
-       'label': "Yes"}
+fixed = {'action': "fixed",
+         'label': "Yes"}
 
-NO = {'action': "skipped",
-      'label': "No"}
+skipped = {'action': "skipped",
+           'label': "No"}
 
-ALREADYFIXED = {'action': "alreadyfixed",
+alreadyfixed = {'action': "alreadyfixed",
                 'label': "Already Fixed"}
 
-FALSEPOSITIVE = {'action': "falsepositive",
+falsepositive = {'action': "falsepositive",
                  'label': "Not an error"}
