@@ -10,7 +10,7 @@ from sqlalchemy import and_
 from shapely.wkt import dumps
 from maproulette import app, models
 from maproulette.models import Challenge, Task, Action, db
-from maproulette.helpers import get_challenge_or_404, get_task_or_404
+from maproulette.helpers import get_challenge_or_404, get_task_or_404, osmlogin_required
 
 # By default, send out the standard client
 @app.route('/')
