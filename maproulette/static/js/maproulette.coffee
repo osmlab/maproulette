@@ -441,7 +441,7 @@ enableKeyboardShortcuts = ->
       when "r" then openIn('potlatch')
       when "i" then openIn('id')
 
-@init = (isLoggedIn) ->
+@init = ->
   ###
   # Find a challenge and set the map up
   ###
@@ -453,9 +453,6 @@ enableKeyboardShortcuts = ->
   map.addLayer tileLayer
   addGeoJSONLayer()
   enableKeyboardShortcuts()
-
-  # Remember whether user is logged in
-  loggedIn = isLoggedIn
 
   # Try to grab parameters from the url
   challenge = $(document).getUrlParam("challenge")

@@ -5,6 +5,16 @@
         <link rel="stylesheet" href="static/css/base.css" />
         <link rel="stylesheet" href="static/css/style.css" />
         <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css" />
+        <script language="javascript" type="text/javascript">
+            {% if session.osm_token is not defined %}
+            window.open('{{ url_for('oauth_authorize') }}','oauth',"height=600,width=500");
+            {% else %}
+            if (self != opener && opener != null) {
+                opener.location.reload();
+                self.close();
+            }
+            {% endif %}
+        </script>
         <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
         <script src="static/js/showdown.js" ></script>
