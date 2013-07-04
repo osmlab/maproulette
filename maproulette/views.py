@@ -24,6 +24,7 @@ def index():
 # All calls require the caller being authenticated against OSM
 
 @app.route('/api/c/challenges')
+@osmlogin_required
 def challenges_api():
     """returns a list of challenges as json
     optional URL parameters are
@@ -32,21 +33,9 @@ def challenges_api():
     challenges whose bounding polygons contain this point)
     example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
     """    
-    # make sure we're authenticated
-    if not 'osm_token' in session and not app.debug:
-        abort(403)
-    # get difficulty (FIXME this logic should probably
-    # partly be in the User model.
-    # first, get difficulty from URL parameter
-    difficulty = request.args.get('difficulty')
-    # if not overridden, get from stored preferences
-    if not difficulty:
-        difficulty = get_preferences('difficulty')
-    # or fall back to default difficulty
-    else:
-        difficulty = app.config['CHALLENGE_DEFAULTS']['difficulty']
-    
-    # get point of interest
+    # First, get the difficulty. If not specified, use the value in
+    # the user object, or just a default value
+    difficulty = request.args.get('difficulty', user.difficulty) or 1
     # first, 
     if 'home_location' in session:
         contains = session['home_location']
@@ -75,11 +64,9 @@ def challenges_api():
         [i.id for i in challenges if i.active])
 
 @app.route('/api/c/challenges/<int:challenge_id>')
+@osmlogin_required
 def challenge(challenge_id):
     """Returns the metadata for a challenge"""
-    # make sure we're authenticated
-    if not 'osm_token' in session and not app.debug:
-        abort(403)
     c = get_challenge_or_404(challenge_id)
     return jsonify(challenge = {
             'slug': c.slug,
@@ -91,11 +78,9 @@ def challenge(challenge_id):
             'instruction': c.instruction})
 
 @app.route('/api/c/challenges/<int:challenge_id>/stats')
+@osmlogin_required
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
-    # make sure we're authenticated
-    if not 'osm_token' in session and not app.debug:
-        abort(403)
     c = get_challenge_or_404(challenge_id, True)
     total = Task.query.filter(challenge_id==c.id).count()
     tasks = Task.query.filter(challenge_id==c.id).all()
@@ -104,11 +89,9 @@ def challenge_stats(challenge_id):
 
 # THIS FUNCTION IS NOT COMPLETE!!! #
 @app.route('/api/c/challenges/<int:challenge_id>/tasks')
+@osmlogin_required
 def challenge_tasks(challenge_id):
     "Returns a task for specified challenge"
-    # make sure we're authenticated
-    if not 'osm_token' in session and not app.debug:
-        abort(403)
     c = get_challenge_or_404(challenge_id, True)
     # By default, we return a single task
     num = request.args.get('num', 1)
@@ -135,13 +118,9 @@ def challenge_tasks(challenge_id):
         db.session.add(a)
         db.session.add(t)
     db.session.commit()
-
     tasks = [{'id': t.identifier,
               'location': dumps(to_shape(t.location)),
               'manifest': t.manifest} for t in tq]
-    # Each task we give should also be assigned
-    # assign(task, osmid)
-    
     for query in get_debug_queries():
         app.logger.debug(query)
     return jsonify(tasks = tasks)
@@ -149,6 +128,7 @@ def challenge_tasks(challenge_id):
 
 @app.route('/api/c/challenges/<challenge_id>/tasks/<task_id>',
            methods=['GET', 'POST'])
+@osmlogin_required
 def task(challenge, task_id):
     "Either displays a task (assigning it) or else posts the commit"
     # make sure we're authenticated
