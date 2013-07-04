@@ -191,20 +191,7 @@ def task(challenge, task_id):
         db.session.add(a)
         db.session.add(t)
         db.commit()
-        
-@app.route('/api/c/prefs/<string:pref>', methods = ['GET'])
-def preference_get(pref):
-    # make sure we're authenticated
-    if not 'osm_token' in session and not app.debug:
-        abort(403)
-    # get pref and return
-    return get_preferences()[pref]
-
-@app.route('/api/c/prefs/<string:pref>/<string:value>', methods = ['POST'])
-def preference_set(pref, value):
-        # set preference
-    return set_preferences({pref:value})
-        
+                
 ### ADMINISTRATIVE API ###
 
 @app.route('/api/a/challenges/<challenge_id>', methods = ['POST'])
