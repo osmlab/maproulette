@@ -1,6 +1,7 @@
 """Some helper functions"""
-from flask import abort
+from flask import abort, session
 from maproulette.models import Challenge, Task, challenge_types
+from functools import wraps
 
 def get_challenge_or_404(id, instance_type=None):
     """Return a challenge by its id or return 404.
@@ -21,3 +22,11 @@ def get_task_or_404(challenge_id, task_identifier):
     t = Task.query.filter(Task.identifier==task_identifier).\
         filter(Task.challenge_id==c.id).first_or_404()
     return t
+
+def osmlogin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not 'osm_token' in session and not app.debug:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated_function
