@@ -6,6 +6,7 @@ from flask import request, url_for, redirect, session
 from flask.ext.sqlalchemy import SQLAlchemy
 from maproulette.database import db
 from geoalchemy2.elements import WKTElement
+from geoalchemy2.shape import to_shape
 
 # instantite OAuth object
 oauth = OAuth()
@@ -42,7 +43,7 @@ def oauth_authorized(resp):
       resp['oauth_token_secret']
     )
     data = osm.get('user/details').data
-    app.logger.debug("Getting user data from osm")
+    app.logger.debug("getting user data from osm")
     if not data:
         # FIXME this requires handling
         return False
@@ -50,10 +51,10 @@ def oauth_authorized(resp):
     osmid = userxml.attrib['id']
     # query for existing user
     if bool(models.User.query.filter(models.User.id==osmid).count()):
-        #user exists
+        app.logger.debug('user exists, getting from database')
         user = models.User.query.filter(models.User.id==osmid).first()
     else:
-        # create new user
+        app.logger.debug('user is new, create local account')
         user = models.User()
         user.id = osmid
         user.display_name = userxml.attrib['display_name']
@@ -91,8 +92,10 @@ def oauth_authorized(resp):
         db.session.add(user)
         db.session.commit()
         app.logger.debug('user created')
+    # we need to convert the GeoAlchemy object to something picklable
+    point = to_shape(user.home_location)
     session['display_name'] = user.display_name
     session['osm_id'] = user.id
-    session['home_location'] = user.home_location
+    session['home_location'] = [point.x, point.y]
     session['difficulty'] = user.difficulty
     return redirect(next_url)

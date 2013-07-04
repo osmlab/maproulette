@@ -49,7 +49,7 @@ def challenges_api():
     # get point of interest
     # first, 
     if 'home_location' in session:
-        contains = session('home_location')
+        contains = session['home_location']
         app.logger.debug('home location retrieved from session')
     else :
         contains = request.args.get('contains')
