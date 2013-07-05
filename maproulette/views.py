@@ -164,9 +164,7 @@ def task(challenge, task_id):
                 db.session.add(a)
                 break
         if not a:
-            # There was no valid action in the request
-            ### FIXME WE SHOULD HANDLE THIS!!!
-            return
+            abort(400)
         new_state = c.task_status(t)
         a = Action(t.id, new_state, osmid)
         t.current_action = a
