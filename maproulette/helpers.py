@@ -2,6 +2,7 @@
 from flask import abort, session
 from maproulette.models import Challenge, Task, challenge_types
 from functools import wraps
+import random
 
 def get_challenge_or_404(id, instance_type=None):
     """Return a challenge by its id or return 404.
@@ -30,3 +31,10 @@ def osmlogin_required(f):
             abort(403)
         return f(*args, **kwargs)
     return decorated_function
+
+def get_random_task(challenge):
+    rn = random.random()
+    t = Task.query.filter(Task.random =< rn).first()
+    if not t:
+        t = Task.query.filter(Task.random > rn).first()
+    return t

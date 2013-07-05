@@ -10,7 +10,7 @@ from sqlalchemy import and_
 from shapely.wkt import dumps
 from maproulette import app, models
 from maproulette.models import Challenge, Task, Action, db
-from maproulette.helpers import get_challenge_or_404, get_task_or_404, osmlogin_required
+from maproulette.helpers import *
 
 # By default, send out the standard client
 @app.route('/')
@@ -86,7 +86,6 @@ def challenge_stats(challenge_id):
     available = len([t for t in tasks if c._get_task_available(t)])
     return jsonify(stats={'total': total, 'available': available})
 
-# THIS FUNCTION IS NOT COMPLETE!!! #
 @app.route('/api/c/challenges/<int:challenge_id>/tasks')
 @osmlogin_required
 def challenge_tasks(challenge_id):
@@ -105,12 +104,8 @@ def challenge_tasks(challenge_id):
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         tq = [t for t in tq if c._get_task_available(t)]
     else:
-        # FIXME return random tast
-        abort(500)
-    # FIXME need to check for active state.
-    #if not t[0].current_state == 'active':
-    #    abort(503)
-    # Any task given to the user should be assigned
+        tq = [get_random_task(c) for i in range(num)]
+        tq = [i for i in tq if i] 
     try:
         assign = int(request.args.get('assign', 1))
     except ValueError:
