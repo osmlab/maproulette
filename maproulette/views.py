@@ -36,7 +36,6 @@ def challenges_api():
     # First, get the difficulty. If not specified, use the value in
     # the user object, or just a default value
     difficulty = request.args.get('difficulty', user.difficulty) or 1
-    # first, 
     if 'home_location' in session:
         contains = session['home_location']
         app.logger.debug('home location retrieved from session')
@@ -59,9 +58,9 @@ def challenges_api():
             Challenge.polygon.ST_Contains(coordWKT)).all()
     if challenges == None or len(challenges) == 0:
         challenges = Challenge.query.all()
+    challenges = [c.id for c in challenges if c.active]
     app.logger.debug('returning %i challenges' % (len(challenges)))
-    return jsonify(challenges =
-        [i.id for i in challenges if i.active])
+    return jsonify(challenges = challenges)
 
 @app.route('/api/c/challenges/<int:challenge_id>')
 @osmlogin_required
@@ -132,11 +131,10 @@ def challenge_tasks(challenge_id):
 def task(challenge, task_id):
     "Either displays a task (assigning it) or else posts the commit"
     # make sure we're authenticated
-    if not 'osm_token' in session and not app.debug:
-        abort(403)
     c = get_challenge_or_404(challenge_id, True)
     t = get_task_or_404(challenge_id, task_id)
-    if request.method == 'GET':
+                  if request.method == 'GET':
+                      
         try:
             assign = int(request.args.get('assign', 1))
         except ValueError:
