@@ -111,12 +111,17 @@ def challenge_tasks(challenge_id):
     #if not t[0].current_state == 'active':
     #    abort(503)
     # Any task given to the user should be assigned
-    for t in tq:
-        a = Action(t.id, "assigned", osmid)
-        t.current_state = a
-        db.session.add(a)
-        db.session.add(t)
-    db.session.commit()
+    try:
+        assign = int(request.args.get('assign', 1))
+    except ValueError:
+        abort(400)
+    if assign:
+        for t in tq:
+            a = Action(t.id, "assigned", osmid)
+            t.current_state = a
+            db.session.add(a)
+            db.session.add(t)
+        db.session.commit()
     tasks = [{'id': t.identifier,
               'location': dumps(to_shape(t.location)),
               'manifest': t.manifest} for t in tq]
@@ -133,8 +138,7 @@ def task(challenge, task_id):
     # make sure we're authenticated
     c = get_challenge_or_404(challenge_id, True)
     t = get_task_or_404(challenge_id, task_id)
-                  if request.method == 'GET':
-                      
+    if request.method == 'GET':
         try:
             assign = int(request.args.get('assign', 1))
         except ValueError:
