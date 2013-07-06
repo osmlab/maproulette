@@ -40,3 +40,18 @@ def get_random_task(challenge):
         t = Task.query.filter(Task.challenge_id == challenge.id,
                               Task.random > rn).first()
     return t
+
+class GeoPoint(object):
+    """A geo-point class for use as a validation in the req parser"""
+    def __init__(self, value):
+        lon,lat = value.split('|')
+        lat = float(lat)
+        lon = float(lon)
+        if not lat >= -90 and lat <= 90:
+            raise ValueError("latitude must be between -90 and 90")
+        if not lon >= -180 and lon <= 180:
+            raise ValueError("longitude must be between -180 and 180")
+        self.lat = lat
+        self.lon = lon
+    
+                             
