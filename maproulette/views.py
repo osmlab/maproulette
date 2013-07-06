@@ -11,6 +11,7 @@ from shapely.wkt import dumps
 from maproulette import app
 from maproulette.models import Challenge, Task, Action, db
 from maproulette.helpers import *
+from flask.ext.restful import reqparse
 
 # By default, send out the standard client
 @app.route('/')
@@ -33,17 +34,24 @@ def challenges():
     challenges whose bounding polygons contain this point)
     example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
     """    
-    difficulty = request.args.get('difficulty', user.difficulty) or 1
-    if 'home_location' in session:
+    parser = reqparse.RequestParser()
+    parser.add_argument('difficulty', type=int,
+                        choices = [1,2,3],
+                        help='difficulty cannot be parsed')
+    parser.add_argument('contains', type=GeoPoint, help = "Could not parse contains")
+    args = parser.parse_args()
+    # Try to get difficulty from argument, or users prefers or default
+    difficulty = args['difficulty'] or user.difficulty or 1
+    # Try to get location from argument or user prefs
+    contains = None
+    if args['contains']:
+        contains = args['contains']
+        coordWKT =  'POINT(%s %s)' % (contains.lat, contains.lon)
+    elif 'home_location' in session:
         contains = session['home_location']
+        coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
         app.logger.debug('home location retrieved from session')
-    else :
-        contains = request.args.get('contains')
-    if contains:
-        try:
-            coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
-        except:
-            contains = None
+    # Now make the appropriate query based on difficulty, contains or both
     if difficulty and contains:
         challenges =  Challenge.query.filter(and_(
             Challenge.difficulty == difficulty,
@@ -90,15 +98,20 @@ def challenge_stats(challenge_id):
 def challenge_tasks(challenge_id):
     "Returns a task for specified challenge"
     challenge = get_challenge_or_404(challenge_id, True)
-    # By default, we return a single task
-    num = request.args.get('num', 1)
-    # If we don't have a "near", we'll use a random function
-    near = request.args.get('near')
-    try:
-        coordWKT = 'POINT(%s %s)' % tuple(near.split("|"))
-    except:
-        near = None
-    if near is not None:
+    parser = reqparse.RequestParser()
+    parser.add_argument('num', type=int, default = 1,
+                        help='Number of return results cannot be parsed')
+    parser.add_argument('near', type=GeoPoint,
+                        help = 'Near argument could not be parsed')
+    parser.add_argument('assign', type=int, default 1,
+                        help = 'Assign could not be parsed')
+    args = parser.parse_args()
+    # By default, we return a single task, but no more than 10
+    num = min(args['num'], 10)
+    assign = args['assign']
+    near = args['near']
+    coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
+    if near:
         task_query = Task.query.filter(Task.location.ST_Intersects(\
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         task_list = [task for task in task_query 
@@ -106,10 +119,6 @@ def challenge_tasks(challenge_id):
     else:
         task_list = [get_random_task(challenge) for i in range(num)]
         task_list = [task for task in task_list if task] 
-    try:
-        assign = int(request.args.get('assign', 1))
-    except ValueError:
-        abort(400)
     if assign:
         for task in task_list:
             action = Action(task.id, "assigned", osmid)
