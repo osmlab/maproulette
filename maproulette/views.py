@@ -25,7 +25,7 @@ def index():
 
 @app.route('/api/c/challenges')
 @osmlogin_required
-def challenges_api():
+def challenges():
     """returns a list of challenges as json
     optional URL parameters are
     difficulty: the desired difficulty to filter on (1=easy, 2=medium, 3=hard)
@@ -58,39 +58,40 @@ def challenges_api():
             Challenge.polygon.ST_Contains(coordWKT)).all()
     if challenges == None or len(challenges) == 0:
         challenges = Challenge.query.all()
-    challenges = [c.id for c in challenges if c.active]
+    challenges = [challenge.id for challenge in challenges if challenge.active]
     app.logger.debug('returning %i challenges' % (len(challenges)))
     return jsonify(challenges = challenges)
 
 @app.route('/api/c/challenges/<int:challenge_id>')
 @osmlogin_required
-def challenge(challenge_id):
+def challenge_by_id(challenge_id):
     """Returns the metadata for a challenge"""
-    c = get_challenge_or_404(challenge_id)
+    challenge = get_challenge_or_404(challenge_id)
     return jsonify(challenge = {
-            'slug': c.slug,
-            'title': c.title,
-            'description': c.description,
-            'blurb': c.blurb,
-            'help': c.help,
-            'doneDlg': json.loads(c.done_dialog),
-            'instruction': c.instruction})
+            'slug': challenge.slug,
+            'title': challenge.title,
+            'description': challenge.description,
+            'blurb': challenge.blurb,
+            'help': challenge.help,
+            'doneDlg': json.loads(challenge.done_dialog),
+            'instruction': challenge.instruction})
 
 @app.route('/api/c/challenges/<int:challenge_id>/stats')
 @osmlogin_required
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
-    c = get_challenge_or_404(challenge_id, True)
-    total = Task.query.filter(challenge_id==c.id).count()
-    tasks = Task.query.filter(challenge_id==c.id).all()
-    available = len([t for t in tasks if c._get_task_available(t)])
+    challenge = get_challenge_or_404(challenge_id, True)
+    total = Task.query.filter(challenge_id==challenge.id).count()
+    tasks = Task.query.filter(challenge_id==challenge.id).all()
+    available = len([task for task in tasks
+                     if challenge._get_task_available(task)])
     return jsonify(stats={'total': total, 'available': available})
 
 @app.route('/api/c/challenges/<int:challenge_id>/tasks')
 @osmlogin_required
 def challenge_tasks(challenge_id):
     "Returns a task for specified challenge"
-    c = get_challenge_or_404(challenge_id, True)
+    challenge = get_challenge_or_404(challenge_id, True)
     # By default, we return a single task
     num = request.args.get('num', 1)
     # If we don't have a "near", we'll use a random function
@@ -100,26 +101,27 @@ def challenge_tasks(challenge_id):
     except:
         near = None
     if near is not None:
-        tq = Task.query.filter(Task.location.ST_Intersects(\
+        task_query = Task.query.filter(Task.location.ST_Intersects(\
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
-        tq = [t for t in tq if c._get_task_available(t)]
+        task_list = [task for task in task_query 
+                     if challenge._get_task_available(task)]
     else:
-        tq = [get_random_task(c) for i in range(num)]
-        tq = [i for i in tq if i] 
+        task_list = [get_random_task(challenge) for i in range(num)]
+        task_list = [task for task in task_list if task] 
     try:
         assign = int(request.args.get('assign', 1))
     except ValueError:
         abort(400)
     if assign:
-        for t in tq:
-            a = Action(t.id, "assigned", osmid)
-            t.current_state = a
-            db.session.add(a)
-            db.session.add(t)
+        for task in task_list:
+            action = Action(task.id, "assigned", osmid)
+            task.current_state = action
+            db.session.add(action)
+            db.session.add(task)
         db.session.commit()
-    tasks = [{'id': t.identifier,
-              'location': dumps(to_shape(t.location)),
-              'manifest': t.manifest} for t in tq]
+    tasks = [{'id': task.identifier,
+              'location': dumps(to_shape(task.location)),
+              'manifest': task.manifest} for task in task_list]
     for query in get_debug_queries():
         app.logger.debug(query)
     return jsonify(tasks = tasks)
@@ -128,43 +130,43 @@ def challenge_tasks(challenge_id):
 @app.route('/api/c/challenges/<challenge_id>/tasks/<task_id>',
            methods=['GET', 'POST'])
 @osmlogin_required
-def task(challenge, task_id):
+def task_by_id(challenge_id, task_id):
     "Either displays a task (assigning it) or else posts the commit"
     # make sure we're authenticated
-    c = get_challenge_or_404(challenge_id, True)
-    t = get_task_or_404(challenge_id, task_id)
+    challenge = get_challenge_or_404(challenge_id, True)
+    task = get_task_or_404(challenge_id, task_id)
     if request.method == 'GET':
         try:
             assign = int(request.args.get('assign', 1))
         except ValueError:
             abort(400)
         if assign:
-            a = Action(t.id, "assigned", osmid)
-            t.current_state = a
-            db.session.add(a)
-            db.session.add(t)
-        d = {'id': t.identifier,
-             'center': t.location,
-             'features': t.manifest}
-        if t.instructions:
-            d['instructions'] = t.instructions
-        return jsonify(d)
+            action = Action(task.id, "assigned", osmid)
+            task.current_state = action
+            db.session.add(action)
+            db.session.add(task)
+        output = {'id': task.identifier,
+                  'center': task.location,
+                  'features': task.manifest}
+        if task.instructions:
+            output['instructions'] = task.instructions
+        return jsonify(output)
     elif request.method == 'POST':
-        valid_actions = [i.action for i in c.dlg['buttons']]
-        a = None
-        for k in valid_actions:
-            if request.form.get(k):
-                a = Action(t.id, k, osmid)
-                t.current_action = a
-                db.session.add(a)
+        valid_actions = [button.action for button in challenge.dlg['buttons']]
+        action = None
+        for key in valid_actions:
+            if request.form.get(key):
+                action = Action(task.id, key, osmid)
+                task.current_action = action
+                db.session.add(action)
                 break
-        if not a:
+        if not action:
             abort(400)
-        new_state = c.task_status(t)
-        a = Action(t.id, new_state, osmid)
-        t.current_action = a
-        db.session.add(a)
-        db.session.add(t)
+        new_state = challenge.task_status(task)
+        action = Action(task.id, new_state, osmid)
+        task.current_action = action
+        db.session.add(action)
+        db.session.add(task)
         db.commit()
                 
 ### ADMINISTRATIVE API ###
@@ -175,18 +177,18 @@ def challenge_settings(challenge_id):
     changeable = ['title', 'description', 'blurb', 'polygon', 'help',
                   'instruction', 'run', 'active']
     content = request.json['content']
-    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
-    for k, v in content.items():
-        if k in changeable:
-            setattr(c, k, v)
+    challenge = Challenge.query.filter(Challenge.id==challenge_id).\
+        first_or_404()
+    for key, value in content.items():
+        if key in changeable:
+            setattr(challenge, key, value)
 
 @app.route('/api/a/challenges/<challenge_id>/tasks/<task_id>',
            methods = ['PUT', 'POST'])
 def edit_task(self, challenge_id, task_id):
     # FIXME other form of authentication required
-    c = Challenge.query.filter(Challenge.id==challenge_id).first_or_404()
-    pass
-
+    challenge = Challenge.query.filter(Challenge.id==challenge_id).\
+        first_or_404()
 
 @app.route('/logout')
 def logout():
