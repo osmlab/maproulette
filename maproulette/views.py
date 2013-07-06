@@ -8,7 +8,7 @@ from geoalchemy2.functions import ST_Contains, ST_Intersects, \
 from geoalchemy2.shape import to_shape
 from sqlalchemy import and_
 from shapely.wkt import dumps
-from maproulette import app, models
+from maproulette import app
 from maproulette.models import Challenge, Task, Action, db
 from maproulette.helpers import *
 
@@ -33,8 +33,6 @@ def challenges():
     challenges whose bounding polygons contain this point)
     example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
     """    
-    # First, get the difficulty. If not specified, use the value in
-    # the user object, or just a default value
     difficulty = request.args.get('difficulty', user.difficulty) or 1
     if 'home_location' in session:
         contains = session['home_location']
