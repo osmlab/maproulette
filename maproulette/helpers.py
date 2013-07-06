@@ -34,7 +34,9 @@ def osmlogin_required(f):
 
 def get_random_task(challenge):
     rn = random.random()
-    t = Task.query.filter(Task.random =< rn).first()
+    t = Task.query.filter(Task.challenge_id == challenge.id,
+                          Task.random <= rn).first()
     if not t:
-        t = Task.query.filter(Task.random > rn).first()
+        t = Task.query.filter(Task.challenge_id == challenge.id,
+                              Task.random > rn).first()
     return t
