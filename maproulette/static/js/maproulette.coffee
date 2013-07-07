@@ -289,9 +289,8 @@ getNewChallenge = (difficulty, near) ->
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges/#{challenge}/tasks?near=#{near}"
   $.getJSON url, (data) ->
-    currentTask = data
-    currentTask.startTime = new Date().getTime()
-    showTask(data)
+    currentTask = data[0]
+    showTask(data[0])
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
   ###
@@ -330,9 +329,7 @@ addGeoJSONLayer = ->
   setDelay 1, msgClose()
   payload = {
       "action": action,
-      "editor": editor,
-      "startTime": currentTask.startTime,
-      "endTime": new Date().getTime() }
+      "editor": editor}
   near = currentTask.center
   challenge = currentChallenge.id
   task_id = currentTask.id
