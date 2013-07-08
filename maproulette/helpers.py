@@ -4,24 +4,29 @@ from maproulette.models import Challenge, Task, challenge_types
 from functools import wraps
 import random
 
-def get_challenge_or_404(id, instance_type=None):
+def get_challenge_or_404(challenge_id, instance_type=None,
+                         abort_if_inactive=True):
     """Return a challenge by its id or return 404.
 
     If instance_type is True, return the correct Challenge Type
     """
-    c = Challenge.query.filter(Challenge.id==id).first_or_404()
-    if not c.active:
-        abort(503)
+    c = Challenge.query.filter(Challenge.id==challenge_id).first()
+    if not c:
+        abort(404, message="Challenge {} does not exist".format(challenge_id))
+    if not c.active and abort_if_inactive:
+        abort(503, message="Challenge {} is not active".format(challenge_id))
     if instance_type:
         return challenge_types[c.type].query.get(c.id)
     else:
         return c
 
-def get_task_or_404(challenge_id, task_identifier):
-    """Return a task based on its challenge slug and task identifier"""
-    c = get_challenge_or_404(challenge_id)
+def get_task_or_404(challenge, task_identifier):
+    """Return a task based on its challenge and task identifier"""
     t = Task.query.filter(Task.identifier==task_identifier).\
-        filter(Task.challenge_id==c.id).first_or_404()
+        filter(Task.challenge_id==challenge.id).first()
+    if not t:
+        abort(404,"Task {} does not exist for {}".format(task_identifier,
+                                                         challenge.slug))
     return t
 
 def osmlogin_required(f):

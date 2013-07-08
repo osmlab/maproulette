@@ -139,7 +139,7 @@ def task_by_id(challenge_id, task_id):
     "Either displays a task (assigning it) or else posts the commit"
     # make sure we're authenticated
     challenge = get_challenge_or_404(challenge_id, True)
-    task = get_task_or_404(challenge_id, task_id)
+    task = get_task_or_404(challenge, task_id)
     if request.method == 'GET':
         try:
             assign = int(request.args.get('assign', 1))
