@@ -1,14 +1,15 @@
 """This module contains the data for a GeoError, the most common type
 of MapRoulette Challenge"""
 
-from models import Challenge, challenge_types
-import buttons
+from maproulette.models import Challenge, challenge_types
+import maproulette.buttons as buttons
 
 class Default(Challenge):
     dlg = {
         'text': "This area is being loaded in your editor.\n\nDid you fix it?",
         'buttons': [buttons.fixed, buttons.skipped]}
-
+    
+    @property
     def task_status(self, task):
         current_state = task.current_action.state
         if current_state == 'skipped':
@@ -17,7 +18,7 @@ class Default(Challenge):
             return 'done'
         elif (current.status == 'alreadyfixed' or
               current.status == 'falsepositive'):
-            l = [i for i in task.actions where i.status == "falsepositive" \
+            l = [i for i in task.actions if i.status == "falsepositive" \
                      or i.status == "alreadyfixed"]
             if len(l) >= 2:
                 return 'done'
@@ -38,7 +39,7 @@ class Default(Challenge):
         elif (current.status == 'alreadyfixed' 
               or current.status == 'falsepositive'):
             # We should see two of these before setting the task to done
-            l = [i for i in task.actions where i.status == "falsepositive" \
+            l = [i for i in task.actions if i.status == "falsepositive" \
                      or i.status == "alreadyfixed"]
             if len(l) >= 2:
                 task.setdone()
