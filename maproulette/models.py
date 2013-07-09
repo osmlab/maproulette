@@ -58,7 +58,6 @@ class Challenge(db.Model):
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
     type = db.Column(db.String, default='default')
-    done_dialog = db.Column(db.String)
 
     __table_args__ = (db.Index('idx_geom', polygon, postgresql_using='gist'),
                       db.Index('idx_run', run))
@@ -97,19 +96,6 @@ class Challenge(db.Model):
             # This is a catchall that a task should never get to
             task.status = 'available'
 
-    @property
-    def meta(self):
-        """Return a dictionary of metadata for the challenge"""
-        return {'slug': self.slug,
-                'description': self.description,
-                'help': self.help,
-                'blurb': self.blurb,
-                'instruction': self.instruction,
-                'doneDlg': self.done_dialog,
-                'editors': self.editors
-                }
-
-
 class Task(db.Model):
     __tablename__ = 'tasks'
 
@@ -130,8 +116,9 @@ class Task(db.Model):
         db.Index('idx_challenge', challenge_id),
         db.Index('idx_random', random))
 
-    def __init__(self, challenge_id):
+    def __init__(self, challenge_id, identifier):
         self.challenge_id = challenge_id
+        self.identifier = identifier
 
     def __repr__(self):
         return '<Task %d>' % (self.id)
