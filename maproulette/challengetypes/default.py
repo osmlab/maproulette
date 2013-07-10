@@ -12,7 +12,9 @@ class Default(Challenge):
     @property
     def task_status(self, task):
         current_state = task.current_action.state
-        if current_state == 'skipped':
+        if current_state == 'created' or current_state == 'modified':
+            return 'available'
+        elif current_state == 'skipped':
             return 'available'
         elif current_state == 'fixed':
             return 'done'
