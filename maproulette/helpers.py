@@ -3,6 +3,7 @@ from flask import abort, session
 from maproulette.models import Challenge, Task, challenge_types
 from functools import wraps
 import random
+import json
 
 def get_challenge_or_404(challenge_id, instance_type=None,
                          abort_if_inactive=True):
@@ -28,6 +29,14 @@ def get_task_or_404(challenge, task_identifier):
         abort(404,"Task {} does not exist for {}".format(task_identifier,
                                                          challenge.slug))
     return t
+
+def get_or_create_task(challenge, task_identifier):
+    """Return a task, either pull a new one or create a new one"""
+    task = Task.identifier==task_identifier).\
+        filter(Task.challenge_id==challenge.id).first()
+    if not task:
+        task = Task(challenge.id, task_identifier)
+    return task
 
 def osmlogin_required(f):
     @wraps(f)
@@ -59,4 +68,22 @@ class GeoPoint(object):
         self.lat = lat
         self.lon = lon
     
-                             
+class JsonData(object):
+    """A simple class for use as a validation that a manifest is valid"""
+    def __init__(self, value):
+        self.data = json.loads(value)
+
+    @property
+    def json(self):
+        return self.dumps(self.data)
+
+class JsonTasks(object):
+    """A class for validation of a mass tasks insert"""
+    def __init__(self, value):
+        data = json.loads(value)
+        assert type(data) is list
+        for task in data:
+            assert 'id' in task, "Task must contain an 'id' property"
+            assert 'manifest' in task, "Task must contain a 'manifest' property"
+            assert 'location' in task, "Task must contain a 'location' property"
+        self.data = data
