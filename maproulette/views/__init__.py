@@ -181,28 +181,6 @@ def task_by_id(challenge_id, task_id):
         db.commit()
 
 
-### ADMINISTRATIVE API ###
-@app.route('/api/a/challenges/<challenge_id>', methods=['POST'])
-def challenge_settings(challenge_id):
-    # FIXME other form of authentication required
-    changeable = ['title', 'description', 'blurb', 'polygon', 'help',
-                  'instruction', 'run', 'active']
-    content = request.json['content']
-    challenge = Challenge.query.filter(Challenge.id == challenge_id).\
-        first_or_404()
-    for key, value in content.items():
-        if key in changeable:
-            setattr(challenge, key, value)
-
-
-@app.route('/api/a/challenges/<challenge_id>/tasks/<task_id>',
-           methods=['PUT', 'POST'])
-def edit_task(self, challenge_id, task_id):
-    # FIXME other form of authentication required
-    challenge = Challenge.query.filter(Challenge.id == challenge_id).\
-        first_or_404()
-
-
 @app.route('/logout')
 def logout():
     # make sure we're authenticated
