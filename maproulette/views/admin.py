@@ -2,6 +2,7 @@ from flask import Flask, request
 from flask.ext.restful import Resource, Api, fields, marshal_with
 from maproulette import app
 from maproulette.helpers import GeoPoint, JsonData
+from maproulette.models import Challenge, Task, Action, db
 
 
 challenge_fields = {'id': fields.String(attribute='slug'),
