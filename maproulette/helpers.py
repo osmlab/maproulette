@@ -5,6 +5,8 @@ from functools import wraps
 import random
 import json
 
+from maproulette import app
+
 def get_challenge_or_404(challenge_id, instance_type=None,
                          abort_if_inactive=True):
     """Return a challenge by its id or return 404.
@@ -32,7 +34,7 @@ def get_task_or_404(challenge, task_identifier):
 
 def get_or_create_task(challenge, task_identifier):
     """Return a task, either pull a new one or create a new one"""
-    task = Task.identifier==task_identifier).\
+    task = (Task.identifier==task_identifier).\
         filter(Task.challenge_id==challenge.id).first()
     if not task:
         task = Task(challenge.id, task_identifier)
