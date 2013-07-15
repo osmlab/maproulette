@@ -5,20 +5,25 @@
         <link rel="stylesheet" href="static/css/base.css" />
         <link rel="stylesheet" href="static/css/style.css" />
         <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css" />
+        <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+        <script src="static/js/showdown.js" ></script>
+        <script src="static/js/maproulette.js"></script>
         <script language="javascript" type="text/javascript">
             {% if session.osm_token is not defined %}
-            window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
+            var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
+            if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') { 
+                msg('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain");
+                setDelay(3, msgClose());
+            }
             {% else %}
+            // we are in the oauth window and we're all done, so close the oauth window
             if (self != opener && opener != null) {
                 opener.location.reload();
                 self.close();
             }
             {% endif %}
         </script>
-        <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script>
-        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
-        <script src="static/js/showdown.js" ></script>
-        <script src="static/js/maproulette.js"></script>
     </head>
     <body onload="init({%- if session.osm_token -%}true{%- else -%}false{%- endif -%})">
         <div id="map" class="fullscreen"></div>
