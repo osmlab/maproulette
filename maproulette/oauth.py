@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import json
 from maproulette import app, models
-from flask_oauth import OAuth
+from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
 from flask.ext.sqlalchemy import SQLAlchemy
 from maproulette.database import db
@@ -93,9 +93,10 @@ def oauth_authorized(resp):
         db.session.commit()
         app.logger.debug('user created')
     # we need to convert the GeoAlchemy object to something picklable
-    point = to_shape(user.home_location)
+    if user.home_location is not None:
+        point = to_shape(user.home_location)
+        session['home_location'] = [point.x, point.y] or None
     session['display_name'] = user.display_name
     session['osm_id'] = user.id
-    session['home_location'] = [point.x, point.y]
     session['difficulty'] = user.difficulty
     return redirect(next_url)
