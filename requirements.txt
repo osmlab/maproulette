@@ -2,7 +2,6 @@ CoffeeScript==1.0.5
 Flask==0.10.1
 Flask-Coffee==0.3
 Flask-KVSession==0.4
-Flask-OAuth==0.12
 Flask-SQLAlchemy==0.16
 Flask-Script==0.5.3
 GeoAlchemy2==0.2.1
@@ -11,3 +10,4 @@ SQLAlchemy==0.8.1
 Shapely==1.2.17
 psycopg2==2.5.1
 Flask-RESTful==0.2.3
+-e git://github.com/mvexel/flask-oauthlib.git#egg=flask-oauthlib
