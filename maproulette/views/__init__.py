@@ -72,7 +72,7 @@ def challenges():
     return jsonify(challenges=challenges)
 
 
-@app.route('/api/c/challenges/<int:challenge_id>')
+@app.route('/api/c/challenges/<challenge_id>')
 @osmlogin_required
 def challenge_by_id(challenge_id):
     """Returns the metadata for a challenge"""
@@ -87,7 +87,7 @@ def challenge_by_id(challenge_id):
             'help': challenge.instruction})
 
 
-@app.route('/api/c/challenges/<int:challenge_id>/stats')
+@app.route('/api/c/challenges/<challenge_id>/stats')
 @osmlogin_required
 def challenge_stats(challenge_id):
     "Returns stat data for a challenge"
@@ -99,7 +99,7 @@ def challenge_stats(challenge_id):
     return jsonify(stats={'total': total, 'available': available})
 
 
-@app.route('/api/c/challenges/<int:challenge_id>/tasks')
+@app.route('/api/c/challenges/<challenge_id>/tasks')
 @osmlogin_required
 def challenge_tasks(challenge_id):
     "Returns a task for specified challenge"
@@ -123,8 +123,13 @@ def challenge_tasks(challenge_id):
         task_list = [task for task in task_query
                      if challenge._get_task_available(task)]
     else:
+        # If no location is specified, gather random tasks
         task_list = [get_random_task(challenge) for i in range(num)]
         task_list = [task for task in task_list if task]
+        # If no tasks are found with this method, then this challenge
+        # is complete
+        osmerror("ChallengeComplete",
+                 "Challenge {} is complete".format(challenge_id)
     if assign:
         for task in task_list:
             action = Action(task.id, "assigned", osmid)
