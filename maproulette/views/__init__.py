@@ -117,17 +117,21 @@ def challenge_tasks(challenge_id):
     assign = args['assign']
     near = args['near']
     coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
+    task_list = []
     if near:
         task_query = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         task_list = [task for task in task_query
                      if challenge._get_task_available(task)]
-    else:
-        # If no location is specified, gather random tasks
+    if not near or not task_list:
+        # If no location is specified, or no tasks were found, gather
+        # random tasks
         task_list = [get_random_task(challenge) for i in range(num)]
         task_list = [task for task in task_list if task]
         # If no tasks are found with this method, then this challenge
         # is complete
+    if not task_list:
+        # Is this the right error?
         osmerror("ChallengeComplete",
                  "Challenge {} is complete".format(challenge_id)
     if assign:
