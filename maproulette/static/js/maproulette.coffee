@@ -42,6 +42,19 @@ mr_attrib = """
   <p>
 </small>"""
 
+# Button data for use in error dialogs
+buttonAutoChallenge = {
+  label: "Find a new challenge",
+  action: "getNewChallenge()"}
+
+buttonManualChallenge = {
+  label: "Let me choose a new challenge",
+  action: 'window.location.href="/challenges/'}
+
+buttonExitApp {
+  label: "Return to homepage"
+  action: 'window.location.href="/"'}
+
 setDelay = (seconds, func) ->
   ###
   # Wraps setTimeout to make it easiet to write in Coffeescript
@@ -146,6 +159,15 @@ msgTaskText = ->
   ###
   msg currentTask.text if currentTask.text
 
+makeButton = (label, action) ->
+  ###
+  # Takes in a label and onclick action and returns a button div
+  ###
+  button = $('div').addClass("button")
+  button.attr {onclick: action}
+  button.content = label
+  return button
+
 makeDlg = (dlgData) ->
   ###
   # Takes dialog box data and returns a dialog box for nextUp actions
@@ -154,9 +176,7 @@ makeDlg = (dlgData) ->
   dlg.append(markdown.makeHtml(dlgData.text))
   buttons = $('<div></div>').addClass("buttons")
   for item in dlgData.buttons
-    button = $('div').addClass("button")
-    button.attr {onclick: "#{item.action}"}
-    button.content(item.label)
+    button = makeButton(item.label, item.action)
     buttons.append(button)
   dlg.append(buttons)
   return dlg
@@ -173,6 +193,45 @@ dlgOpen = (h) ->
   # Closes the dialog box
   ###
   $("#dlgBox").fadeOut()
+
+ajaxErrorHandler = ( jqxhr, statusString, error) ->
+  ###
+  # Handle AJAX errors in this function (or hand them over to
+  # mrErrorHandler if appropriate
+  ###
+  switch jqxhr.status
+    when 400
+      # We treat 400 errors with mrErrorHandler
+      mrErrorHandler(error)
+    else
+      # We aught to handle more errors (such as timeouts and other
+      # errors For now, we will have to assume that this error is
+      # critical and exit the application
+      dlg = makeDlg({
+        text: "The application has encountered a critical error: #{jqxhr.status}: #{error}",
+        buttons: [buttonExitApp]})
+      dlgOpen(dlg)
+
+mrErrorHandler = (errorString) ->
+  ###
+  # This function takes in MapRoulette errors and handles them
+  ###
+  error = errorString.split(':')[0]
+  desc = errorString.split(':')[1].trim()
+  switch error
+    when "ChallengeInactive"
+      dlg = makeDlg({
+        text: "The current challenge is unavailable (maybe down for maintence. What should we do?",
+        buttons: [buttonAutoChallenge, buttonManualChallenge]})
+    when "ChallengeComplete"
+      dlg = makeDlg({
+        text: "This challenge has no tasks available (maybe it's complete!). What should we do?",
+        buttons: [buttonAutoChallenge, buttonManualChallenge]})
+    else
+      dlg = makeDlg({
+        text: "An unhandled MapRoulette error has occured. Sorry :(",
+        buttons: [buttonExitApp]})
+  dlgOpen(dlg)
 
 nomToString = (addr) ->
   ###
@@ -220,9 +279,11 @@ revGeocodeOSMObj = (feature) ->
   id = feature.properties.id
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=#{type}@osm_id=#{id}"
   msgClose()
-  $.getJSON mqurl, (data) ->
+  request = $.ajax {url: mqurl}
+  request.done((data) ->
     locstr = nomToString(data.address)
-    msg locstr
+    msg locstr)
+  request.fail(ajaxErrorHandler)
 
 revGeocode = ->
   ###
@@ -233,10 +294,12 @@ revGeocode = ->
   msgClose()
   # this next bit fires the RGC request and parses the result in a
   # decent way, but it looks really ugly.
-  $.getJSON mqurl, (data) ->
+  request = $.ajax {url: mqurl}
+  request.done((data) ->
     locstr = nomToString(data.address)
     # display a message saying where we are in the world
-    msg locstr
+    msg locstr)
+  request.fail(ajaxErrorHandler)
 
 drawFeatures = (features) ->
   ###
@@ -263,23 +326,29 @@ getChallenge = (id) ->
   ###
   # Gets a specific challenge
   ###
-  $.getJSON "/api/c/challenges/#{id}", (data) ->
+  request = $.ajax {url: "/api/c/challenges/#{id}"}
+  request.done((data) ->
     challenge = data
     updateChallenge(challenge)
     updateStats(challenge)
-    getTask()
+    getTask())
+  request.fail(ajaxErrorHandler)
 
-getNewChallenge = (difficulty, near) ->
+@getNewChallenge = (difficulty, near) ->
   ###
   # Gets a challenge based on difficulty and location
   ###
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"
-  $.getJSON url, (data) ->
+  request = $.ajax({
+    url:  "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"})
+  request.done((data) ->
     challenge = data.challenges[0]
     updateChallenge(challenge)
     updateStats(challenge)
-    getTask(near)
+    getTask(near))
+  request.fail(ajaxErrorHandler)
+
 
 @getTask = (near = null) ->
   ###
@@ -288,9 +357,11 @@ getNewChallenge = (difficulty, near) ->
   ###
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges/#{challenge}/tasks?near=#{near}"
-  $.getJSON url, (data) ->
+  request = $.ajax {url: url}
+  request.done((data) ->
     currentTask = data[0]
-    showTask(data[0])
+    showTask(data[0]))
+  request.fail(ajaxErrorHandler)
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
   ###
@@ -333,10 +404,15 @@ addGeoJSONLayer = ->
   near = currentTask.center
   challenge = currentChallenge.id
   task_id = currentTask.id
-  $.post "/c/#{challenge}/task/#{task_id}", payload, ->
-    setDelay 1, ->
+  request = $.ajax {
+    url: "/c/#{challenge}/task/#{task_id}",
+    type: "POST",
+    data: payload}
+  request.done(->
+    setDelay(1, ->
       clearTask()
-      getTask(near)
+      getTask(near)))
+  request.fail(ajaxErrorHandler)
 
 @openIn = (e) ->
   ###
@@ -406,15 +482,18 @@ updateStats = (challenge) ->
   # Get the stats for the challenge and display the count of remaining
   # tasks
   ###
-  $.getJSON "/api/c/challenges/#{challenge}/stats", (data) ->
+  request = $.ajax {url:  "/api/c/challenges/#{challenge}/stats"}
+  request.done((data) ->
     remaining = data.stats.total - data.stats.done
-    $("#counter").text remaining
+    $("#counter").text remaining)
+  request.fail(ajaxErrorHandler)
 
 updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
-  $.getJSON "/api/c/challenges/#{challenge}", (data) ->
+  request = $.ajax(url: "/api/c/challenges/#{challenge}")
+  request.done(data ->
     currentChallenge = data.challenge
     $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL
@@ -422,8 +501,8 @@ updateChallenge = (challenge) ->
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
     currentChallenge.help = markdown.makeHtml(currentChallenge.help)
-    currentChallenge.doneDlg = makeDlg(currentChallenge.doneDlg)
-
+    currentChallenge.doneDlg = makeDlg(currentChallenge.doneDlg))
+  request.fail(ajaxErrorHandler)
 
 enableKeyboardShortcuts = ->
   ###
@@ -470,3 +549,4 @@ enableKeyboardShortcuts = ->
     if not near
       near = "#{map.getCenter().lng}|#{map.getCenter().lat}"
     getNewChallenge(difficulty, near)
+
