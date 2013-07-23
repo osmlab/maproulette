@@ -10,7 +10,9 @@ from sqlalchemy import and_
 from shapely.wkt import dumps
 from maproulette import app
 from maproulette.models import Challenge, Task, Action, db
-from maproulette.helpers import *
+from maproulette.helpers import osmlogin_required, get_task_or_404, \
+    GeoPoint, JsonData, JsonTasks, osmerror, get_random_task, \
+    get_challenge_or_404
 from flask.ext.restful import reqparse
 from maproulette.views.admin import AdminTasksApi, AdminTaskApi
 from flask.ext.restful import Api
@@ -45,13 +47,13 @@ def challenges():
     example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
     """
     parser = reqparse.RequestParser()
-    parser.add_argument('difficulty', type=int, choices=[1,2,3],
+    parser.add_argument('difficulty', type=int, choices=[1, 2, 3],
                         help='difficulty cannot be parsed')
     parser.add_argument('contains', type=GeoPoint,
                         help="Could not parse contains")
     args = parser.parse_args()
     # Try to get difficulty from argument, or users prefers or default
-    difficulty = args['difficulty'] or user.difficulty or 1
+    difficulty = args['difficulty'] or session.get('difficulty') or 1
     # Try to get location from argument or user prefs
     contains = None
     if args['contains']:
@@ -67,9 +69,9 @@ def challenges():
     if contains:
         query = query.filter(polygon.ST_Contains(coordWKT))
     query = query.all()
-    challenges = [challenge.id for challenge in query if challenge.active]
+    results = [challenge.id for challenge in query if challenge.active]
     app.logger.debug('returning %i challenges' % (len(challenges)))
-    return jsonify(challenges=challenges)
+    return jsonify(challenges=results)
 
 
 @app.route('/api/c/challenges/<challenge_id>')
@@ -84,7 +86,7 @@ def challenge_by_id(challenge_id):
             'blurb': challenge.blurb,
             'help': challenge.help,
             'doneDlg': json.loads(challenge.done_dialog),
-            'help': challenge.instruction})
+            'instruction': challenge.instruction})
 
 
 @app.route('/api/c/challenges/<challenge_id>/stats')
@@ -94,6 +96,7 @@ def challenge_stats(challenge_id):
     challenge = get_challenge_or_404(challenge_id, True)
     total = Task.query.filter(challenge_id == challenge.id).count()
     tasks = Task.query.filter(challenge_id == challenge.id).all()
+    osmid = session['osm_id']
     available = len([task for task in tasks
                      if challenge.task_available(task, osmid)])
     return jsonify(stats={'total': total, 'available': available})
@@ -112,6 +115,7 @@ def challenge_tasks(challenge_id):
     parser.add_argument('assign', type=int, default=1,
                         help='Assign could not be parsed')
     args = parser.parse_args()
+    osmid = session['osm_id']
     # By default, we return a single task, but no more than 10
     num = min(args['num'], 10)
     assign = args['assign']
@@ -126,14 +130,14 @@ def challenge_tasks(challenge_id):
     if not near or not task_list:
         # If no location is specified, or no tasks were found, gather
         # random tasks
-        task_list = [get_random_task(challenge) for i in range(num)]
-        task_list = [task for task in task_list if task]
+        task_list = [get_random_task(challenge) for _ in range(num)]
+        task_list = filter(None, task_list)
         # If no tasks are found with this method, then this challenge
         # is complete
     if not task_list:
         # Is this the right error?
         osmerror("ChallengeComplete",
-                 "Challenge {} is complete".format(challenge_id)
+                 "Challenge {} is complete".format(challenge_id))
     if assign:
         for task in task_list:
             action = Action(task.id, "assigned", osmid)
@@ -157,6 +161,7 @@ def task_by_id(challenge_id, task_id):
     # make sure we're authenticated
     challenge = get_challenge_or_404(challenge_id, True)
     task = get_task_or_404(challenge, task_id)
+    osmid = session['osm_id']
     if request.method == 'GET':
         try:
             assign = int(request.args.get('assign', 1))
