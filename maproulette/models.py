@@ -68,7 +68,7 @@ class Challenge(db.Model):
     def __unicode__(self):
         return self.slug
 
-    def _get_task_available(self, task):
+    def task_available(self, task):
         """The function for a task to determine if it's available or not."""
         action = task.current_action
         if action.status == 'available':

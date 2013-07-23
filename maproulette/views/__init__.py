@@ -95,7 +95,7 @@ def challenge_stats(challenge_id):
     total = Task.query.filter(challenge_id == challenge.id).count()
     tasks = Task.query.filter(challenge_id == challenge.id).all()
     available = len([task for task in tasks
-                     if challenge._get_task_available(task)])
+                     if challenge.task_available(task)])
     return jsonify(stats={'total': total, 'available': available})
 
 
@@ -122,7 +122,7 @@ def challenge_tasks(challenge_id):
         task_query = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         task_list = [task for task in task_query
-                     if challenge._get_task_available(task)]
+                     if challenge.task_available(task)]
     if not near or not task_list:
         # If no location is specified, or no tasks were found, gather
         # random tasks
