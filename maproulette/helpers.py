@@ -9,7 +9,7 @@ from maproulette import app
 
 def osmerror(error, description):
     """Return an OSMError to the client"""
-    abort(400, "%u: %u" % (error, description)
+    abort(400, "%u: %u" % (error, description))
 
 def get_challenge_or_404(challenge_id, instance_type=None,
                          abort_if_inactive=True):

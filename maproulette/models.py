@@ -1,4 +1,4 @@
-"""This file contains the SQLAlechemy ORM models"""
+"""This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -68,33 +68,22 @@ class Challenge(db.Model):
     def __unicode__(self):
         return self.slug
 
-    def _get_task_available(self, task):
+    def task_available(self, task, osmid = None):
         """The function for a task to determine if it's available or not."""
+        avail = False
         action = task.current_action
         if action.status == 'available':
-            return True
-        else:
-            return False
-
-    def _set_task_status(self, task):
-        """This is the function that runs after a task action is set,
-        to set its secondary availability."""
-        current = task.current
-        if current.status == 'skipped':
-            task.state = 'available'
-        elif current.status == 'fixed':
-            task.state = 'done'
-        elif (current.status == 'alreadyfixed' or
-              current.status == 'falsepositive'):
-            l = [i for i in task.actions if i.status == "falsepositive"
-                 or i.status == "alreadyfixed"]
-            if len(l) >= 2:
-                task.status = 'done'
-            else:
-                task.status = 'available'
-        else:
-            # This is a catchall that a task should never get to
-            task.status = 'available'
+            avail = True
+        if not osmid:
+            return avail
+        # If osmid is present, then we will need to check every action
+        # of this task against the previous actions
+        for action in task.actions:
+            # If it's just been assigned but no action was taken, we
+            # can re-assign it, otherwise, we'll toss it
+            if not action.status == 'assigned':
+                return False
+        return True
 
 class Task(db.Model):
     __tablename__ = 'tasks'

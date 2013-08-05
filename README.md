@@ -80,7 +80,7 @@ Generate a Flask application secret:
 
 Generate the database tables:
 
-    python maproulette/models.py
+    python manage.py create_db
 
 And run the server:
 
