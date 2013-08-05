@@ -21,7 +21,6 @@ currentTask = null
 selectedFeature = null
 
 # User variables
-loggedIn = false
 editor = ""
 difficulty = null
 location = null
@@ -393,9 +392,6 @@ addGeoJSONLayer = ->
   # This should be harmless if the dialog box is already closed
   dlgClose()
 
-  if not loggedIn
-    window.location.pathname = '/oauth/authorize'
-
   msg msgMovingOnToTheNextChallenge
   setDelay 1, msgClose()
   payload = {
@@ -418,9 +414,6 @@ addGeoJSONLayer = ->
   ###
   # Open the currently displayed OSM objects in the selected editor (e)
   ###
-  if not loggedIn
-    window.location.pathname = '/oauth/authorize'
-
   editor = e
   if map.getZoom() < 14
     msg msgZoomInForEdit, 3

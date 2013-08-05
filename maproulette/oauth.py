@@ -12,13 +12,10 @@ from geoalchemy2.shape import to_shape
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
-    base_url = app.config['OSM_URL'] + 'api/0.6/',
-    request_token_url = app.config['OSM_URL'] + 'oauth/request_token',
-    access_token_url = app.config['OSM_URL'] + 'oauth/access_token',
-    authorize_url = app.config['OSM_URL'] + 'oauth/authorize',
-    consumer_key = app.config['OAUTH_KEY'],
-    consumer_secret = app.config['OAUTH_SECRET']
+    app_key = 'OSM'
 )
+
+oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
