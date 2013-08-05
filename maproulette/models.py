@@ -1,4 +1,4 @@
-"""This file contains the SQLAlechemy ORM models"""
+"""This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
