@@ -63,14 +63,15 @@ def challenges():
         contains = session['home_location']
         coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
         app.logger.debug('home location retrieved from session')
-    query = session.query(Challenge)
+    app.logger.debug(session)
+    query = db.session.query(Challenge)
     if difficulty:
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
         query = query.filter(polygon.ST_Contains(coordWKT))
     query = query.all()
     results = [challenge.id for challenge in query if challenge.active]
-    app.logger.debug('returning %i challenges' % (len(challenges)))
+    app.logger.debug('returning %i challenges' % (len(query)))
     return jsonify(challenges=results)
 
 
