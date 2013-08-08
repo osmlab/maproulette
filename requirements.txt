@@ -10,4 +10,4 @@ SQLAlchemy==0.8.1
 Shapely==1.2.17
 psycopg2==2.5.1
 Flask-RESTful==0.2.3
--e git://github.com/mvexel/flask-oauthlib.git#egg=flask-oauthlib
+Flask-OAuthlib==0.3.0
