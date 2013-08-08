@@ -5,7 +5,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
-from random import random
+import random
 from datetime import datetime
 from maproulette import app
 
@@ -22,6 +22,10 @@ db = SQLAlchemy(app)
 challenge_types = {
     'default': []}
 
+random.seed()
+
+def getrandom():
+   return random.random()
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -47,7 +51,7 @@ class Challenge(db.Model):
     __tablename__ = 'challenges'
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
-    slug = db.Column(db.String(72), primary_key=True)
+    slug = db.Column(db.String(72), unique=True, primary_key=True)
     title = db.Column(db.String(128))
     description = db.Column(db.String)
     blurb = db.Column(db.String)
@@ -90,10 +94,10 @@ class Task(db.Model):
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
     identifier = db.Column(db.String(72))
-    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'))
+    challenge_slug = db.Column(db.String, db.ForeignKey('challenges.slug'))
     location = db.Column(Geometry('POINT'))
     run = db.Column(db.String(72))
-    random = db.Column(db.Float, default=random())
+    random = db.Column(db.Float, default=getrandom)
     manifest = db.Column(db.String)
     actions = db.relationship("Action", backref=db.backref("task"))
     instructions = db.Column(db.String())
@@ -102,15 +106,15 @@ class Task(db.Model):
     __table_args__ = (
         db.Index('idx_location', location, postgresql_using='gist'),
         db.Index('idx_id', id),
-        db.Index('idx_challenge', challenge_id),
+        db.Index('idx_challenge', challenge_slug),
         db.Index('idx_random', random))
 
-    def __init__(self, challenge_id, identifier):
-        self.challenge_id = challenge_id
+    def __init__(self, challenge_slug, identifier):
+        self.challenge_slug = challenge_slug
         self.identifier = identifier
 
     def __repr__(self):
-        return '<Task %d>' % (self.id)
+        return '<Task %d>' % (self.identifier)
 
     def current_state(self):
         """Displays the current state of a task"""

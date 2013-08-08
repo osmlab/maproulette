@@ -19,7 +19,7 @@ oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
-    session.regenerate()
+#    session.regenerate() this should be done elsewhere.
     return session.get('osm_token')
 
 @app.route('/oauth/authorize')
