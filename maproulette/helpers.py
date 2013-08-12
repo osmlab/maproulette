@@ -47,7 +47,7 @@ def get_or_create_task(challenge, task_identifier):
 def osmlogin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not 'osm_token' in session and not app.debug:
+        if not app.debug and not 'osm_token' in session:
             abort(403)
         return f(*args, **kwargs)
     return decorated_function
