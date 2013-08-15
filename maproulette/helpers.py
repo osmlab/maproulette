@@ -11,13 +11,13 @@ def osmerror(error, description):
     """Return an OSMError to the client"""
     abort(400, "%u: %u" % (error, description))
 
-def get_challenge_or_404(challenge_id, instance_type=None,
+def get_challenge_or_404(challenge_slug, instance_type=None,
                          abort_if_inactive=True):
     """Return a challenge by its id or return 404.
 
     If instance_type is True, return the correct Challenge Type
     """
-    c = Challenge.query.filter(Challenge.id==challenge_id).first()
+    c = Challenge.query.filter(Challenge.slug==challenge_slug).first()
     if not c:
         abort(404, message="Challenge {} does not exist".format(challenge_id))
     if not c.active and abort_if_inactive:
