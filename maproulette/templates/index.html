@@ -10,18 +10,18 @@
         <script src="static/js/showdown.js" ></script>
         <script src="static/js/maproulette.js"></script>
         <script language="javascript" type="text/javascript">
-            {% if session.osm_token is not defined %}
-//            var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
-//            if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') { 
-//                alert('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain');
-//                setTimeout(3000, msgClose);
+            {% if session.osm_token is not defined and session.user is not defined %}
+            var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
+            if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') { 
+                alert('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain');
+                setTimeout(3000, msgClose);
             }
             {% else %}
-//            // we are in the oauth window and we're all done, so close the oauth window
-//            if (self != opener && opener != null) {
-//                opener.location.reload();
-//                self.close();
-//            }
+            // we are in the oauth window and we're all done, so close the oauth window
+            if (self != opener && opener != null) {
+                opener.location.reload();
+                self.close();
+            }
             {% endif %}
         </script>
     </head>
