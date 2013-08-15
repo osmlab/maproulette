@@ -2,7 +2,8 @@ CoffeeScript==1.0.5
 Flask==0.10.1
 Flask-Coffee==0.3
 Flask-KVSession==0.4
-Flask-SQLAlchemy==0.16
+#Flask-SQLAlchemy==0.16
+-e git+https://github.com/mitsuhiko/flask-sqlalchemy#egg=Flask-SQLAlchemy
 Flask-Script==0.5.3
 GeoAlchemy2==0.2.1
 Jinja2==2.7
