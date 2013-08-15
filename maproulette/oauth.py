@@ -2,7 +2,7 @@
 import json
 from maproulette import app, models
 from flask_oauthlib.client import OAuth
-from flask import g, request, url_for, redirect, session
+from flask import request, url_for, redirect, session
 from flask.ext.sqlalchemy import SQLAlchemy
 from maproulette.database import db
 from geoalchemy2.elements import WKTElement
@@ -10,7 +10,6 @@ from geoalchemy2.shape import to_shape
 
 # instantite OAuth object
 oauth = OAuth()
-
 osm = oauth.remote_app(
     'osm',
     app_key = 'OSM'
@@ -24,15 +23,11 @@ def get_osm_token(token=None):
 		resp = session['osm_oauth']
 		return resp['oauth_token'], resp['oauth_token_secret']
 
-@app.before_request
-def before_request():
-    g.user = None
-    if 'osm_oauth' in session:
-        g.user = session['osm_oauth']
-
 @app.route('/login')
 def oauth_authorize():
     callback_url = url_for('oauthorized', next=request.args.get('next'))
+    print callback_url
+    print request.referrer
     return osm.authorize(callback=callback_url or request.referrer or None)
 
 @app.route('/oauthorized')
@@ -44,7 +39,9 @@ def oauthorized(resp):
         return redirect(next_url)
     session['osm_oauth'] = resp
     retrieve_osm_data()
-    
+    app.logger.debug('redirecting to %s' % next_url)
+    return redirect(next_url)
+
 def retrieve_osm_data():
     data = osm.get('user/details').data
     app.logger.debug("getting user data from osm")
@@ -103,4 +100,3 @@ def retrieve_osm_data():
     session['display_name'] = user.display_name
     session['osm_id'] = user.id
     session['difficulty'] = user.difficulty
-    return redirect(next_url)
