@@ -67,7 +67,7 @@ def challenges():
     if difficulty:
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
-        query = query.filter(polygon.ST_Contains(coordWKT))
+        query = query.filter(Challenge.polygon.ST_Contains(coordWKT))
     query = query.all()
     results = [challenge.id for challenge in query if challenge.active]
     app.logger.debug('returning %i challenges' % (len(query)))

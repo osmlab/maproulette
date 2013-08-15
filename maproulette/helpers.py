@@ -19,9 +19,9 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     """
     c = Challenge.query.filter(Challenge.slug==challenge_slug).first()
     if not c:
-        abort(404, message="Challenge {} does not exist".format(challenge_id))
+        abort(404, message="Challenge {} does not exist".format(challenge_slug))
     if not c.active and abort_if_inactive:
-        abort(503, message="Challenge {} is not active".format(challenge_id))
+        abort(503, message="Challenge {} is not active".format(challenge_slug))
     if instance_type:
         return challenge_types[c.type].query.get(c.id)
     else:
@@ -30,7 +30,7 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
 def get_task_or_404(challenge, task_identifier):
     """Return a task based on its challenge and task identifier"""
     t = Task.query.filter(Task.identifier==task_identifier).\
-        filter(Task.challenge_id==challenge.id).first()
+        filter(Task.challenge_slug==challenge.slug).first()
     if not t:
         abort(404,"Task {} does not exist for {}".format(task_identifier,
                                                          challenge.slug))
@@ -39,7 +39,7 @@ def get_task_or_404(challenge, task_identifier):
 def get_or_create_task(challenge, task_identifier):
     """Return a task, either pull a new one or create a new one"""
     task = (Task.identifier==task_identifier).\
-        filter(Task.challenge_id==challenge.id).first()
+        filter(Task.challenge_slug==challenge.slug).first()
     if not task:
         task = Task(challenge.id, task_identifier)
     return task
@@ -54,10 +54,10 @@ def osmlogin_required(f):
 
 def get_random_task(challenge):
     rn = random.random()
-    t = Task.query.filter(Task.challenge_id == challenge.id,
+    t = Task.query.filter(Task.challenge_slug == challenge.slug,
                           Task.random <= rn).first()
     if not t:
-        t = Task.query.filter(Task.challenge_id == challenge.id,
+        t = Task.query.filter(Task.challenge_slug == challenge.slug,
                               Task.random > rn).first()
     return t
 
