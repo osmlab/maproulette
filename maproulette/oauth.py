@@ -2,7 +2,7 @@
 import json
 from maproulette import app, models
 from flask_oauthlib.client import OAuth
-from flask import request, url_for, redirect, session
+from flask import g, request, url_for, redirect, session
 from flask.ext.sqlalchemy import SQLAlchemy
 from maproulette.database import db
 from geoalchemy2.elements import WKTElement
@@ -10,35 +10,42 @@ from geoalchemy2.shape import to_shape
 
 # instantite OAuth object
 oauth = OAuth()
+
 osm = oauth.remote_app(
     'osm',
     app_key = 'OSM'
 )
-
 oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
 #    session.regenerate() this should be done elsewhere.
-    return session.get('osm_token')
+    if 'osm_oauth' in session:
+		resp = session['osm_oauth']
+		return resp['oauth_token'], resp['oauth_token_secret']
 
-@app.route('/oauth/authorize')
+@app.before_request
+def before_request():
+    g.user = None
+    if 'osm_oauth' in session:
+        g.user = session['osm_oauth']
+
+@app.route('/login')
 def oauth_authorize():
-    """Initiates OAuth authorization agains the OSM server"""
-    return osm.authorize(callback=url_for('oauth_authorized',
-      next=request.args.get('next') or request.referrer or None))
+    callback_url = url_for('oauthorized', next=request.args.get('next'))
+    return osm.authorize(callback=callback_url or request.referrer or None)
 
-@app.route('/oauth/callback')
+@app.route('/oauthorized')
 @osm.authorized_handler
-def oauth_authorized(resp):
+def oauthorized(resp):
     """Receives the OAuth callback from OSM"""
     next_url = request.args.get('next') or url_for('index')
     if resp is None:
         return redirect(next_url)
-    session['osm_token'] = (
-      resp['oauth_token'],
-      resp['oauth_token_secret']
-    )
+    session['osm_oauth'] = resp
+    retrieve_osm_data()
+    
+def retrieve_osm_data():
     data = osm.get('user/details').data
     app.logger.debug("getting user data from osm")
     if not data:
