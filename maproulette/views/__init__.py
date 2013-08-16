@@ -127,6 +127,7 @@ def challenge_tasks(challenge_slug):
     num = min(args['num'], 10)
     assign = args['assign']
     near = args['near']
+    logging.info("{user} requesting {num} tasks from {challenge} near {near} assiging: {assign}".format(user=osmid, num=num, challenge=challenge_slug, near=near, assign=assign))
     coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
     task_list = []
     if near:
@@ -152,6 +153,8 @@ def challenge_tasks(challenge_slug):
             db.session.add(action)
             db.session.add(task)
         db.session.commit()
+    logging.info(
+        "{num} tasks found matching criteria".format(num=len(task_list)))
     tasks = [{'id': task.identifier,
               'location': dumps(to_shape(task.location)),
               'manifest': task.manifest} for task in task_list]
