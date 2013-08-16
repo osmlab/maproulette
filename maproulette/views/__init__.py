@@ -68,15 +68,22 @@ def challenges():
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
         query = query.filter(Challenge.polygon.ST_Contains(coordWKT))
-    query = query.all()
-    results = [challenge.id for challenge in query if challenge.active]
-    app.logger.debug('returning %i challenges' % (len(query)))
+    results = [challenge.slug for challenge in query.all() if challenge.active]
+    #if there are no near challenges, return anything
+    if len(results) == 0:
+        app.logger.debug('we have nothing close, looking all over within difficulty setting')
+        results = [challenge.slug for challenge in db.session.query(Challenge).filter(Challenge.difficulty==difficulty).all() if challenge.active]
+    # what if we still don't get anything? get anything!
+    if len(results) == 0:
+        app.logger.debug('we still have nothing, returning any challenge')
+        results = [challenge.slug for challenge in db.session.query(Challenge).all() if challenge.active]    
+    app.logger.debug('returning %i challenges' % (len(results)))
     return jsonify(challenges=results)
 
 
 @app.route('/api/c/challenges/<challenge_slug>')
 @osmlogin_required
-def challenge_by_id(challenge_slug):
+def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
     challenge = get_challenge_or_404(challenge_slug)
     return jsonify(challenge={
