@@ -97,6 +97,8 @@ def challenge_stats(challenge_slug):
     total = Task.query.filter(challenge_slug == challenge.slug).count()
     tasks = Task.query.filter(challenge_slug == challenge.slug).all()
     osmid = session['osm_id']
+    logging.info("{user} requested challenge stats for {challenge}".format(
+            user=osmid, challenge=challenge_slug))
     available = len([task for task in tasks
                      if challenge.task_available(task, osmid)])
     return jsonify(stats={'total': total, 'available': available})
