@@ -3,6 +3,9 @@ Flask==0.10.1
 Flask-Coffee==0.3
 Flask-KVSession==0.4
 #Flask-SQLAlchemy==0.16
+# We need the github tip for now because 
+# https://github.com/mitsuhiko/flask-sqlalchemy/pull/89 has not made
+# it into a release...
 -e git+https://github.com/mitsuhiko/flask-sqlalchemy#egg=Flask-SQLAlchemy
 Flask-Script==0.5.3
 GeoAlchemy2==0.2.1
@@ -12,5 +15,7 @@ Shapely==1.2.17
 psycopg2==2.5.1
 Flask-RESTful==0.2.3
 #Flask-OAuthlib==0.3.0
--e git+https://github.com/mvexel/flask-oauthlib.git#egg=Flask-Oauthlib
+# We need the tip of flask-oauthlib because of 
+# https://github.com/lepture/flask-oauthlib/issues/38 
+-e git+https://github.com/lepture/flask-oauthlib.git#egg=Flask-Oauthlib
 simplejson==3.3.0
