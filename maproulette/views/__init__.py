@@ -26,9 +26,9 @@ def index():
 api = Api(app)
 # Some administrative APIs
 api.add_resource(AdminTasksApi,
-                 '/api/u/<string:challenge_id>/tasks')
+                 '/api/u/<string:challenge_slug>/tasks')
 api.add_resource(AdminTaskApi,
-                 '/api/u/<string:challenge_id>/task/<string:task_id>')
+                 '/api/u/<string:challenge_slug>/task/<string:task_id>')
 
 ### CLIENT API ###
 #
@@ -37,7 +37,6 @@ api.add_resource(AdminTaskApi,
 
 
 @app.route('/api/c/challenges')
-@osmlogin_required
 def challenges():
     """returns a list of challenges as json
     optional URL parameters are
@@ -47,7 +46,7 @@ def challenges():
     example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
     """
     parser = reqparse.RequestParser()
-    parser.add_argument('difficulty', type=int, choices=[1, 2, 3],
+    parser.add_argument('difficulty', type=int, choices=["1","2","3"],
                         help='difficulty cannot be parsed')
     parser.add_argument('contains', type=GeoPoint,
                         help="Could not parse contains")
@@ -68,18 +67,25 @@ def challenges():
     if difficulty:
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
-        query = query.filter(polygon.ST_Contains(coordWKT))
-    query = query.all()
-    results = [challenge.id for challenge in query if challenge.active]
-    app.logger.debug('returning %i challenges' % (len(query)))
+        query = query.filter(Challenge.polygon.ST_Contains(coordWKT))
+    results = [challenge.slug for challenge in query.all() if challenge.active]
+    #if there are no near challenges, return anything
+    if len(results) == 0:
+        app.logger.debug('we have nothing close, looking all over within difficulty setting')
+        results = [challenge.slug for challenge in db.session.query(Challenge).filter(Challenge.difficulty==difficulty).all() if challenge.active]
+    # what if we still don't get anything? get anything!
+    if len(results) == 0:
+        app.logger.debug('we still have nothing, returning any challenge')
+        results = [challenge.slug for challenge in db.session.query(Challenge).all() if challenge.active]    
+    app.logger.debug('returning %i challenges' % (len(results)))
     return jsonify(challenges=results)
 
 
-@app.route('/api/c/challenges/<challenge_id>')
+@app.route('/api/c/challenges/<challenge_slug>')
 @osmlogin_required
-def challenge_by_id(challenge_id):
+def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
-    challenge = get_challenge_or_404(challenge_id)
+    challenge = get_challenge_or_404(challenge_slug)
     return jsonify(challenge={
             'slug': challenge.slug,
             'title': challenge.title,
@@ -90,24 +96,26 @@ def challenge_by_id(challenge_id):
             'instruction': challenge.instruction})
 
 
-@app.route('/api/c/challenges/<challenge_id>/stats')
+@app.route('/api/c/challenges/<challenge_slug>/stats')
 @osmlogin_required
-def challenge_stats(challenge_id):
+def challenge_stats(challenge_slug):
     "Returns stat data for a challenge"
-    challenge = get_challenge_or_404(challenge_id, True)
-    total = Task.query.filter(challenge_id == challenge.id).count()
-    tasks = Task.query.filter(challenge_id == challenge.id).all()
+    challenge = get_challenge_or_404(challenge_slug, True)
+    total = Task.query.filter(challenge_slug == challenge.slug).count()
+    tasks = Task.query.filter(challenge_slug == challenge.slug).all()
     osmid = session['osm_id']
+    logging.info("{user} requested challenge stats for {challenge}".format(
+            user=osmid, challenge=challenge_slug))
     available = len([task for task in tasks
                      if challenge.task_available(task, osmid)])
     return jsonify(stats={'total': total, 'available': available})
 
 
-@app.route('/api/c/challenges/<challenge_id>/tasks')
+@app.route('/api/c/challenges/<challenge_slug>/tasks')
 @osmlogin_required
-def challenge_tasks(challenge_id):
+def challenge_tasks(challenge_slug):
     "Returns a task for specified challenge"
-    challenge = get_challenge_or_404(challenge_id, True)
+    challenge = get_challenge_or_404(challenge_slug, True)
     parser = reqparse.RequestParser()
     parser.add_argument('num', type=int, default=1,
                         help='Number of return results cannot be parsed')
@@ -121,6 +129,7 @@ def challenge_tasks(challenge_id):
     num = min(args['num'], 10)
     assign = args['assign']
     near = args['near']
+    logging.info("{user} requesting {num} tasks from {challenge} near {near} assiging: {assign}".format(user=osmid, num=num, challenge=challenge_slug, near=near, assign=assign))
     coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
     task_list = []
     if near:
@@ -138,7 +147,7 @@ def challenge_tasks(challenge_id):
     if not task_list:
         # Is this the right error?
         osmerror("ChallengeComplete",
-                 "Challenge {} is complete".format(challenge_id))
+                 "Challenge {} is complete".format(challenge_slug))
     if assign:
         for task in task_list:
             action = Action(task.id, "assigned", osmid)
@@ -146,6 +155,8 @@ def challenge_tasks(challenge_id):
             db.session.add(action)
             db.session.add(task)
         db.session.commit()
+    logging.info(
+        "{num} tasks found matching criteria".format(num=len(task_list)))
     tasks = [{'id': task.identifier,
               'location': dumps(to_shape(task.location)),
               'manifest': task.manifest} for task in task_list]
@@ -154,13 +165,13 @@ def challenge_tasks(challenge_id):
     return jsonify(tasks=tasks)
 
 
-@app.route('/api/c/challenges/<challenge_id>/tasks/<task_id>',
+@app.route('/api/c/challenges/<challenge_slug>/tasks/<task_id>',
            methods=['GET', 'POST'])
 @osmlogin_required
-def task_by_id(challenge_id, task_id):
+def task_by_id(challenge_slug, task_id):
     "Either displays a task (assigning it) or else posts the commit"
     # make sure we're authenticated
-    challenge = get_challenge_or_404(challenge_id, True)
+    challenge = get_challenge_or_404(challenge_slug, True)
     task = get_task_or_404(challenge, task_id)
     osmid = session['osm_id']
     if request.method == 'GET':

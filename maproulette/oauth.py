@@ -14,31 +14,35 @@ osm = oauth.remote_app(
     'osm',
     app_key = 'OSM'
 )
-
 oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
 #    session.regenerate() this should be done elsewhere.
-    return session.get('osm_token')
+    if 'osm_oauth' in session:
+		resp = session['osm_oauth']
+		return resp['oauth_token'], resp['oauth_token_secret']
 
-@app.route('/oauth/authorize')
+@app.route('/login')
 def oauth_authorize():
-    """Initiates OAuth authorization agains the OSM server"""
-    return osm.authorize(callback=url_for('oauth_authorized',
-      next=request.args.get('next') or request.referrer or None))
+    callback_url = url_for('oauthorized', next=request.args.get('next'))
+    print callback_url
+    print request.referrer
+    return osm.authorize(callback=callback_url or request.referrer or None)
 
-@app.route('/oauth/callback')
+@app.route('/oauthorized')
 @osm.authorized_handler
-def oauth_authorized(resp):
+def oauthorized(resp):
     """Receives the OAuth callback from OSM"""
     next_url = request.args.get('next') or url_for('index')
     if resp is None:
         return redirect(next_url)
-    session['osm_token'] = (
-      resp['oauth_token'],
-      resp['oauth_token_secret']
-    )
+    session['osm_oauth'] = resp
+    retrieve_osm_data()
+    app.logger.debug('redirecting to %s' % next_url)
+    return redirect(next_url)
+
+def retrieve_osm_data():
     data = osm.get('user/details').data
     app.logger.debug("getting user data from osm")
     if not data:
@@ -96,4 +100,3 @@ def oauth_authorized(resp):
     session['display_name'] = user.display_name
     session['osm_id'] = user.id
     session['difficulty'] = user.difficulty
-    return redirect(next_url)
