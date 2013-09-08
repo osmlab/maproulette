@@ -23,13 +23,13 @@ task_fields = { 'id': fields.String(attribute='identifier'),
 
 class AdminChallengeApi(Resource):
     @marshal_with(challenge_fields)
-    def get(self, challenge_id):
-        challenge = get_challenge_or_404(challenge_id, instance_type=False,
+    def get(self, challenge_slug):
+        challenge = get_challenge_or_404(challenge_slug, instance_type=False,
                                          abort_if_inactive=False)
         return challenge
 
-    def post(self, challenge_id):
-        challenge = get_challenge_or_404(challenge_id, instance_type=False,
+    def post(self, challenge_slug):
+        challenge = get_challenge_or_404(challenge_slug, instance_type=False,
                                          abort_if_inactive=False)
         parser = reqparse.RequestParser()
         parser.add_argument('title')
@@ -53,14 +53,14 @@ class AdminChallengeApi(Resource):
         
 
 class AdminTasksApi(Resource):
-    def post(self, challenge_id):
-        challenge = get_challenge_or_404(challenge_id, instance_type=False,
+    def post(self, challenge_slug):
+        challenge = get_challenge_or_404(challenge_slug, instance_type=False,
                                          abort_if_inactive=False)
         
 
 class AdminTasksApi(Resource):
-    def post(self, challenge_id):
-        challenge = get_challenge_or_404(challenge_id, instance_type=False,
+    def post(self, challenge_slug):
+        challenge = get_challenge_or_404(challenge_slug, instance_type=False,
                                          abort_if_inactive=False)
         parser = reqparse.RequestParser()
         parser.add_argument('run', required=True,
@@ -71,7 +71,7 @@ class AdminTasksApi(Resource):
         tasks = args['tasks'].data
         results = []
         for t in tasks:
-            task = Task(challenge.id, t['id'])
+            task = Task(challenge.slug, t['id'])
             task.instructions = t['text']
             task.location = t['location']
             task.manifest = t['manifest']
@@ -89,23 +89,23 @@ class AdminTasksApi(Resource):
 
 class AdminTaskApi(Resource):
     @marshal_with(task_fields)
-    def get(self, challenge_id, task_id):
-        challenge =  get_challenge_or_404(challenge_id, instance_type=False,
+    def get(self, challenge_slug, task_id):
+        challenge =  get_challenge_or_404(challenge_slug, instance_type=False,
                                           abort_if_inactive=False)
         task = get_task_or_404(challenge, task_id)
         return task
 
     @marshal_with(task_fields)
-    def put(self, challenge_id, task_id):
-        challenge =  get_challenge_or_404(challenge_id, instance_type=False,
+    def put(self, challenge_slug, task_id):
+        challenge =  get_challenge_or_404(challenge_slug, instance_type=False,
                                           abort_if_inactive=False)
         task = Task.query(Task.identifier==task_id).\
-            filter(Task.challenge_id==challenge.id).first()
+            filter(Task.challenge_slug==challenge.slug).first()
         if task:
             action = Action(task.id, "modified")
             db.session.add(action)
         else:
-            task = Task(challenge.id, task_id)
+            task = Task(challenge.slug, task_id)
             db.session.add(task)
             db.session.flush()
             action = Action(task.id, "created")
@@ -136,8 +136,8 @@ class AdminTaskApi(Resource):
         return task
 
     @marshal_with(task_fields)
-    def post(self, challenge_id, task_id):
-        challenge =  get_challenge_or_404(challenge_id, instance_type=False,
+    def post(self, challenge_slug, task_id):
+        challenge =  get_challenge_or_404(challenge_slug, instance_type=False,
                                           abort_if_inactive=False)
         task = get_task_or_404(challenge, task_id)
         if request.form.get('run'):

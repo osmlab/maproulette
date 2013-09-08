@@ -10,7 +10,7 @@
         <script src="static/js/showdown.js" ></script>
         <script src="static/js/maproulette.js"></script>
         <script language="javascript" type="text/javascript">
-            {% if session.osm_token is not defined %}
+            {% if session.osm_oauth is not defined and g.user is not defined %}
             var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
             if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') { 
                 alert('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain');
@@ -25,14 +25,14 @@
             {% endif %}
         </script>
     </head>
-    <body onload="init({%- if session.osm_token -%}true{%- else -%}false{%- endif -%})">
+    <body onload="init({%- if session.osm_oauth -%}true{%- else -%}false{%- endif -%})">
         <div id="map" class="fullscreen"></div>
         <div id="msgBox"></div>
         <div id="dlgBox"></div>
         <div class="banner pad1">
             <h2>OpenStreetMap <em>MapRoulette</em></h2>
             <div>
-                {%- if session.osm_token -%}
+                {%- if session.osm_oauth -%}
                 logged in as {{ session.display_name }}. <a href="{{ url_for('logout') }}">log out</a>
                 {%- else -%}
                 not logged in. <a href="{{ url_for('oauth_authorize') }}">log in</a>
