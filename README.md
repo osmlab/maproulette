@@ -21,7 +21,7 @@ MapRoulette requires [CoffeeScript](http://coffeescript.org/), which can easily 
 
 On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
 
-    sudo apt-get install python-software-properties
+    sudo apt-get install software-properties-common python-software-properties
     sudo apt-add-repository -y ppa:ubuntugis/ppa
     sudo apt-get -qq update && sudo apt-get -qq upgrade
     sudo apt-get install postgresql-9.1-postgis postgresql-server-dev-9.1 python-dev git virtualenvwrapper
