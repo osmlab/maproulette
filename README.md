@@ -44,7 +44,6 @@ Then as the `postgres` user:
 Enter the password `osm` twice.
 
     createdb -O osm maproulette
-    exit
 
 Then as you:
 
@@ -55,7 +54,6 @@ At this point you should spawn a new shell for the `virtualenvwrapper` scripts t
 Set up the virtual environment and activate it:
 
     mkvirtualenv maproulette
-    workon maproulette
 
 Clone the repo:
 
