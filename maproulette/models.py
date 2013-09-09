@@ -56,12 +56,12 @@ class Challenge(db.Model):
     description = db.Column(db.String)
     blurb = db.Column(db.String)
     polygon = db.Column(Geometry('POLYGON'))
-    help = db.Column(db.String)
+    helptext = db.Column(db.String)
     instruction = db.Column(db.String)
     run = db.Column(db.String(72))
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
-    type = db.Column(db.String, default='default')
+    challenge_type = db.Column(db.String, default='default')
 
     __table_args__ = (db.Index('idx_geom', polygon, postgresql_using='gist'),
                       db.Index('idx_run', run))
