@@ -74,6 +74,10 @@ Ensure that maproulette will be accessible to python:
 Generate a Flask application secret:
 
     python bin/make_secret.py
+    
+Create a configuration file. Start by copying the example and modify as needed:
+
+    cp maproulette/maproulette.cfg.example maproulette/maproulette.cfg
 
 Generate the database tables:
 
