@@ -60,7 +60,7 @@ Set up the virtual environment and activate it:
 
 Clone the repo:
 
-    git clone git://github.com/osmlab/maproulette.git
+    git clone https://github.com/osmlab/maproulette.git
 
 Install the python requirements:
 
