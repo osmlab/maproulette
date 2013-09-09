@@ -31,6 +31,10 @@ On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
 
 [See installation with Homebrew](https://gist.github.com/mvexel/5526126)
 
+Note that on Mac OSX you may need to add a symlink to the `coffee` executable:
+	
+	ln -s ~/node_modules/coffee-script/bin/coffee /usr/local/bin/
+	
 ### Setting up the DB
 
 Then as the `postgres` user:
