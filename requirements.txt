@@ -1,4 +1,4 @@
-CoffeeScript==1.0.5
+CoffeeScript>=1.0.5
 Flask==0.10.1
 Flask-Coffee==0.3
 Flask-KVSession==0.4
@@ -13,9 +13,10 @@ Jinja2==2.7
 SQLAlchemy==0.8.1
 Shapely==1.2.17
 psycopg2==2.5.1
-Flask-RESTful==0.2.3
-Flask-OAuthlib==0.3.1
+Flask-RESTful>=0.2.3
+Flask-OAuthlib>=0.3.1
 # We used to need the tip of flask-oauthlib because of 
 # https://github.com/lepture/flask-oauthlib/issues/38 
 #-e git+https://github.com/lepture/flask-oauthlib.git#egg=Flask-Oauthlib
 simplejson==3.3.0
+six==1.4.1
