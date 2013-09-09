@@ -34,12 +34,12 @@ class User(db.Model):
     oauth_token = db.Column(db.String)
     oauth_secret = db.Column(db.String)
     display_name = db.Column(db.String)
-    home_location = db.Column(Geometry('POINT'))
+    home_location = db.Column(Geometry('POINT', management=True))
     languages = db.Column(db.String)
     changeset_count = db.Column(db.Integer)
     last_changeset_id = db.Column(db.Integer)
     last_changeset_date = db.Column(db.DateTime)
-    last_changeset_bbox = db.Column(Geometry('POLYGON'))
+    last_changeset_bbox = db.Column(Geometry('POLYGON', management=True))
     osm_account_created = db.Column(db.DateTime)
     difficulty = db.Column(db.SmallInteger)
 
@@ -55,7 +55,7 @@ class Challenge(db.Model):
     title = db.Column(db.String(128))
     description = db.Column(db.String)
     blurb = db.Column(db.String)
-    polygon = db.Column(Geometry('POLYGON'))
+    geom = db.Column(Geometry('POLYGON'))
     helptext = db.Column(db.String)
     instruction = db.Column(db.String)
     run = db.Column(db.String(72))
@@ -63,7 +63,7 @@ class Challenge(db.Model):
     difficulty = db.Column(db.SmallInteger)
     challenge_type = db.Column(db.String, default='default')
 
-    __table_args__ = (db.Index('idx_geom', polygon, postgresql_using='gist'),
+    __table_args__ = (db.Index('idx_geom', geom, postgresql_using='gist'),
                       db.Index('idx_run', run))
 
     def __init__(self, slug):
