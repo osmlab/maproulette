@@ -23,9 +23,9 @@ Note that you may need to run this as root.
 
 On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
 
-    sudo apt-get install software-properties-common python-software-properties
-    sudo apt-get -qq update && sudo apt-get -qq upgrade
-    sudo apt-get install postgresql-9.1-postgis postgresql-server-dev-9.1 python-dev git virtualenvwrapper
+    sudo apt-get install software-properties-common python-software-properties postgresql-server-dev-9.1 python-dev git virtualenvwrapper
+
+Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as part of their packages, see [here](http://trac.osgeo.org/postgis/wiki/UsersWikiInstall) for guidance.
 
 ### Dependencies: OSX
 
@@ -44,19 +44,16 @@ Then as the `postgres` user:
 Enter the password `osm` twice.
 
     createdb -O osm maproulette
-    exit
 
 Then as you:
 
-    psql -h localhost -U osm -d maproulette -f /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql
-    psql -h localhost -U osm -d maproulette -f /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql
+    psql -h localhost -U osm -d maproulette -c 'CREATE EXTENSION postgis'
 
 At this point you should spawn a new shell for the `virtualenvwrapper` scripts to be sourced.
 
 Set up the virtual environment and activate it:
 
     mkvirtualenv maproulette
-    workon maproulette
 
 Clone the repo:
 
@@ -74,6 +71,10 @@ Ensure that maproulette will be accessible to python:
 Generate a Flask application secret:
 
     python bin/make_secret.py
+    
+Create a configuration file. Start by copying the example and modify as needed:
+
+    cp maproulette/maproulette.cfg.example maproulette/maproulette.cfg
 
 Generate the database tables:
 
