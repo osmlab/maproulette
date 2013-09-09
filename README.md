@@ -49,7 +49,7 @@ Enter the password `osm` twice.
 Then as you:
 
     psql -h localhost -U osm -d maproulette -f /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql
-    psql -h localhost -U osm -d maproulette -f /usr/share/postgresql/9.1/contrib/postgis-1.6/spatial_ref_sys.sql
+    psql -h localhost -U osm -d maproulette -f /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql
 
 At this point you should spawn a new shell for the `virtualenvwrapper` scripts to be sourced.
 
