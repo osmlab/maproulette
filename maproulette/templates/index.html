@@ -25,7 +25,7 @@
             {% endif %}
         </script>
     </head>
-    <body onload="init({%- if session.osm_oauth -%}true{%- else -%}false{%- endif -%})">
+    <body onload="init()">
         <div id="map" class="fullscreen"></div>
         <div id="msgBox"></div>
         <div id="dlgBox"></div>
