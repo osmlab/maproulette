@@ -278,7 +278,7 @@ revGeocodeOSMObj = (feature) ->
   id = feature.properties.id
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=#{type}@osm_id=#{id}"
   msgClose()
-  request = $.get mqurl
+  request = $.ajax {url: mqurl}
   request.success (data) -> 
     locstr = nomToString(data.address)
     msg locstr
@@ -294,11 +294,11 @@ revGeocode = ->
   # this next bit fires the RGC request and parses the result in a
   # decent way, but it looks really ugly.
   request = $.ajax {url: mqurl}
-  request.done((data) ->
+  request.done (data) ->
     locstr = nomToString(data.address)
     # display a message saying where we are in the world
-    msg locstr)
-  request.fail(ajaxErrorHandler)
+    msg locstr
+  request.fail (ajaxErrorHandler)
 
 drawFeatures = (features) ->
   ###
@@ -326,12 +326,12 @@ getChallenge = (id) ->
   # Gets a specific challenge
   ###
   request = $.ajax {url: "/api/c/challenges/#{id}"}
-  request.done((data) ->
+  request.done (data) ->
     challenge = data
     updateChallenge(challenge)
     updateStats(challenge)
-    getTask())
-  request.fail(ajaxErrorHandler)
+    getTask()
+  request.fail (ajaxErrorHandler)
 
 @getNewChallenge = (difficulty, near) ->
   ###
@@ -339,14 +339,13 @@ getChallenge = (id) ->
   ###
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"
-  request = $.ajax({
-    url:  "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"})
-  request.done((data) ->
+  request = $.ajax {url: "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"}
+  request.done (data) ->
     challenge = data.challenges[0]
     updateChallenge(challenge)
     updateStats(challenge)
-    getTask(near))
-  request.fail(ajaxErrorHandler)
+    getTask(near)
+  request.fail (ajaxErrorHandler)
 
 
 @getTask = (near = null) ->
@@ -357,10 +356,10 @@ getChallenge = (id) ->
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges/#{challenge}/tasks?near=#{near}"
   request = $.ajax {url: url}
-  request.done((data) ->
+  request.done (data) ->
     currentTask = data[0]
-    showTask(data[0]))
-  request.fail(ajaxErrorHandler)
+    showTask(data[0])
+  request.fail (ajaxErrorHandler)
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
   ###
@@ -404,11 +403,11 @@ addGeoJSONLayer = ->
     url: "/c/#{challenge}/task/#{task_id}",
     type: "POST",
     data: payload}
-  request.done(->
+  request.done (data) ->
     setDelay(1, ->
       clearTask()
-      getTask(near)))
-  request.fail(ajaxErrorHandler)
+      getTask(near))
+  request.fail (ajaxErrorHandler)
 
 @openIn = (e) ->
   ###
@@ -476,17 +475,17 @@ updateStats = (challenge) ->
   # tasks
   ###
   request = $.ajax {url:  "/api/c/challenges/#{challenge}/stats"}
-  request.done((data) ->
+  request.done (data) ->
     remaining = data.stats.total - data.stats.done
-    $("#counter").text remaining)
-  request.fail(ajaxErrorHandler)
+    $("#counter").text remaining
+  request.fail (ajaxErrorHandler)
 
 updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
-  request = $.ajax(url: "/api/c/challenges/#{challenge}")
-  request.done(data ->
+  request = $.ajax {url: "/api/c/challenges/#{challenge}"}
+  request.done (data) ->
     currentChallenge = data.challenge
     $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL
@@ -494,8 +493,8 @@ updateChallenge = (challenge) ->
       tileAttrib = data.tileasttribution if data.tileattribution?
       changeMapLayer(tileURL, tileAttrib)
     currentChallenge.help = markdown.makeHtml(currentChallenge.help)
-    currentChallenge.doneDlg = makeDlg(currentChallenge.doneDlg))
-  request.fail(ajaxErrorHandler)
+    currentChallenge.doneDlg = makeDlg(currentChallenge.doneDlg)
+  request.fail (ajaxErrorHandler)
 
 enableKeyboardShortcuts = ->
   ###
