@@ -19,8 +19,7 @@ Base = declarative_base()
 Base.query = db_session.query_property()
 db = SQLAlchemy(app)
 
-challenge_types = {
-    'default': []}
+challenge_types = {}
 
 random.seed()
 
