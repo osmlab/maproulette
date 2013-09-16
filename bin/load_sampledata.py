@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from maproulette.models import Challenge, Task
 import simplejson as json
 from shapely.wkt import dumps
