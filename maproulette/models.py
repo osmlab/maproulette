@@ -61,7 +61,7 @@ class Challenge(db.Model):
     run = db.Column(db.String(72))
     active = db.Column(db.Boolean)
     difficulty = db.Column(db.SmallInteger)
-    challenge_type = db.Column(db.String, default='default')
+    type = db.Column(db.String, default='default')
 
     __table_args__ = (db.Index('idx_geom', geom, postgresql_using='gist'),
                       db.Index('idx_run', run))

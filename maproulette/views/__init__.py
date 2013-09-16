@@ -67,7 +67,7 @@ def challenges():
     if difficulty:
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
-        query = query.filter(Challenge.polygon.ST_Contains(coordWKT))
+        query = query.filter(Challenge.geom.ST_Contains(coordWKT))
     results = [challenge.slug for challenge in query.all() if challenge.active]
     #if there are no near challenges, return anything
     if len(results) == 0:
@@ -85,14 +85,14 @@ def challenges():
 @osmlogin_required
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
-    challenge = get_challenge_or_404(challenge_slug)
+    challenge = get_challenge_or_404(challenge_slug, "Default")
     return jsonify(challenge={
             'slug': challenge.slug,
             'title': challenge.title,
             'description': challenge.description,
             'blurb': challenge.blurb,
-            'help': challenge.help,
-            'doneDlg': json.loads(challenge.done_dialog),
+            'help': challenge.helptext,
+            'doneDlg': json.loads(challenge.done_dlg),
             'instruction': challenge.instruction})
 
 
