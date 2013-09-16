@@ -5,7 +5,7 @@ from maproulette.models import Challenge, challenge_types
 import maproulette.buttons as buttons
 
 class Default(Challenge):
-    dlg = {
+    self.done_dlg = {
         'text': "This area is being loaded in your editor.\n\nDid you fix it?",
         'buttons': [buttons.fixed, buttons.skipped]}
     

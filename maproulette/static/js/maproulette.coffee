@@ -50,7 +50,7 @@ buttonManualChallenge = {
   label: "Let me choose a new challenge",
   action: 'window.location.href="/challenges/'}
 
-buttonExitApp {
+buttonExitApp = {
   label: "Return to homepage"
   action: 'window.location.href="/"'}
 
@@ -278,10 +278,10 @@ revGeocodeOSMObj = (feature) ->
   id = feature.properties.id
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=#{type}@osm_id=#{id}"
   msgClose()
-  request = $.ajax {url: mqurl}
-  request.done((data) ->
+  request = $.get mqurl
+  request.success (data) -> 
     locstr = nomToString(data.address)
-    msg locstr)
+    msg locstr
   request.fail(ajaxErrorHandler)
 
 revGeocode = ->
