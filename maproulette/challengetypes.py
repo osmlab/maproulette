@@ -1,12 +1,12 @@
 """This module contains the various challenge types"""
 
-from maproulette.models import Challenge, challenge_types
+from maproulette.models import Challenge
 import maproulette.buttons as buttons
 
 challenge_types = {}
 
 class Default(Challenge):
-    self.done_dlg = {
+    done_dlg = {
         'text': "This area is being loaded in your editor.\n\nDid you fix it?",
         'buttons': [buttons.fixed, buttons.skipped]}
     
