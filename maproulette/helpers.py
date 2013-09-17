@@ -1,5 +1,5 @@
 """Some helper functions"""
-from flask import abort, session
+from flask import abort, session, make_response
 from maproulette.models import Challenge, Task
 from maproulette.challengetypes import challenge_types
 from functools import wraps
@@ -7,10 +7,11 @@ import random
 import json
 
 from maproulette import app
-
+    
 def osmerror(error, description):
     """Return an OSMError to the client"""
-    abort(400, "%u: %u" % (error, description))
+    response = make_response("%s: %s" % (error, description), 400)
+    return response
 
 def get_challenge_or_404(challenge_slug, instance_type=None,
                          abort_if_inactive=True):
@@ -20,9 +21,9 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     """
     c = Challenge.query.filter(Challenge.slug==challenge_slug).first()
     if not c:
-        abort(404, message="Challenge {} does not exist".format(challenge_slug))
+        return make_response("Challenge {} does not exist".format(challenge_slug), 404)
     if not c.active and abort_if_inactive:
-        abort(503, message="Challenge {} is not active".format(challenge_slug))
+        return make_response("Challenge {} is not active".format(challenge_slug), 503)
     if instance_type:
         return challenge_types[c.type].query.get(c.id)
     else:
@@ -33,8 +34,7 @@ def get_task_or_404(challenge, task_identifier):
     t = Task.query.filter(Task.identifier==task_identifier).\
         filter(Task.challenge_slug==challenge.slug).first()
     if not t:
-        abort(404,"Task {} does not exist for {}".format(task_identifier,
-                                                         challenge.slug))
+        return make_response(,"Task {} does not exist for {}".format(task_identifier, challenge.slug), 404)
     return t
 
 def get_or_create_task(challenge, task_identifier):
