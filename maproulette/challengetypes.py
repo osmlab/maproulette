@@ -1,8 +1,9 @@
-"""This module contains the data for a GeoError, the most common type
-of MapRoulette Challenge"""
+"""This module contains the various challenge types"""
 
 from maproulette.models import Challenge, challenge_types
 import maproulette.buttons as buttons
+
+challenge_types = {}
 
 class Default(Challenge):
     self.done_dlg = {
