@@ -1,6 +1,7 @@
 """Some helper functions"""
 from flask import abort, session
-from maproulette.models import Challenge, Task, challenge_types
+from maproulette.models import Challenge, Task
+from maproulette.challengetypes import challenge_types
 from functools import wraps
 import random
 import json
