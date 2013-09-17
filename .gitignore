@@ -1,7 +1,7 @@
 .\#*
 \#*\#
 *.pyc
-*.js
+maproulette.js
 *.ini
 *.conf
 *.log
