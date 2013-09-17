@@ -514,6 +514,7 @@ enableKeyboardShortcuts = ->
   # Find a challenge and set the map up
   ###
   # First create the map
+  console.log('init')
   map = new L.Map "map"
   map.attributionControl.setPrefix('')
   tileLayer = new L.TileLayer(tileUrl, attribution: tileAttrib)
