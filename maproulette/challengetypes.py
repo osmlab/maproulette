@@ -54,4 +54,4 @@ class Default(Challenge):
             task.setavailable()
 
 # Now register this class with the Challenge
-challenge_types['Default'] = Default
+challenge_types['default'] = Default
