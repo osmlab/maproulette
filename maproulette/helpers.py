@@ -34,7 +34,7 @@ def get_task_or_404(challenge, task_identifier):
     t = Task.query.filter(Task.identifier==task_identifier).\
         filter(Task.challenge_slug==challenge.slug).first()
     if not t:
-        return make_response(,"Task {} does not exist for {}".format(task_identifier, challenge.slug), 404)
+        return make_response("Task {} does not exist for {}".format(task_identifier, challenge.slug), 404)
     return t
 
 def get_or_create_task(challenge, task_identifier):
