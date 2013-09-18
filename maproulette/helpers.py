@@ -25,7 +25,9 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     if not c.active and abort_if_inactive:
         return make_response("Challenge {} is not active".format(challenge_slug), 503)
     if instance_type:
-        return challenge_types[c.type].query.get(c.id)
+        challenge_class = challenge_types[c.type]
+        challenge = challenge_class.query.filter(Challenge.id==c.id).first()
+        return challenge
     else:
         return c
 
