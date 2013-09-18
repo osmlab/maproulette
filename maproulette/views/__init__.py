@@ -103,7 +103,7 @@ def challenge_stats(challenge_slug):
     challenge = get_challenge_or_404(challenge_slug, True)
     total = Task.query.filter(challenge_slug == challenge.slug).count()
     tasks = Task.query.filter(challenge_slug == challenge.slug).all()
-    osmid = session['osm_id']
+    osmid = session.get('osm_id')
     logging.info("{user} requested challenge stats for {challenge}".format(
             user=osmid, challenge=challenge_slug))
     available = len([task for task in tasks
@@ -124,7 +124,7 @@ def challenge_tasks(challenge_slug):
     parser.add_argument('assign', type=int, default=1,
                         help='Assign could not be parsed')
     args = parser.parse_args()
-    osmid = session['osm_id']
+    osmid = session.get('osm_id')
     # By default, we return a single task, but no more than 10
     num = min(args['num'], 10)
     assign = args['assign']
@@ -173,7 +173,7 @@ def task_by_id(challenge_slug, task_id):
     # make sure we're authenticated
     challenge = get_challenge_or_404(challenge_slug, True)
     task = get_task_or_404(challenge, task_id)
-    osmid = session['osm_id']
+    osmid = session.get('osm_id')
     if request.method == 'GET':
         try:
             assign = int(request.args.get('assign', 1))
