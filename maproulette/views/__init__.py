@@ -1,6 +1,7 @@
 """The various views and routes for MapRoulette"""
 
 import json
+import logging
 from flask import render_template, redirect, session, jsonify, abort, request
 from flask.ext.sqlalchemy import get_debug_queries
 from geoalchemy2.functions import ST_Contains, ST_Intersects, \
