@@ -113,6 +113,10 @@ class Task(db.Model):
     def __repr__(self):
         return '<Task %d>' % (self.identifier)
 
+    @property
+    def current_action(self):
+       return self.actions[-1]
+
     def current_state(self):
         """Displays the current state of a task"""
         return self.current_action.state
