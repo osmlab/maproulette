@@ -2,7 +2,7 @@
 
 import json
 import logging
-from flask import render_template, redirect, session, jsonify, abort, request
+from flask import render_template, redirect, session, abort, request, jsonify
 from flask.ext.sqlalchemy import get_debug_queries
 from geoalchemy2.functions import ST_Contains, ST_Intersects, \
     ST_Buffer, ST_AsText
@@ -69,17 +69,17 @@ def challenges():
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
         query = query.filter(Challenge.geom.ST_Contains(coordWKT))
-    results = [challenge.slug for challenge in query.all() if challenge.active]
+    challenges = [challenge.slug for challenge in query.all() if challenge.active]
     #if there are no near challenges, return anything
-    if len(results) == 0:
+    if len(challenges) == 0:
         app.logger.debug('we have nothing close, looking all over within difficulty setting')
-        results = [challenge.slug for challenge in db.session.query(Challenge).filter(Challenge.difficulty==difficulty).all() if challenge.active]
+        challenges = [challenge.slug for challenge in db.session.query(Challenge).filter(Challenge.difficulty==difficulty).all() if challenge.active]
     # what if we still don't get anything? get anything!
-    if len(results) == 0:
+    if len(challenges) == 0:
         app.logger.debug('we still have nothing, returning any challenge')
-        results = [challenge.slug for challenge in db.session.query(Challenge).all() if challenge.active]    
-    app.logger.debug('returning %i challenges' % (len(results)))
-    return jsonify(challenges=results)
+        challenges = [challenge.slug for challenge in db.session.query(Challenge).all() if challenge.active]    
+    app.logger.debug('returning %i challenges' % (len(challenges)))
+    return jsonify(challenges=challenges)
 
 
 @app.route('/api/c/challenges/<challenge_slug>')
@@ -87,6 +87,7 @@ def challenges():
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
     challenge = get_challenge_or_404(challenge_slug, "Default")
+    app.logger.debug('done dialog for challenge: %s' % (challenge.done_dlg))
     return jsonify(challenge={
             'slug': challenge.slug,
             'title': challenge.title,
@@ -159,7 +160,7 @@ def challenge_tasks(challenge_slug):
     logging.info(
         "{num} tasks found matching criteria".format(num=len(task_list)))
     tasks = [{'id': task.identifier,
-              'location': dumps(to_shape(task.location)),
+              'features': dumps(to_shape(task.location)),
               'manifest': task.manifest} for task in task_list]
     for query in get_debug_queries():
         app.logger.debug(query)

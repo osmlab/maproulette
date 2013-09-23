@@ -14,7 +14,7 @@
             var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
             if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') { 
                 alert('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain');
-                setTimeout(3000, msgClose);
+                setTimeout(3000, "msgClose");
             }
             {% else %}
             // we are in the oauth window and we're all done, so close the oauth window
