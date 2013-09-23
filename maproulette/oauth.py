@@ -26,8 +26,6 @@ def get_osm_token(token=None):
 @app.route('/login')
 def oauth_authorize():
     callback_url = url_for('oauthorized', next=request.args.get('next'))
-    print callback_url
-    print request.referrer
     return osm.authorize(callback=callback_url or request.referrer or None)
 
 @app.route('/oauthorized')
