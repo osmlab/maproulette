@@ -1,4 +1,4 @@
-"""The various views and routes for MapRoulette"""
+"""The variosus views and routes for MapRoulette"""
 
 import json
 import logging
@@ -17,6 +17,38 @@ from maproulette.helpers import osmlogin_required, get_task_or_404, \
 from flask.ext.restful import reqparse, fields, marshal_with, marshal
 from maproulette.views.admin import AdminTasksApi, AdminTaskApi
 from flask.ext.restful import Api
+import geojson
+
+class GeoJsonField(fields.Raw):
+    """A GeoJson Representation of an Shapely object"""
+
+    def format(value):
+        return geojson.dumps(value)
+    
+    def output(self, key, obj):
+        value = get_value(key if self.attribute is None else self.attribute, obj)
+        if value is None:
+            return self.default
+        else:
+            value = geojson.loads(value)
+            
+    return self.format(value)
+        
+challenge_fields = {'id': fields.String(attribute='slug'),
+                    'title': fields.String,
+                    'description': fields.String,
+                    'blurb': fields.String,
+                    'help': fields.String,
+                    'instruction': fields.String,
+                    'active': fields.Boolean,
+                    'difficulty': fields.Integer
+                    'polygon': GeoJsonFields}
+
+task_fields = { 'id': fields.String(attribute='identifier'),
+                'location': GeoJsonField,
+                'manifest': GeoJsonField,
+                'text': fields.String(attribute='instructions')}
+
 
 challenge_fields = {'id': fields.String(attribute='slug'),
                     'title': fields.String,
