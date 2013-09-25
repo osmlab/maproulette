@@ -169,6 +169,15 @@ makeButton = (label, action) ->
   button.content = label
   return button
 
+makeChallengeSelectionDlg = (challenges) ->
+  ###
+  # Creates a dialog box for challenge selection
+  ###
+  dlg = $('<div></div>').addClass("dlg")
+  for c in challenges
+
+
+
 makeDlg = (dlgData) ->
   ###
   # Takes dialog box data and returns a dialog box for nextUp actions
@@ -318,7 +327,7 @@ showTask = (task) ->
   ###
   # Displays a task to the display and waits for the user prompt
   ###
-  drawFeatures(task.features)
+  drawFeatures(task.manifest)
   revGeocode()
   setDelay 3, msgClose()
   msgTaskText()

@@ -160,7 +160,7 @@ def challenge_tasks(challenge_slug):
     logging.info(
         "{num} tasks found matching criteria".format(num=len(task_list)))
     tasks = [{'id': task.identifier,
-              'features': dumps(to_shape(task.location)),
+              'location': dumps(to_shape(task.location)),
               'manifest': task.manifest} for task in task_list]
     for query in get_debug_queries():
         app.logger.debug(query)
