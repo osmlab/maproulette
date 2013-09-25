@@ -1,4 +1,4 @@
-"""The various views and routes for MapRoulette"""
+"""The variosus views and routes for MapRoulette"""
 
 import json
 import logging
@@ -14,9 +14,41 @@ from maproulette.models import Challenge, Task, Action, db
 from maproulette.helpers import osmlogin_required, get_task_or_404, \
     GeoPoint, JsonData, JsonTasks, osmerror, get_random_task, \
     get_challenge_or_404
-from flask.ext.restful import reqparse
+from flask.ext.restful import reqparse, fields, marshal_with, marshal
 from maproulette.views.admin import AdminTasksApi, AdminTaskApi
 from flask.ext.restful import Api
+import geojson
+
+class GeoJsonField(fields.Raw):
+    """A GeoJson Representation of an Shapely object"""
+
+    def format(value):
+        return geojson.dumps(value)
+    
+    def output(self, key, obj):
+        value = get_value(key if self.attribute is None else self.attribute, obj)
+        if value is None:
+            return self.default
+        else:
+            value = geojson.loads(value)
+            
+    return self.format(value)
+        
+challenge_fields = {'id': fields.String(attribute='slug'),
+                    'title': fields.String,
+                    'description': fields.String,
+                    'blurb': fields.String,
+                    'help': fields.String,
+                    'instruction': fields.String,
+                    'active': fields.Boolean,
+                    'difficulty': fields.Integer
+                    'polygon': GeoJsonFields}
+
+task_fields = { 'id': fields.String(attribute='identifier'),
+                'location': GeoJsonField,
+                'manifest': GeoJsonField,
+                'text': fields.String(attribute='instructions')}
+
 
 # By default, send out the standard client
 @app.route('/')
@@ -69,34 +101,34 @@ def challenges():
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
         query = query.filter(Challenge.geom.ST_Contains(coordWKT))
-    challenges = [challenge.slug for challenge in query.all() if challenge.active]
+
+    challenges = [marshal(challenge, challenge_fields)
+                  for challenge in query.all() if challenge.active]
     #if there are no near challenges, return anything
     if len(challenges) == 0:
         app.logger.debug('we have nothing close, looking all over within difficulty setting')
-        challenges = [challenge.slug for challenge in db.session.query(Challenge).filter(Challenge.difficulty==difficulty).all() if challenge.active]
+        challenges = [marshal(challenge, challenge_fields)
+                      for challenge in db.session.query(Challenge).\
+                          filter(Challenge.difficulty==difficulty).all()
+                      if challenge.active]
     # what if we still don't get anything? get anything!
     if len(challenges) == 0:
         app.logger.debug('we still have nothing, returning any challenge')
-        challenges = [challenge.slug for challenge in db.session.query(Challenge).all() if challenge.active]    
+        challenges = [marshal(challenge, challenge_fields)
+                      for challenge in db.session.query(Challenge).all()
+                      if challenge.active]    
     app.logger.debug('returning %i challenges' % (len(challenges)))
     return jsonify(challenges=challenges)
 
 
 @app.route('/api/c/challenges/<challenge_slug>')
 @osmlogin_required
+@marshal_with(challenge_fields)
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
     challenge = get_challenge_or_404(challenge_slug, "Default")
     app.logger.debug('done dialog for challenge: %s' % (challenge.done_dlg))
-    return jsonify(challenge={
-            'slug': challenge.slug,
-            'title': challenge.title,
-            'description': challenge.description,
-            'blurb': challenge.blurb,
-            'help': challenge.helptext,
-            'doneDlg': json.loads(challenge.done_dlg),
-            'instruction': challenge.instruction})
-
+    return challenge
 
 @app.route('/api/c/challenges/<challenge_slug>/stats')
 @osmlogin_required
@@ -159,13 +191,10 @@ def challenge_tasks(challenge_slug):
         db.session.commit()
     logging.info(
         "{num} tasks found matching criteria".format(num=len(task_list)))
-    tasks = [{'id': task.identifier,
-              'location': dumps(to_shape(task.location)),
-              'manifest': task.manifest} for task in task_list]
+    tasks = [marshal(task, task_fields) for task in task_list]
     for query in get_debug_queries():
         app.logger.debug(query)
     return jsonify(tasks=tasks)
-
 
 @app.route('/api/c/challenges/<challenge_slug>/tasks/<task_id>',
            methods=['GET', 'POST'])
@@ -186,10 +215,8 @@ def task_by_id(challenge_slug, task_id):
             task.current_state = action
             db.session.add(action)
             db.session.add(task)
-        return jsonify({'id': task.identifier,
-                        'center': task.location,
-                        'features': task.manifest,
-                        'text': task.instruction})
+        return jsonify(marshal(task, task_fields))
+
     elif request.method == 'POST':
         valid_actions = [button.action for button in challenge.dlg['buttons']]
         action = None
