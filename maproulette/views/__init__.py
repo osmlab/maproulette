@@ -49,21 +49,6 @@ task_fields = { 'id': fields.String(attribute='identifier'),
                 'manifest': GeoJsonField,
                 'text': fields.String(attribute='instructions')}
 
-
-challenge_fields = {'id': fields.String(attribute='slug'),
-                    'title': fields.String,
-                    'description': fields.String,
-                    'blurb': fields.String,
-                    'help': fields.String,
-                    'instruction': fields.String,
-                    'active': fields.Boolean,
-                    'difficulty': fields.Integer}
-
-task_fields = { 'id': fields.String(attribute='identifier'),
-                'location': fields.String,
-                'text': fields.String(attribute='instructions')}
-
-
 # By default, send out the standard client
 @app.route('/')
 def index():
