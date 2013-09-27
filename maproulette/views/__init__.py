@@ -146,9 +146,9 @@ def challenge_tasks(challenge_slug):
     assign = args['assign']
     near = args['near']
     logging.info("{user} requesting {num} tasks from {challenge} near {near} assiging: {assign}".format(user=osmid, num=num, challenge=challenge_slug, near=near, assign=assign))
-    coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
     task_list = []
     if near:
+        coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
         task_query = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         task_list = [task for task in task_query
