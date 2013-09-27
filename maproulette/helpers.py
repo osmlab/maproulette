@@ -58,7 +58,7 @@ def osmlogin_required(f):
 def localonly(f):
     """Restricts the view to only localhost. If there is a proxy, it
     will handle that too"""
-    @wraps(f):
+    @wraps(f)
     def recordated_function(*args, **hwargs):
         if not request.headers.getlist("X-Forwarded-For"):
             ip = request.remote_addr

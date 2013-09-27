@@ -15,11 +15,11 @@ from maproulette.helpers import osmlogin_required, get_task_or_404, \
     GeoPoint, JsonData, JsonTasks, osmerror, get_random_task, \
     get_challenge_or_404
 from flask.ext.restful import reqparse, fields, marshal_with, marshal
-from maproulette.views.admin import AdminTasksApi, AdminTaskApi
+from flask.ext.restful.fields import get_value, Raw
 from flask.ext.restful import Api
 import geojson
 
-class GeoJsonField(fields.Raw):
+class GeoJsonField(Raw):
     """A GeoJson Representation of an Shapely object"""
 
     def format(value):
@@ -30,9 +30,8 @@ class GeoJsonField(fields.Raw):
         if value is None:
             return self.default
         else:
-            value = geojson.loads(value)
-            
-    return self.format(value)
+            value = geojson.loads(value)            
+        return self.format(value)
         
 challenge_fields = {'id': fields.String(attribute='slug'),
                     'title': fields.String,
@@ -41,13 +40,14 @@ challenge_fields = {'id': fields.String(attribute='slug'),
                     'help': fields.String,
                     'instruction': fields.String,
                     'active': fields.Boolean,
-                    'difficulty': fields.Integer
-                    'polygon': GeoJsonFields}
+                    'difficulty': fields.Integer,
+                    'polygon': GeoJsonField}
 
 task_fields = { 'id': fields.String(attribute='identifier'),
                 'location': GeoJsonField,
                 'manifest': GeoJsonField,
                 'text': fields.String(attribute='instructions')}
+
 
 # By default, send out the standard client
 @app.route('/')
@@ -56,11 +56,6 @@ def index():
     return render_template('index.html')
 
 api = Api(app)
-# Some administrative APIs
-api.add_resource(AdminTasksApi,
-                 '/api/u/<string:challenge_slug>/tasks')
-api.add_resource(AdminTaskApi,
-                 '/api/u/<string:challenge_slug>/task/<string:task_id>')
 
 ### CLIENT API ###
 #
