@@ -189,7 +189,7 @@ makeDlg = (dlgData) ->
   dlg.append(buttons)
   return dlg
 
-makeChalllengeSelectionDlg = (challenges) ->
+makeChallengeSelectionDlg = (challenges) ->
   ###
   # Takes the global challenge list and returns a dialog box for it
   ###
@@ -202,6 +202,22 @@ makeChalllengeSelectionDlg = (challenges) ->
   dlg.append(makeButton("Close", "dlgClose()"))
   return dlg
 
+makeWelcomeDlg = () ->
+  ###
+  # Makes a Welcome to MapRoulette Dialog box
+  ###
+  dlg = $('<div></div>').addClass("dlg")
+  dlg.append("<h1>Welcome to MapRoulette</h1>")
+  dlg.append("<p>Lorem ipsum dolor sit amet, consectetur adipisicing
+  elit, sed do eiusmod tempor incididunt ut labore et dolore magna
+  aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+  laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
+  dolor in reprehenderit in voluptate velit esse cillum dolore eu
+  fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+  proident, sunt in culpa qui officia deserunt mollit anim id est
+  laborum.</p>")
+  dlg.append(makeButton("Continue without logging in", "dlgClose()"))
+  return dlg
 
 dlgOpen = (h) ->
   ###
