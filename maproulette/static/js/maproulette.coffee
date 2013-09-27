@@ -176,8 +176,6 @@ makeChallengeSelectionDlg = (challenges) ->
   dlg = $('<div></div>').addClass("dlg")
   for c in challenges
 
-
-
 makeDlg = (dlgData) ->
   ###
   # Takes dialog box data and returns a dialog box for nextUp actions
@@ -190,6 +188,20 @@ makeDlg = (dlgData) ->
     buttons.append(button)
   dlg.append(buttons)
   return dlg
+
+makeChalllengeSelectionDlg = (challenges) ->
+  ###
+  # Takes the global challenge list and returns a dialog box for it
+  ###
+  dlg = $('<div></div>').addClass("dlg")
+  dlg.apppend("<ul>")
+  for c in challenges
+    s = "<li><a href=\"getChallenge(\"#{c.id}"\)\">#{c.title}</a></li>"
+    dlg.append(s)
+  dlg.append("</ul>")
+  dlg.append(makeButton("Close", "dlgClose()"))
+  return dlg
+
 
 dlgOpen = (h) ->
   ###
@@ -332,7 +344,7 @@ showTask = (task) ->
   setDelay 3, msgClose()
   msgTaskText()
 
-getChallenge = (id) ->
+@getChallenge = (id) ->
   ###
   # Gets a specific challenge
   ###
