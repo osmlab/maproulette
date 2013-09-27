@@ -26,10 +26,9 @@ def load_sampledata(path):
 
     identifier = 0
     tasks = []
-
+    actions = []
     c = Challenge('test')
     c.title = 'Just a test challenge'
-    c.active = True
 
     with open(path, 'rb') as filehandle:
         q = json.load(filehandle)
@@ -42,8 +41,9 @@ def load_sampledata(path):
             t = Task('test',identifier)
             t.location = dumps(shape)
             t.run = 1
+            a = Action(t.id, "created")
             tasks.append(t)
-    
+            
     print tasks
     
     feedengine = create_engine('postgresql://osm:osm@localhost/maproulette')
@@ -56,6 +56,10 @@ def load_sampledata(path):
     session.commit()
     for t in tasks:
         session.add(t)
+    for a in actions:
+        session.add(a)
+
+    c.active = True
     session.commit()
 
 if __name__ == "__main__":

@@ -27,10 +27,10 @@ def getrandom():
 class User(db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True)
+    id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
     oauth_token = db.Column(db.String)
     oauth_secret = db.Column(db.String)
-    display_name = db.Column(db.String)
+    display_name = db.Column(db.String, nullable=False)
     home_location = db.Column(Geometry('POINT', management=True))
     languages = db.Column(db.String)
     changeset_count = db.Column(db.Integer)
@@ -47,18 +47,18 @@ class User(db.Model):
 class Challenge(db.Model):
     __tablename__ = 'challenges'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True)
-    slug = db.Column(db.String(72), unique=True, primary_key=True)
-    title = db.Column(db.String(128))
+    id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
+    slug = db.Column(db.String(72), unique=True, primary_key=True, nullable=False)
+    title = db.Column(db.String(128), nullable=False)
     description = db.Column(db.String)
-    blurb = db.Column(db.String)
+    blurb = db.Column(db.String, nullable=False)
     geom = db.Column(Geometry('POLYGON'))
     helptext = db.Column(db.String)
     instruction = db.Column(db.String)
     run = db.Column(db.String(72))
-    active = db.Column(db.Boolean)
-    difficulty = db.Column(db.SmallInteger)
-    type = db.Column(db.String, default='default')
+    active = db.Column(db.Boolean, nullable=False)
+    difficulty = db.Column(db.SmallInteger, nullable=False)
+    type = db.Column(db.String, default='default', nullable=False)
 
     __table_args__ = (db.Index('idx_geom', geom, postgresql_using='gist'),
                       db.Index('idx_run', run))
@@ -89,13 +89,13 @@ class Challenge(db.Model):
 class Task(db.Model):
     __tablename__ = 'tasks'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True)
-    identifier = db.Column(db.String(72))
+    id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
+    identifier = db.Column(db.String(72), nullable=False)
     challenge_slug = db.Column(db.String, db.ForeignKey('challenges.slug'))
-    location = db.Column(Geometry('POINT'))
-    run = db.Column(db.String(72))
-    random = db.Column(db.Float, default=getrandom)
-    manifest = db.Column(db.String)
+    location = db.Column(Geometry('POINT'), nullable=False)
+    run = db.Column(db.String(72), nullable=False)
+    random = db.Column(db.Float, default=getrandom, nullable=False)
+    manifest = db.Column(db.String, nullable=False)
     actions = db.relationship("Action", backref=db.backref("task"))
     instructions = db.Column(db.String())
     challenge = db.relationship("Challenge",
@@ -113,6 +113,10 @@ class Task(db.Model):
     def __repr__(self):
         return '<Task %d>' % (self.identifier)
 
+    @property
+    def current_action(self):
+       return self.actions[-1]
+
     def current_state(self):
         """Displays the current state of a task"""
         return self.current_action.state
@@ -121,11 +125,11 @@ class Task(db.Model):
 class Action(db.Model):
     __tablename__ = 'actions'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.now, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'))
-    status = db.Column(db.String(32))
+    status = db.Column(db.String(32), nullable=False)
 
     def __init__(self, task_id, status, user_id=None):
         self.task_id = task_id

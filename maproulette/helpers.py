@@ -25,7 +25,9 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     if not c.active and abort_if_inactive:
         return make_response("Challenge {} is not active".format(challenge_slug), 503)
     if instance_type:
-        return challenge_types[c.type].query.get(c.id)
+        challenge_class = challenge_types[c.type]
+        challenge = challenge_class.query.filter(Challenge.id==c.id).first()
+        return challenge
     else:
         return c
 
@@ -53,6 +55,18 @@ def osmlogin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def localonly(f):
+    """Restricts the view to only localhost. If there is a proxy, it
+    will handle that too"""
+    @wraps(f):
+    def recordated_function(*args, **hwargs):
+        if not request.headers.getlist("X-Forwarded-For"):
+            ip = request.remote_addr
+        else:
+            ip = request.headers.getlist("X-Forwarded-For")[0]
+        if not ip == "127.0.0.1":
+            abort(404)
+            
 def get_random_task(challenge):
     rn = random.random()
     t = Task.query.filter(Task.challenge_slug == challenge.slug,

@@ -1,7 +1,8 @@
 """The various views and routes for MapRoulette"""
 
 import json
-from flask import render_template, redirect, session, jsonify, abort, request
+import logging
+from flask import render_template, redirect, session, abort, request, jsonify
 from flask.ext.sqlalchemy import get_debug_queries
 from geoalchemy2.functions import ST_Contains, ST_Intersects, \
     ST_Buffer, ST_AsText
@@ -13,9 +14,23 @@ from maproulette.models import Challenge, Task, Action, db
 from maproulette.helpers import osmlogin_required, get_task_or_404, \
     GeoPoint, JsonData, JsonTasks, osmerror, get_random_task, \
     get_challenge_or_404
-from flask.ext.restful import reqparse
+from flask.ext.restful import reqparse, fields, marshal_with, marshal
 from maproulette.views.admin import AdminTasksApi, AdminTaskApi
 from flask.ext.restful import Api
+
+challenge_fields = {'id': fields.String(attribute='slug'),
+                    'title': fields.String,
+                    'description': fields.String,
+                    'blurb': fields.String,
+                    'help': fields.String,
+                    'instruction': fields.String,
+                    'active': fields.Boolean,
+                    'difficulty': fields.Integer}
+
+task_fields = { 'id': fields.String(attribute='identifier'),
+                'location': fields.String,
+                'text': fields.String(attribute='instructions')}
+
 
 # By default, send out the standard client
 @app.route('/')
@@ -68,33 +83,34 @@ def challenges():
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
         query = query.filter(Challenge.geom.ST_Contains(coordWKT))
-    results = [challenge.slug for challenge in query.all() if challenge.active]
+
+    challenges = [marshal(challenge, challenge_fields)
+                  for challenge in query.all() if challenge.active]
     #if there are no near challenges, return anything
-    if len(results) == 0:
+    if len(challenges) == 0:
         app.logger.debug('we have nothing close, looking all over within difficulty setting')
-        results = [challenge.slug for challenge in db.session.query(Challenge).filter(Challenge.difficulty==difficulty).all() if challenge.active]
+        challenges = [marshal(challenge, challenge_fields)
+                      for challenge in db.session.query(Challenge).\
+                          filter(Challenge.difficulty==difficulty).all()
+                      if challenge.active]
     # what if we still don't get anything? get anything!
-    if len(results) == 0:
+    if len(challenges) == 0:
         app.logger.debug('we still have nothing, returning any challenge')
-        results = [challenge.slug for challenge in db.session.query(Challenge).all() if challenge.active]    
-    app.logger.debug('returning %i challenges' % (len(results)))
-    return jsonify(challenges=results)
+        challenges = [marshal(challenge, challenge_fields)
+                      for challenge in db.session.query(Challenge).all()
+                      if challenge.active]    
+    app.logger.debug('returning %i challenges' % (len(challenges)))
+    return jsonify(challenges=challenges)
 
 
 @app.route('/api/c/challenges/<challenge_slug>')
 @osmlogin_required
+@marshal_with(challenge_fields)
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
     challenge = get_challenge_or_404(challenge_slug, "Default")
-    return jsonify(challenge={
-            'slug': challenge.slug,
-            'title': challenge.title,
-            'description': challenge.description,
-            'blurb': challenge.blurb,
-            'help': challenge.helptext,
-            'doneDlg': json.loads(challenge.done_dlg),
-            'instruction': challenge.instruction})
-
+    app.logger.debug('done dialog for challenge: %s' % (challenge.done_dlg))
+    return challenge
 
 @app.route('/api/c/challenges/<challenge_slug>/stats')
 @osmlogin_required
@@ -103,7 +119,7 @@ def challenge_stats(challenge_slug):
     challenge = get_challenge_or_404(challenge_slug, True)
     total = Task.query.filter(challenge_slug == challenge.slug).count()
     tasks = Task.query.filter(challenge_slug == challenge.slug).all()
-    osmid = session['osm_id']
+    osmid = session.get('osm_id')
     logging.info("{user} requested challenge stats for {challenge}".format(
             user=osmid, challenge=challenge_slug))
     available = len([task for task in tasks
@@ -124,7 +140,7 @@ def challenge_tasks(challenge_slug):
     parser.add_argument('assign', type=int, default=1,
                         help='Assign could not be parsed')
     args = parser.parse_args()
-    osmid = session['osm_id']
+    osmid = session.get('osm_id')
     # By default, we return a single task, but no more than 10
     num = min(args['num'], 10)
     assign = args['assign']
@@ -157,13 +173,10 @@ def challenge_tasks(challenge_slug):
         db.session.commit()
     logging.info(
         "{num} tasks found matching criteria".format(num=len(task_list)))
-    tasks = [{'id': task.identifier,
-              'location': dumps(to_shape(task.location)),
-              'manifest': task.manifest} for task in task_list]
+    tasks = [marshal(task, task_fields) for task in task_list]
     for query in get_debug_queries():
         app.logger.debug(query)
     return jsonify(tasks=tasks)
-
 
 @app.route('/api/c/challenges/<challenge_slug>/tasks/<task_id>',
            methods=['GET', 'POST'])
@@ -173,7 +186,7 @@ def task_by_id(challenge_slug, task_id):
     # make sure we're authenticated
     challenge = get_challenge_or_404(challenge_slug, True)
     task = get_task_or_404(challenge, task_id)
-    osmid = session['osm_id']
+    osmid = session.get('osm_id')
     if request.method == 'GET':
         try:
             assign = int(request.args.get('assign', 1))
@@ -184,10 +197,8 @@ def task_by_id(challenge_slug, task_id):
             task.current_state = action
             db.session.add(action)
             db.session.add(task)
-        return jsonify({'id': task.identifier,
-                        'center': task.location,
-                        'features': task.manifest,
-                        'text': task.instruction})
+        return jsonify(marshal(task, task_fields))
+
     elif request.method == 'POST':
         valid_actions = [button.action for button in challenge.dlg['buttons']]
         action = None
