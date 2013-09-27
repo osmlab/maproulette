@@ -13,7 +13,8 @@ tileLayer = null
 
 # Challenge related attributes
 tileUrl = "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-tileAttrib = '© <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+tileAttrib = '© <a href="http://openstreetmap.org">
+OpenStreetMap</a> contributors'
 
 # Task specific features
 currentChallenge = null
@@ -33,7 +34,8 @@ pageStartTime = null
 
 # Static strings
 msgMovingOnToTheNextChallenge = 'OK, moving right along...'
-msgZoomInForEdit = """Please zoom in a little so we don't have to load a huge area from the API."""
+msgZoomInForEdit = """Please zoom in a little so we don't have
+to load a huge area from the API."""
 mr_attrib = """
 <small>
   <p>
@@ -167,6 +169,13 @@ makeButton = (label, action) ->
   button.content = label
   return button
 
+makeChallengeSelectionDlg = (challenges) ->
+  ###
+  # Creates a dialog box for challenge selection
+  ###
+  dlg = $('<div></div>').addClass("dlg")
+  for c in challenges
+
 makeDlg = (dlgData) ->
   ###
   # Takes dialog box data and returns a dialog box for nextUp actions
@@ -178,6 +187,36 @@ makeDlg = (dlgData) ->
     button = makeButton(item.label, item.action)
     buttons.append(button)
   dlg.append(buttons)
+  return dlg
+
+makeChallengeSelectionDlg = (challenges) ->
+  ###
+  # Takes the global challenge list and returns a dialog box for it
+  ###
+  dlg = $('<div></div>').addClass("dlg")
+  dlg.apppend("<ul>")
+  for c in challenges
+    s = "<li><a href=\"getChallenge(\"#{c.id}"\)\">#{c.title}</a></li>"
+    dlg.append(s)
+  dlg.append("</ul>")
+  dlg.append(makeButton("Close", "dlgClose()"))
+  return dlg
+
+makeWelcomeDlg = () ->
+  ###
+  # Makes a Welcome to MapRoulette Dialog box
+  ###
+  dlg = $('<div></div>').addClass("dlg")
+  dlg.append("<h1>Welcome to MapRoulette</h1>")
+  dlg.append("<p>Lorem ipsum dolor sit amet, consectetur adipisicing
+  elit, sed do eiusmod tempor incididunt ut labore et dolore magna
+  aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+  laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
+  dolor in reprehenderit in voluptate velit esse cillum dolore eu
+  fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+  proident, sunt in culpa qui officia deserunt mollit anim id est
+  laborum.</p>")
+  dlg.append(makeButton("Continue without logging in", "dlgClose()"))
   return dlg
 
 dlgOpen = (h) ->
@@ -279,7 +318,7 @@ revGeocodeOSMObj = (feature) ->
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=#{type}@osm_id=#{id}"
   msgClose()
   request = $.ajax {url: mqurl}
-  request.success (data) -> 
+  request.success (data) ->
     locstr = nomToString(data.address)
     msg locstr
   request.fail(ajaxErrorHandler)
@@ -307,7 +346,7 @@ drawFeatures = (features) ->
   ###
   for feature in features
     if feature.properties.selected is true
-        selectedFeature = feature
+      selectedFeature = feature
       geojsonLayer.addData feature
     extent = getExtent(selectedFeature)
     map.fitBounds(extent)
@@ -316,12 +355,12 @@ showTask = (task) ->
   ###
   # Displays a task to the display and waits for the user prompt
   ###
-  drawFeatures(task.features)
+  drawFeatures(task.manifest)
   revGeocode()
   setDelay 3, msgClose()
   msgTaskText()
 
-getChallenge = (id) ->
+@getChallenge = (id) ->
   ###
   # Gets a specific challenge
   ###
@@ -356,10 +395,11 @@ getChallenge = (id) ->
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges/#{challenge}/tasks?near=#{near}"
   request = $.ajax {url: url}
-  request.done (data) ->
-    currentTask = data[0]
-    showTask(data[0])
-  request.fail (ajaxErrorHandler)
+  request.success (data) ->
+    currentTask = data.tasks[0]
+    showTask(currentTask)
+  request.fail (jqXHR, textStatus, errorThrown) ->
+    ajaxErrorHandler(jqXHR, textStatus, errorThrown)
 
 changeMapLayer = (layerUrl, layerAttrib = tileAttrib) ->
   ###
@@ -394,8 +434,8 @@ addGeoJSONLayer = ->
   msg msgMovingOnToTheNextChallenge
   setDelay 1, msgClose()
   payload = {
-      "action": action,
-      "editor": editor}
+    "action": action,
+    "editor": editor}
   near = currentTask.center
   challenge = currentChallenge.id
   task_id = currentTask.id
@@ -474,7 +514,7 @@ updateStats = (challenge) ->
   # Get the stats for the challenge and display the count of remaining
   # tasks
   ###
-  request = $.ajax {url:  "/api/c/challenges/#{challenge}/stats"}
+  request = $.ajax {url: "/api/c/challenges/#{challenge}/stats"}
   request.done (data) ->
     remaining = data.stats.total - data.stats.done
     $("#counter").text remaining
