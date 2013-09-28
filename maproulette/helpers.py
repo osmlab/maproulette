@@ -27,7 +27,7 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     If instance_type is True, return the correct Challenge Type
     """
     c = Challenge.query.filter(Challenge.slug==challenge_slug).first()
-    if not c or if (abort_if_inactive and not c.active):
+    if not c or (abort_if_inactive and not c.active):
         abort(404)
     if instance_type:
         challenge_class = challenge_types[c.type]
