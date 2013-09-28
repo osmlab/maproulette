@@ -189,7 +189,7 @@ makeChallengeSelectionDlg = (challenges) ->
   dlg = $('<div></div>').addClass("dlg")
   dlg.apppend("<ul>")
   for c in challenges
-    s = "<li><a href=\"getChallenge(\"#{c.id}"\)\">#{c.title}</a></li>"
+    s = """"<li><a href="getChallenge(#{c.id})">#{c.title}</a></li>"""
     dlg.append(s)
   dlg.append("</ul>")
   dlg.append(makeButton("Close", "dlgClose()"))
