@@ -44,7 +44,7 @@ challenge_fields = {'id': fields.String(attribute='slug'),
                     'polygon': GeoJsonField}
 
 task_fields = { 'id': fields.String(attribute='identifier'),
-                'centroid': GeoJsonField,
+                'location': GeoJsonField,
                 'manifest': GeoJsonField,
                 'text': fields.String(attribute='instructions')}
 
@@ -162,7 +162,7 @@ def challenge_tasks(challenge_slug):
     task_list = []
     if near:
         coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
-        task_query = Task.query.filter(Task.centroid.ST_Intersects(
+        task_query = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         task_list = [task for task in task_query
                      if challenge.task_available(task, osmid)]

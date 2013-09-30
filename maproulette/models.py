@@ -104,7 +104,7 @@ class Task(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
     identifier = db.Column(db.String(72), nullable=False)
     challenge_slug = db.Column(db.String, db.ForeignKey('challenges.slug'))
-    location = db.Column(Geometry('POINT'), nullable=False)
+    geom = db.Column(Geometry('POINT'), nullable=False)
     run = db.Column(db.String(72), nullable=False)
     random = db.Column(db.Float, default=getrandom, nullable=False)
     manifest = db.Column(db.String, nullable=False)
@@ -134,14 +134,14 @@ class Task(db.Model):
         return self.current_action.state
 
     @property
-    def centroid(self):
-        return ST_AsGeoJSON(location)
+    def location(self):
+        return ST_AsGeoJSON(geom)
     
-    @centroid.setter
+    @location.setter
     def centroid(self, geojson):
-        self.location = loads(geojson)
+        self.geom = loads(geojson)
 
-    centroid = synonym('location', descriptor=centroid)
+    centroid = synonym('geom', descriptor=centroid)
 
 class Action(db.Model):
     __tablename__ = 'actions'
