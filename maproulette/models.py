@@ -1,7 +1,7 @@
 """This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker, synonym
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
@@ -54,7 +54,7 @@ class Challenge(db.Model):
     title = db.Column(db.String(128), nullable=False)
     description = db.Column(db.String)
     blurb = db.Column(db.String, nullable=False)
-    _geom = db.Column(Geometry('POLYGON'))
+    geom = db.Column(Geometry('POLYGON'))
     helptext = db.Column(db.String)
     instruction = db.Column(db.String)
     run = db.Column(db.String(72))
@@ -62,7 +62,7 @@ class Challenge(db.Model):
     difficulty = db.Column(db.SmallInteger, nullable=False)
     type = db.Column(db.String, default='default', nullable=False)
 
-    __table_args__ = (db.Index('idx_geom', _geom, postgresql_using='gist'),
+    __table_args__ = (db.Index('idx_geom', geom, postgresql_using='gist'),
                       db.Index('idx_run', run))
 
     def __init__(self, slug):
@@ -72,12 +72,14 @@ class Challenge(db.Model):
         return self.slug
         
     @property
-    def geom(self):
-        return ST_AsGeoJSON(self._geom)
+    def geometry(self):
+        return ST_AsGeoJSON(self.geom)
     
-    @geom.setter
-    def name(self, geojson):
-        self._geom = loads(geojson)
+    @geometry.setter
+    def geometry(self, geojson):
+        self.geom = loads(geojson)
+
+    geometry = synonym('geom', descriptor=geometry)
 
     def task_available(self, task, osmid = None):
         """The function for a task to determine if it's available or not."""
@@ -102,7 +104,7 @@ class Task(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
     identifier = db.Column(db.String(72), nullable=False)
     challenge_slug = db.Column(db.String, db.ForeignKey('challenges.slug'))
-    _location = db.Column(Geometry('POINT'), nullable=False)
+    location = db.Column(Geometry('POINT'), nullable=False)
     run = db.Column(db.String(72), nullable=False)
     random = db.Column(db.Float, default=getrandom, nullable=False)
     manifest = db.Column(db.String, nullable=False)
@@ -132,12 +134,14 @@ class Task(db.Model):
         return self.current_action.state
 
     @property
-    def location(self):
-        return ST_AsGeoJSON(_location)
+    def centroid(self):
+        return ST_AsGeoJSON(location)
     
-    @location.setter
-    def location(self, geojson):
-        self._location = loads(geojson)
+    @centroid.setter
+    def centroid(self, geojson):
+        self.location = loads(geojson)
+
+    centroid = synonym('location', descriptor=centroid)
 
 class Action(db.Model):
     __tablename__ = 'actions'

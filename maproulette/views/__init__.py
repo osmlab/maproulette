@@ -44,7 +44,7 @@ challenge_fields = {'id': fields.String(attribute='slug'),
                     'polygon': GeoJsonField}
 
 task_fields = { 'id': fields.String(attribute='identifier'),
-                'location': GeoJsonField,
+                'centroid': GeoJsonField,
                 'manifest': GeoJsonField,
                 'text': fields.String(attribute='instructions')}
 
@@ -91,6 +91,7 @@ def challenges():
         app.logger.debug('home location retrieved from session')
     app.logger.debug(session)
     query = db.session.query(Challenge)
+    app.logger.debug(Challenge.geom)
     if difficulty:
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
@@ -161,7 +162,7 @@ def challenge_tasks(challenge_slug):
     task_list = []
     if near:
         coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
-        task_query = Task.query.filter(Task.location.ST_Intersects(
+        task_query = Task.query.filter(Task.centroid.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         task_list = [task for task in task_query
                      if challenge.task_available(task, osmid)]
