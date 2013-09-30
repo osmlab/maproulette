@@ -22,7 +22,7 @@ import geojson
 class GeoJsonField(Raw):
     """A GeoJson Representation of an Shapely object"""
 
-    def format(value):
+    def format(self, value):
         return geojson.dumps(value)
     
     def output(self, key, obj):
