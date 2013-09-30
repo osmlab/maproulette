@@ -5,6 +5,8 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
+from geoalchemy2.functions import ST_AsGeoJSON
+from geojson import loads
 import random
 from datetime import datetime
 from maproulette import app
@@ -52,7 +54,7 @@ class Challenge(db.Model):
     title = db.Column(db.String(128), nullable=False)
     description = db.Column(db.String)
     blurb = db.Column(db.String, nullable=False)
-    geom = db.Column(Geometry('POLYGON'))
+    _geom = db.Column(Geometry('POLYGON'))
     helptext = db.Column(db.String)
     instruction = db.Column(db.String)
     run = db.Column(db.String(72))
@@ -68,6 +70,14 @@ class Challenge(db.Model):
 
     def __unicode__(self):
         return self.slug
+        
+    @property
+    def geom(self):
+        return ST_AsGeoJSON(self._geom)
+    
+    @geom.setter
+    def name(self, geojson)
+        self._geom = loads(geojson)
 
     def task_available(self, task, osmid = None):
         """The function for a task to determine if it's available or not."""
