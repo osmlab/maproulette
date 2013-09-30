@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.functions import ST_AsGeoJSON
-from geojson import loads
+from geoalchemy2.shape import from_shape
 import random
 from datetime import datetime
 from maproulette import app
@@ -62,8 +62,8 @@ class Challenge(db.Model):
     difficulty = db.Column(db.SmallInteger, nullable=False)
     type = db.Column(db.String, default='default', nullable=False)
 
-    __table_args__ = (db.Index('idx_geom', geom, postgresql_using='gist'),
-                      db.Index('idx_run', run))
+    # note that spatial indexes seem to be created automagically
+    __table_args__ = (db.Index('idx_run', run),)
 
     def __init__(self, slug):
         self.slug = slug
@@ -76,8 +76,8 @@ class Challenge(db.Model):
         return ST_AsGeoJSON(self.geom)
     
     @geometry.setter
-    def geometry(self, geojson):
-        self.geom = loads(geojson)
+    def geometry(self, shape):
+        self.geom = from_shape(shape)
 
     geometry = synonym('geom', descriptor=geometry)
 
@@ -112,8 +112,8 @@ class Task(db.Model):
     instructions = db.Column(db.String())
     challenge = db.relationship("Challenge",
                                 backref=db.backref('tasks', order_by=id))
+    # note that spatial indexes seem to be created automagically
     __table_args__ = (
-        db.Index('idx_location', location, postgresql_using='gist'),
         db.Index('idx_id', id),
         db.Index('idx_challenge', challenge_slug),
         db.Index('idx_random', random))
@@ -138,10 +138,10 @@ class Task(db.Model):
         return ST_AsGeoJSON(geom)
     
     @location.setter
-    def centroid(self, geojson):
-        self.geom = loads(geojson)
+    def location(self, shape):
+        self.geom = from_shape(shape)
 
-    centroid = synonym('geom', descriptor=centroid)
+    location = synonym('geom', descriptor=location)
 
 class Action(db.Model):
     __tablename__ = 'actions'

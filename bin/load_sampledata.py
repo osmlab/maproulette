@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-from maproulette.models import Challenge, Task
-import simplejson as json
-from shapely.wkt import dumps
-from shapely.geometry import Point
-from geoalchemy2.types import Geometry
-
 # This script loads a small set of fixtures into the MapRoulette database.
 # It consists of a Challenge object and 463 Task objects with point
 # geometries.
@@ -20,7 +14,11 @@ import sys
 import os
 from sqlalchemy import create_engine   
 from sqlalchemy.orm import sessionmaker
-
+from maproulette.models import Challenge, Task, Action
+import simplejson as json
+from shapely.geometry import Point
+from geoalchemy2.types import Geometry
+from geojson import loads,dumps
 
 def load_sampledata(path):
 
@@ -29,22 +27,25 @@ def load_sampledata(path):
     actions = []
     c = Challenge('test')
     c.title = 'Just a test challenge'
-
+    c.blurb = 'This challenge serves no purpose but to test everything'
+    c.active = True
+    c.difficulty = 1
+    
     with open(path, 'rb') as filehandle:
         q = json.load(filehandle)
 
         for feature in q['features']:
             identifier += 1
             coordinates = feature['geometry']['coordinates']
-            shape = Point(coordinates[0], coordinates[1])
-            properties = feature['properties']
-            t = Task('test',identifier)
-            t.location = dumps(shape)
+            location = Point(coordinates[0], coordinates[1])
+            t = Task('test', identifier)
+            t.location = location
+            t.manifest = dumps(location)
             t.run = 1
             a = Action(t.id, "created")
             tasks.append(t)
             
-    print tasks
+    print "%i tasks loaded..." % (identifier,)
     
     feedengine = create_engine('postgresql://osm:osm@localhost/maproulette')
 
