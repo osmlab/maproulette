@@ -76,7 +76,7 @@ class Challenge(db.Model):
         return ST_AsGeoJSON(self._geom)
     
     @geom.setter
-    def name(self, geojson)
+    def name(self, geojson):
         self._geom = loads(geojson)
 
     def task_available(self, task, osmid = None):
