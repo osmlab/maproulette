@@ -102,7 +102,7 @@ class Task(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
     identifier = db.Column(db.String(72), nullable=False)
     challenge_slug = db.Column(db.String, db.ForeignKey('challenges.slug'))
-    location = db.Column(Geometry('POINT'), nullable=False)
+    _location = db.Column(Geometry('POINT'), nullable=False)
     run = db.Column(db.String(72), nullable=False)
     random = db.Column(db.Float, default=getrandom, nullable=False)
     manifest = db.Column(db.String, nullable=False)
@@ -131,6 +131,13 @@ class Task(db.Model):
         """Displays the current state of a task"""
         return self.current_action.state
 
+    @property
+    def location(self):
+        return ST_AsGeoJSON(_location)
+    
+    @location.setter
+    def location(self, geojson):
+        self._location = loads(geojson)
 
 class Action(db.Model):
     __tablename__ = 'actions'
