@@ -62,7 +62,7 @@ class Challenge(db.Model):
     difficulty = db.Column(db.SmallInteger, nullable=False)
     type = db.Column(db.String, default='default', nullable=False)
 
-    __table_args__ = (db.Index('idx_geom', geom, postgresql_using='gist'),
+    __table_args__ = (db.Index('idx_geom', _geom, postgresql_using='gist'),
                       db.Index('idx_run', run))
 
     def __init__(self, slug):
