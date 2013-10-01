@@ -91,25 +91,6 @@ getExtent = (feature) ->
     ne = new L.LatLng(Math.max.apply(Math, lats), Math.max.apply(Math, lons))
     new L.LatLngBounds(sw, ne)
 
-@msgClose = ->
-  ###
-  # Close the msg box
-  ###
-  $("#msgBox").fadeOut()
-
-msg = (html) ->
-  ###
-  # Display a msg (html) in the msgbox. Must be closed with msgClose()
-  ###
-  $("#msgBox").html(html).fadeIn()
-  $("#msgBox").css "display", "block"
-
-msgTaskText = ->
-  ###
-  # Display the current task text in the msgbox
-  ###
-  msg currentTask.text if currentTask.text
-
 makeButton = (label, action) ->
   ###
   # Takes in a label and onclick action and returns a button div
@@ -259,11 +240,10 @@ revGeocodeOSMObj = (feature) ->
   type = feature.properties.type
   id = feature.properties.id
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=#{type}@osm_id=#{id}"
-  msgClose()
   request = $.ajax {url: mqurl}
   request.success (data) ->
     locstr = nomToString(data.address)
-    msg locstr
+    notifications.emit locstr
   request.fail(ajaxErrorHandler)
 
 revGeocode = ->
@@ -272,14 +252,13 @@ revGeocode = ->
   ###
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=" + map.getCenter().lat + " &lon=" + map.getCenter().lng
   #close any notifications that are still hanging out on the page.
-  msgClose()
   # this next bit fires the RGC request and parses the result in a
   # decent way, but it looks really ugly.
   request = $.ajax {url: mqurl}
   request.done (data) ->
     locstr = nomToString(data.address)
     # display a message saying where we are in the world
-    msg locstr
+    notificiations.emit locstr
   request.fail (ajaxErrorHandler)
 
 drawFeatures = (features) ->
@@ -300,8 +279,8 @@ showTask = (task) ->
   ###
   drawFeatures(task.manifest)
   revGeocode()
-  setDelay 3, msgClose()
-  msgTaskText()
+  notifications.emit(currentTask.text) if currentTask.text
+
 
 @getChallenge = (id) ->
   ###
@@ -373,9 +352,7 @@ addGeoJSONLayer = ->
   ###
   # This should be harmless if the dialog box is already closed
   dlgClose()
-
-  msg msgMovingOnToTheNextChallenge
-  setDelay 1, msgClose()
+  notifications.emit(msgMovingOnToTheNextChallenge, 1)
   payload = {
     "action": action,
     "editor": editor}
