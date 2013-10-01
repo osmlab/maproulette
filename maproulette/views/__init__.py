@@ -22,9 +22,6 @@ import geojson
 class GeoJsonField(Raw):
     """A GeoJson Representation of an Shapely object"""
 
-    def format(self, value):
-        return geojson.dumps(value)
-    
     def output(self, key, obj):
         value = get_value(key if self.attribute is None else self.attribute, obj)
         if value is None:
