@@ -57,7 +57,7 @@ jQuery.fn.extend({
   }
 });
 
-setDelay = function(seconds, func) {
+var setDelay = function(seconds, func) {
   /*
   # Wraps setTimeout to make it easiet to write in Coffeescript
   */
@@ -65,3 +65,42 @@ setDelay = function(seconds, func) {
   return setTimeout(func, seconds * 1000);
 };
 
+var nomToString = function(addr) {
+  /*
+    # Takes a geocode object returned from Nominatim and returns a
+    # nicely formatted string
+  */
+  
+  var county, locality, str, town;
+  str = "";
+  if (addr.city != null) {
+    locality = addr.city;
+  } else {
+    if (addr.town != null) {
+      town = addr.town;
+    } else if (addr.hamlet != null) {
+      town = addr.hamlet;
+    } else {
+      town = "Somewhere in";
+    }
+    if (addr.county != null) {
+      if (addr.county.toLowerCase().indexOf('county') > -1) {
+        county = ", " + addr.county;
+      } else {
+        county = ", " + addr.county + " County";
+      }
+    } else {
+      county = "";
+    }
+    locality = "" + addr.town + " " + county;
+  }
+  if (addr.state != null) {
+    return "" + locality + ", " + addr.state;
+  } else {
+    if (addr.country != null) {
+      return "" + locality + ", " + addr.country;
+    } else {
+      return "Somewhere on Earth";
+    }
+  }
+};
