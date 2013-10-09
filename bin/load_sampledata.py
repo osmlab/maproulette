@@ -26,6 +26,7 @@ def load_sampledata(path):
     tasks = []
     actions = []
     c = Challenge('test')
+    c.slug = 'test'
     c.title = 'Just a test challenge'
     c.blurb = 'This challenge serves no purpose but to test everything'
     c.active = True
