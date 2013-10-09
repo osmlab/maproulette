@@ -119,7 +119,7 @@ def challenges():
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
     challenge = get_challenge_or_404(challenge_slug, "Default")
-    app.logger.debug('done dialog for challenge: %s' % (challenge.done_dlg))
+    app.logger.debug('retrieved challenge %s' % (challenge.slug))
     return challenge
 
 @app.route('/api/c/challenges/<challenge_slug>/stats')
