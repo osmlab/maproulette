@@ -286,11 +286,14 @@ showTask = (task) ->
   ###
   # Gets a specific challenge
   ###
+  console.log(getting challenge)
   request = $.ajax {url: "/api/c/challenges/#{id}"}
   request.done (data) ->
-    challenge = data
-    updateChallenge(challenge)
-    updateStats(challenge)
+    slug = data.slug
+    console.log(data)
+    console.log(data.slug)
+    updateChallenge(slug)
+    updateStats(slug)
     getTask()
   request.fail (ajaxErrorHandler)
 
@@ -298,11 +301,16 @@ showTask = (task) ->
   ###
   # Gets a challenge based on difficulty and location
   ###
+  console.log('getting new challenge')
+  # near default was already set in the init function, no need to do it again here?
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"
   request = $.ajax {url: "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"}
   request.done (data) ->
-    challenge = data.challenges[0]
+    # for some reason we don't get challenge.slug but we do get challenge.id which is the slug?
+    challenge = data.challenges[0].id
+    console.log(JSON.stringify(challenge, null, 4))
+    console.log('we got a challenge: ' + challenge)
     updateChallenge(challenge)
     updateStats(challenge)
     getTask(near)
@@ -444,6 +452,7 @@ updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
+  console.log('updating challenge')
   request = $.ajax {url: "/api/c/challenges/#{challenge}"}
   request.done (data) ->
     currentChallenge = data.challenge
@@ -492,13 +501,17 @@ enableKeyboardShortcuts = ->
   #
   #
   if challenge?
+    console.log('challenge passed in through url params')
     updateChallenge(challenge)
     updateStats(challenge)
     getTask(near)
   else
+    console.log('no challenge passed in')
     if not difficulty
+      console.log('no difficulty passed in either, defaulting to 1')
       difficulty = 1
     if not near
+      console.log('no near coords passed in, defaulting to map center')
       near = "#{map.getCenter().lng}|#{map.getCenter().lat}"
     getNewChallenge(difficulty, near)
 
