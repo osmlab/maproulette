@@ -118,9 +118,11 @@ def challenges():
 @marshal_with(challenge_fields)
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
+    app.logger.debug('retrieving challenge %s' % (challenge_slug,))
     challenge = get_challenge_or_404(challenge_slug, "Default")
-    app.logger.debug('retrieved challenge %s' % (challenge.slug))
-    return challenge
+    app.logger.debug('retrieved challenge %s' % (challenge.slug,))
+    app.logger.debug(jsonify(marshal(challenge, challenge_fields)))
+    return jsonify(jsonify(marshal(challenge, challenge_fields)))
 
 @app.route('/api/c/challenges/<challenge_slug>/stats')
 @osmlogin_required
