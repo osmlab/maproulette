@@ -3,7 +3,7 @@ Flask>=0.10.1
 Flask-Coffee>=0.3
 Flask-KVSession>=0.4
 Flask-SQLAlchemy>=0.17
-# We need the github tip for now because 
+# We used to need the github tip because 
 # https://github.com/mitsuhiko/flask-sqlalchemy/pull/89 has not made
 # it into a release...
 #-e git+https://github.com/mitsuhiko/flask-sqlalchemy#egg=Flask-SQLAlchemy
