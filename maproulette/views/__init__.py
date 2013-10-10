@@ -2,7 +2,7 @@
 
 import json
 import logging
-from flask import render_template, redirect, session, abort, request, jsonify
+from flask import render_template, redirect, session, abort, request, jsonify, json
 from flask.ext.sqlalchemy import get_debug_queries
 from geoalchemy2.functions import ST_Contains, ST_Intersects, \
     ST_Buffer, ST_AsText
@@ -86,9 +86,7 @@ def challenges():
         contains = session['home_location']
         coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
         app.logger.debug('home location retrieved from session')
-    app.logger.debug(session)
     query = db.session.query(Challenge)
-    app.logger.debug(Challenge.geom)
     if difficulty:
         query = query.filter(Challenge.difficulty==difficulty)
     if contains:
@@ -109,20 +107,19 @@ def challenges():
         challenges = [marshal(challenge, challenge_fields)
                       for challenge in db.session.query(Challenge).all()
                       if challenge.active]    
-    app.logger.debug('returning %i challenges' % (len(challenges)))
+    app.logger.debug(challenges)
     return jsonify(challenges=challenges)
 
 
 @app.route('/api/c/challenges/<challenge_slug>')
-@osmlogin_required
-@marshal_with(challenge_fields)
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
     app.logger.debug('retrieving challenge %s' % (challenge_slug,))
-    challenge = get_challenge_or_404(challenge_slug, "Default")
-    app.logger.debug('retrieved challenge %s' % (challenge.slug,))
-    app.logger.debug(jsonify(marshal(challenge, challenge_fields)))
-    return jsonify(jsonify(marshal(challenge, challenge_fields)))
+    challenge = [marshal(
+        get_challenge_or_404(challenge_slug),
+        challenge_fields)]
+    app.logger.debug(challenge)
+    return jsonify(challenge=challenge)
 
 @app.route('/api/c/challenges/<challenge_slug>/stats')
 @osmlogin_required
