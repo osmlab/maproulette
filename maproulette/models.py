@@ -24,7 +24,7 @@ db = SQLAlchemy(app)
 random.seed()
 
 def getrandom():
-   return random.random()
+    return random.random()
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -127,7 +127,7 @@ class Task(db.Model):
 
     @property
     def current_action(self):
-       return self.actions[-1]
+        return self.actions[-1]
 
     def current_state(self):
         """Displays the current state of a task"""
@@ -135,7 +135,7 @@ class Task(db.Model):
 
     @property
     def location(self):
-        return ST_AsGeoJSON(geom)
+        return ST_AsGeoJSON(self.geom)
     
     @location.setter
     def location(self, shape):
