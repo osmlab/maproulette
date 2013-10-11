@@ -17,10 +17,13 @@ from sqlalchemy.orm import sessionmaker
 from maproulette.models import Challenge, Task, Action
 import simplejson as json
 from shapely.geometry import Point
-from geoalchemy2.types import Geometry
-from geojson import loads,dumps
+from shapely.wkt import dumps
 
-def load_sampledata(path):
+def load_sampledata(datapath):
+    '''
+    Load the sample data from a file
+    :param datapath: the datapath to the sample data file.
+    '''
 
     identifier = 0
     tasks = []
@@ -32,7 +35,7 @@ def load_sampledata(path):
     c.active = True
     c.difficulty = 1
     
-    with open(path, 'rb') as filehandle:
+    with open(datapath, 'rb') as filehandle:
         q = json.load(filehandle)
 
         for feature in q['features']:
