@@ -56,56 +56,6 @@ buttonExitApp = {
   label: "Return to homepage"
   action: 'window.location.href="/"'}
 
-setDelay = (seconds, func) ->
-  ###
-  # Wraps setTimeout to make it easiet to write in Coffeescript
-  ###
-  # setTimeout takes miliseconds, so we multiply them by 1000
-  setTimeout func, seconds * 1000
-
-jQuery.fn.extend
-  ###
-  # Returns get parameters.
-  #
-  # If the desired param does not exist, null will be returned
-  #
-  # To get the document params:
-  # @example value = $(document).getUrlParam("paramName");
-  #
-  # To get the params of a html-attribut (uses src attribute)
-  # @example value = $('#imgLink').getUrlParam("paramName");
-  ###
-  # Taken from https://gist.github.com/thorn/2775179
-  getUrlParam: (strParamName) ->
-    strParamName = escape(unescape(strParamName))
-
-    if $(this).attr("nodeName") is "#document"
-      if window.location.search.search(strParamName) > -1
-        qString = window.location.search.substr(1,window.location.search.length).split("&")
-    else if $(this).attr("src") isnt "undefined"
-      strHref = $(this).attr("src")
-      if strHref.indexOf("?") > -1
-        strQueryString = strHref.substr(strHref.indexOf("?") + 1)
-        qString = strQueryString.split("&")
-    else if $(this).attr("href") isnt "undefined"
-      strHref = $(this).attr("href")
-      if strHref.indexOf("?") > -1
-        strQueryString = strHref.substr(strHref.indexOf("?") + 1)
-        qString = strQueryString.split("&")
-    else
-      return null
-
-    return null unless qString
-
-    returnVal = (query.split("=")[1] for query in qString when escape(unescape(query.split("=")[0])) is strParamName)
-
-    if returnVal.lenght is 0
-      null
-    else if returnVal.lenght is 1
-      returnVal[0]
-    else
-      returnVal
-
 clearTask = ->
   ###
   # Clear all the task-related variables in between tasks
@@ -141,25 +91,6 @@ getExtent = (feature) ->
     ne = new L.LatLng(Math.max.apply(Math, lats), Math.max.apply(Math, lons))
     new L.LatLngBounds(sw, ne)
 
-@msgClose = ->
-  ###
-  # Close the msg box
-  ###
-  $("#msgBox").fadeOut()
-
-msg = (html) ->
-  ###
-  # Display a msg (html) in the msgbox. Must be closed with msgClose()
-  ###
-  $("#msgBox").html(html).fadeIn()
-  $("#msgBox").css "display", "block"
-
-msgTaskText = ->
-  ###
-  # Display the current task text in the msgbox
-  ###
-  msg currentTask.text if currentTask.text
-
 makeButton = (label, action) ->
   ###
   # Takes in a label and onclick action and returns a button div
@@ -168,13 +99,6 @@ makeButton = (label, action) ->
   button.attr {onclick: action}
   button.content = label
   return button
-
-makeChallengeSelectionDlg = (challenges) ->
-  ###
-  # Creates a dialog box for challenge selection
-  ###
-  dlg = $('<div></div>').addClass("dlg")
-  for c in challenges
 
 makeDlg = (dlgData) ->
   ###
@@ -196,7 +120,7 @@ makeChallengeSelectionDlg = (challenges) ->
   dlg = $('<div></div>').addClass("dlg")
   dlg.apppend("<ul>")
   for c in challenges
-    s = "<li><a href=\"getChallenge(\"#{c.id}"\)\">#{c.title}</a></li>"
+    s = """"<li><a href="getChallenge(#{c.id})">#{c.title}</a></li>"""
     dlg.append(s)
   dlg.append("</ul>")
   dlg.append(makeButton("Close", "dlgClose()"))
@@ -316,11 +240,10 @@ revGeocodeOSMObj = (feature) ->
   type = feature.properties.type
   id = feature.properties.id
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=#{type}@osm_id=#{id}"
-  msgClose()
   request = $.ajax {url: mqurl}
   request.success (data) ->
     locstr = nomToString(data.address)
-    msg locstr
+    notifications.emit locstr
   request.fail(ajaxErrorHandler)
 
 revGeocode = ->
@@ -329,14 +252,13 @@ revGeocode = ->
   ###
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=" + map.getCenter().lat + " &lon=" + map.getCenter().lng
   #close any notifications that are still hanging out on the page.
-  msgClose()
   # this next bit fires the RGC request and parses the result in a
   # decent way, but it looks really ugly.
   request = $.ajax {url: mqurl}
   request.done (data) ->
     locstr = nomToString(data.address)
     # display a message saying where we are in the world
-    msg locstr
+    notificiations.emit locstr
   request.fail (ajaxErrorHandler)
 
 drawFeatures = (features) ->
@@ -357,18 +279,21 @@ showTask = (task) ->
   ###
   drawFeatures(task.manifest)
   revGeocode()
-  setDelay 3, msgClose()
-  msgTaskText()
+  notifications.emit(currentTask.text) if currentTask.text
+
 
 @getChallenge = (id) ->
   ###
   # Gets a specific challenge
   ###
+  console.log(getting challenge)
   request = $.ajax {url: "/api/c/challenges/#{id}"}
   request.done (data) ->
-    challenge = data
-    updateChallenge(challenge)
-    updateStats(challenge)
+    slug = data.slug
+    console.log(data)
+    console.log(data.slug)
+    updateChallenge(slug)
+    updateStats(slug)
     getTask()
   request.fail (ajaxErrorHandler)
 
@@ -376,11 +301,16 @@ showTask = (task) ->
   ###
   # Gets a challenge based on difficulty and location
   ###
+  console.log('getting new challenge')
+  # near default was already set in the init function, no need to do it again here?
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
   url = "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"
   request = $.ajax {url: "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"}
   request.done (data) ->
-    challenge = data.challenges[0]
+    # for some reason we don't get challenge.slug but we do get challenge.id which is the slug?
+    challenge = data.challenges[0].id
+    console.log(JSON.stringify(challenge, null, 4))
+    console.log('we got a challenge: ' + challenge)
     updateChallenge(challenge)
     updateStats(challenge)
     getTask(near)
@@ -430,9 +360,7 @@ addGeoJSONLayer = ->
   ###
   # This should be harmless if the dialog box is already closed
   dlgClose()
-
-  msg msgMovingOnToTheNextChallenge
-  setDelay 1, msgClose()
+  notifications.emit(msgMovingOnToTheNextChallenge, 1)
   payload = {
     "action": action,
     "editor": editor}
@@ -524,6 +452,7 @@ updateChallenge = (challenge) ->
   ###
   # Use the current challenge metadata to fill in the web page
   ###
+  console.log('updating challenge')
   request = $.ajax {url: "/api/c/challenges/#{challenge}"}
   request.done (data) ->
     currentChallenge = data.challenge
@@ -573,13 +502,17 @@ enableKeyboardShortcuts = ->
   #
   #
   if challenge?
+    console.log('challenge passed in through url params')
     updateChallenge(challenge)
     updateStats(challenge)
     getTask(near)
   else
+    console.log('no challenge passed in')
     if not difficulty
+      console.log('no difficulty passed in either, defaulting to 1')
       difficulty = 1
     if not near
+      console.log('no near coords passed in, defaulting to map center')
       near = "#{map.getCenter().lng}|#{map.getCenter().lat}"
     getNewChallenge(difficulty, near)
 

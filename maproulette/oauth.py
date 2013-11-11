@@ -1,5 +1,6 @@
-#!/usr/bin/python
-import json
+#!/usr/bin/env python
+
+import json  # @UnusedImport
 from maproulette import app, models
 from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
@@ -8,7 +9,7 @@ from maproulette.database import db
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 
-# instantite OAuth object
+# instantiate OAuth object
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
@@ -20,8 +21,8 @@ oauth.init_app(app)
 def get_osm_token(token=None):
 #    session.regenerate() this should be done elsewhere.
     if 'osm_oauth' in session:
-		resp = session['osm_oauth']
-		return resp['oauth_token'], resp['oauth_token_secret']
+        resp = session['osm_oauth']
+        return resp['oauth_token'], resp['oauth_token_secret']
 
 @app.route('/login')
 def oauth_authorize():
