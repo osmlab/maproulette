@@ -1,10 +1,12 @@
 """This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker, synonym
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
+from geoalchemy2.functions import ST_AsGeoJSON
+from geoalchemy2.shape import from_shape
 import random
 from datetime import datetime
 from maproulette import app
@@ -22,7 +24,7 @@ db = SQLAlchemy(app)
 random.seed()
 
 def getrandom():
-   return random.random()
+    return random.random()
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -60,14 +62,24 @@ class Challenge(db.Model):
     difficulty = db.Column(db.SmallInteger, nullable=False)
     type = db.Column(db.String, default='default', nullable=False)
 
-    __table_args__ = (db.Index('idx_geom', geom, postgresql_using='gist'),
-                      db.Index('idx_run', run))
+    # note that spatial indexes seem to be created automagically
+    __table_args__ = (db.Index('idx_run', run),)
 
     def __init__(self, slug):
         self.slug = slug
 
     def __unicode__(self):
         return self.slug
+        
+    @property
+    def geometry(self):
+        return ST_AsGeoJSON(self.geom)
+    
+    @geometry.setter
+    def geometry(self, shape):
+        self.geom = from_shape(shape)
+
+    geometry = synonym('geom', descriptor=geometry)
 
     def task_available(self, task, osmid = None):
         """The function for a task to determine if it's available or not."""
@@ -92,7 +104,7 @@ class Task(db.Model):
     id = db.Column(db.Integer, unique=True, primary_key=True, nullable=False)
     identifier = db.Column(db.String(72), nullable=False)
     challenge_slug = db.Column(db.String, db.ForeignKey('challenges.slug'))
-    location = db.Column(Geometry('POINT'), nullable=False)
+    geom = db.Column(Geometry('POINT'), nullable=False)
     run = db.Column(db.String(72), nullable=False)
     random = db.Column(db.Float, default=getrandom, nullable=False)
     manifest = db.Column(db.String, nullable=False)
@@ -100,8 +112,8 @@ class Task(db.Model):
     instructions = db.Column(db.String())
     challenge = db.relationship("Challenge",
                                 backref=db.backref('tasks', order_by=id))
+    # note that spatial indexes seem to be created automagically
     __table_args__ = (
-        db.Index('idx_location', location, postgresql_using='gist'),
         db.Index('idx_id', id),
         db.Index('idx_challenge', challenge_slug),
         db.Index('idx_random', random))
@@ -115,12 +127,21 @@ class Task(db.Model):
 
     @property
     def current_action(self):
-       return self.actions[-1]
+        return self.actions[-1]
 
     def current_state(self):
         """Displays the current state of a task"""
         return self.current_action.state
 
+    @property
+    def location(self):
+        return ST_AsGeoJSON(self.geom)
+    
+    @location.setter
+    def location(self, shape):
+        self.geom = from_shape(shape)
+
+    location = synonym('geom', descriptor=location)
 
 class Action(db.Model):
     __tablename__ = 'actions'

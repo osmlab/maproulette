@@ -13,6 +13,13 @@ def osmerror(error, description):
     response = make_response("%s: %s" % (error, description), 400)
     return response
 
+def get_or_abort(model, object_id, code=404):
+    """
+    get an object with his given id or an abort error (404 is the default)
+    """
+    result = model.query.get(object_id)
+    return result or abort(code)
+
 def get_challenge_or_404(challenge_slug, instance_type=None,
                          abort_if_inactive=True):
     """Return a challenge by its id or return 404.
@@ -20,11 +27,10 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     If instance_type is True, return the correct Challenge Type
     """
     c = Challenge.query.filter(Challenge.slug==challenge_slug).first()
-    if not c:
-        return make_response("Challenge {} does not exist".format(challenge_slug), 404)
-    if not c.active and abort_if_inactive:
-        return make_response("Challenge {} is not active".format(challenge_slug), 503)
+    if not c or (abort_if_inactive and not c.active):
+        abort(404)
     if instance_type:
+        app.logger.debug('returning instance type')
         challenge_class = challenge_types[c.type]
         challenge = challenge_class.query.filter(Challenge.id==c.id).first()
         return challenge
@@ -58,7 +64,7 @@ def osmlogin_required(f):
 def localonly(f):
     """Restricts the view to only localhost. If there is a proxy, it
     will handle that too"""
-    @wraps(f):
+    @wraps(f)
     def recordated_function(*args, **hwargs):
         if not request.headers.getlist("X-Forwarded-For"):
             ip = request.remote_addr

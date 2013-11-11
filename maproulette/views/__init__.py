@@ -1,8 +1,8 @@
-"""The various views and routes for MapRoulette"""
+"""The variosus views and routes for MapRoulette"""
 
 import json
 import logging
-from flask import render_template, redirect, session, abort, request, jsonify
+from flask import render_template, redirect, session, abort, request, jsonify, json
 from flask.ext.sqlalchemy import get_debug_queries
 from geoalchemy2.functions import ST_Contains, ST_Intersects, \
     ST_Buffer, ST_AsText
@@ -15,9 +15,21 @@ from maproulette.helpers import osmlogin_required, get_task_or_404, \
     GeoPoint, JsonData, JsonTasks, osmerror, get_random_task, \
     get_challenge_or_404
 from flask.ext.restful import reqparse, fields, marshal_with, marshal
-from maproulette.views.admin import AdminTasksApi, AdminTaskApi
+from flask.ext.restful.fields import get_value, Raw
 from flask.ext.restful import Api
+import geojson
 
+class GeoJsonField(Raw):
+    """A GeoJson Representation of an Shapely object"""
+
+    def output(self, key, obj):
+        value = get_value(key if self.attribute is None else self.attribute, obj)
+        if value is None:
+            return self.default
+        else:
+            value = geojson.loads(value)            
+        return self.format(value)
+        
 challenge_fields = {'id': fields.String(attribute='slug'),
                     'title': fields.String,
                     'description': fields.String,
@@ -25,10 +37,12 @@ challenge_fields = {'id': fields.String(attribute='slug'),
                     'help': fields.String,
                     'instruction': fields.String,
                     'active': fields.Boolean,
-                    'difficulty': fields.Integer}
+                    'difficulty': fields.Integer,
+                    'polygon': GeoJsonField}
 
 task_fields = { 'id': fields.String(attribute='identifier'),
-                'location': fields.String,
+                'location': GeoJsonField,
+                'manifest': GeoJsonField,
                 'text': fields.String(attribute='instructions')}
 
 
@@ -39,11 +53,6 @@ def index():
     return render_template('index.html')
 
 api = Api(app)
-# Some administrative APIs
-api.add_resource(AdminTasksApi,
-                 '/api/u/<string:challenge_slug>/tasks')
-api.add_resource(AdminTaskApi,
-                 '/api/u/<string:challenge_slug>/task/<string:task_id>')
 
 ### CLIENT API ###
 #
@@ -77,7 +86,6 @@ def challenges():
         contains = session['home_location']
         coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
         app.logger.debug('home location retrieved from session')
-    app.logger.debug(session)
     query = db.session.query(Challenge)
     if difficulty:
         query = query.filter(Challenge.difficulty==difficulty)
@@ -99,18 +107,19 @@ def challenges():
         challenges = [marshal(challenge, challenge_fields)
                       for challenge in db.session.query(Challenge).all()
                       if challenge.active]    
-    app.logger.debug('returning %i challenges' % (len(challenges)))
+    app.logger.debug(challenges)
     return jsonify(challenges=challenges)
 
 
 @app.route('/api/c/challenges/<challenge_slug>')
-@osmlogin_required
-@marshal_with(challenge_fields)
 def challenge_by_slug(challenge_slug):
     """Returns the metadata for a challenge"""
-    challenge = get_challenge_or_404(challenge_slug, "Default")
-    app.logger.debug('done dialog for challenge: %s' % (challenge.done_dlg))
-    return challenge
+    app.logger.debug('retrieving challenge %s' % (challenge_slug,))
+    challenge = [marshal(
+        get_challenge_or_404(challenge_slug),
+        challenge_fields)]
+    app.logger.debug(challenge)
+    return jsonify(challenge=challenge)
 
 @app.route('/api/c/challenges/<challenge_slug>/stats')
 @osmlogin_required
@@ -146,9 +155,9 @@ def challenge_tasks(challenge_slug):
     assign = args['assign']
     near = args['near']
     logging.info("{user} requesting {num} tasks from {challenge} near {near} assiging: {assign}".format(user=osmid, num=num, challenge=challenge_slug, near=near, assign=assign))
-    coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
     task_list = []
     if near:
+        coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
         task_query = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
         task_list = [task for task in task_query
