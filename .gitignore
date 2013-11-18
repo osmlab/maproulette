@@ -9,3 +9,5 @@ maproulette.js
 sessiondata/*
 build/
 *.cfg
+.project
+.pydev*
