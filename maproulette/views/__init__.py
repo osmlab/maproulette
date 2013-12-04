@@ -1,4 +1,4 @@
-"""The variosus views and routes for MapRoulette"""
+"""The various views and routes for MapRoulette"""
 
 import json
 import logging
