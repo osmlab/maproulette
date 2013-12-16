@@ -14,10 +14,10 @@ import sys
 import os
 from sqlalchemy import create_engine   
 from sqlalchemy.orm import sessionmaker
-from maproulette.models import Challenge, Task, Action
+from maproulette.models import Challenge, Task, Action, TaskGeometry
 import simplejson as json
 from shapely.geometry import Point
-from shapely.wkt import dumps
+from geojson import dumps
 
 def load_sampledata(datapath):
     '''
@@ -32,6 +32,7 @@ def load_sampledata(datapath):
     c.slug = 'test'
     c.title = 'Just a test challenge'
     c.blurb = 'This challenge serves no purpose but to test everything'
+    c.description = 'This challenge serves no purpose but to test everything'
     c.active = True
     c.difficulty = 1
     
@@ -44,7 +45,7 @@ def load_sampledata(datapath):
             location = Point(coordinates[0], coordinates[1])
             t = Task('test', identifier)
             t.location = location
-            t.manifest = dumps(location)
+            t.geometries.append(TaskGeometry(location))
             t.run = 1
             a = Action(t.id, "created")
             tasks.append(t)

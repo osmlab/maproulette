@@ -3,22 +3,18 @@ from flask.ext.restful import reqparse, fields, marshal, Api, Resource
 from flask.ext.restful.fields import get_value, Raw
 from flask import session
 from maproulette.helpers import GeoPoint, get_challenge_or_404, \
-    get_random_task
+    get_random_task, osmlogin_required
 from maproulette.models import Challenge, Task, Action, db
-import geojson 
+from geoalchemy2.functions import ST_Buffer
+from shapely.geometry import mapping, shape
+import json
 
 class GeoJsonField(Raw):
     """A GeoJson Representation of an Shapely object"""
+    def format(self, value):
+        app.logger.debug(value)
+        return str(value)
 
-    def output(self, key, obj):
-        value = get_value(key if self.attribute is None else self.attribute, obj)
-        if value is None:
-            return self.default
-        else:
-            app.logger.debug(value)
-            value = geojson.loads(value)            
-        return self.format(value)
-        
 challenge_fields = {
     'id':           fields.String(attribute='slug'),
     'title':        fields.String,
@@ -28,19 +24,19 @@ challenge_fields = {
     'instruction':  fields.String,
     'active':       fields.Boolean,
     'difficulty':   fields.Integer,
-    'polygon':      GeoJsonField
+    'geometry':     GeoJsonField
 }
 
 task_fields = {
     'id':           fields.String(attribute='identifier'),
     'location':     GeoJsonField,
-    'manifest':     GeoJsonField,
     'text':         fields.String(attribute='instructions')
 }
 
 api = Api(app)
 
 class ApiChallengeList(Resource):
+    method_decorators = [osmlogin_required]
     def get(self):
         """returns a list of challenges.
         Optional URL parameters are:
@@ -117,12 +113,12 @@ class ApiChallengeStats(Resource):
         available = len([task for task in tasks
                          if challenge.task_available(task, osmid)])
         
-        logging.info("{user} requested challenge stats for {challenge}".format(
+        app.logger.info("{user} requested challenge stats for {challenge}".format(
                 user=osmid, challenge=slug))
                 
         return {'total': total, 'available': available}
 
-class ApiChallengeTaskList(Resource):
+class ApiChallengeTask(Resource):
     def get(self, slug):
         "Returns a task for specified challenge"
         challenge = get_challenge_or_404(slug, True)
@@ -135,51 +131,50 @@ class ApiChallengeTaskList(Resource):
                             help='Assign could not be parsed')
         args = parser.parse_args()
         osmid = session.get('osm_id')
-        # By default, we return a single task, but no more than 10
-        num = min(args['num'], 10)
         assign = args['assign']
         near = args['near']
         
-        app.logger.info("{user} requesting {num} tasks from {challenge} near {near} assiging: {assign}".format(user=osmid, num=num, challenge=slug, near=near, assign=assign))
-        
-        task_list = []
+        app.logger.info("{user} requesting task from {challenge} near {near} assiging: {assign}".format(user=osmid, challenge=slug, near=near, assign=assign))
+
+        task = None
         if near:
             coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
             task_query = Task.query.filter(Task.location.ST_Intersects(
-                    ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(num)
+                    ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(1)
             task_list = [task for task in task_query
                          if challenge.task_available(task, osmid)]
-        if not near or not task_list:
+        if not near or not task:
             # If no location is specified, or no tasks were found, gather
             # random tasks
-            task_list = [get_random_task(challenge) for _ in range(num)]
-            task_list = filter(None, task_list)
+            task = get_random_task(challenge)
             # If no tasks are found with this method, then this challenge
             # is complete
-        if not task_list:
+        if not task:
             # Is this the right error?
             osmerror("ChallengeComplete",
                      "Challenge {} is complete".format(slug))
         if assign:
-            for task in task_list:
-                action = Action(task.id, "assigned", osmid)
-                task.current_state = action
-                db.session.add(action)
-                db.session.add(task)
-            db.session.commit()
+            task.actions.append(Action("assigned", osmid))
+            db.session.add(task)
+            
+        db.session.commit()
+            
+        app.logger.debug("task found matching criteria")
         
-        app.logger.info(
-            "{num} tasks found matching criteria".format(num=len(task_list)))
-        
-        tasks = [marshal(task, task_fields) for task in task_list]
+        return marshal(task, task_fields)
 
-        for query in get_debug_queries():
-            app.logger.debug(query)
-
-        return tasks
-
+class ApiChallengeTaskGeometries(Resource):
+    def get(self, slug, identifier):
+        task = Task.query.filter(
+            Task.challenge_slug == slug).filter(
+            Task.identifier == identifier).all()[-1]
+        if task is None:
+            abort(404) # FIXME is this the right error code?
+        app.logger.debug(task.geometries)
+        return task.geometries
 
 api.add_resource(ApiChallengeList, '/api/challenges/')
 api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
 api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
-api.add_resource(ApiChallengeTaskList, '/api/challenge/<slug>/tasks')
+api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
+api.add_resource(ApiChallengeTaskGeometries, '/api/challenge/<slug>/task/<identifier>/geom')

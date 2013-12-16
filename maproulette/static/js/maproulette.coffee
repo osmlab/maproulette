@@ -104,8 +104,10 @@ makeDlg = (dlgData) ->
   ###
   # Takes dialog box data and returns a dialog box for nextUp actions
   ###
+  dlgText = dlgData.text or ""
+  dlgButtons = dlgData.buttons or []
   dlg = $('<div></div>').addClass("dlg")
-  dlg.append(markdown.makeHtml(dlgData.text))
+  dlg.append(markdown.makeHtml(dlgText))
   buttons = $('<div></div>').addClass("buttons")
   for item in dlgData.buttons
     button = makeButton(item.label, item.action)
@@ -248,7 +250,11 @@ revGeocodeOSMObj = (feature) ->
 
 revGeocode = ->
   ###
-  # Reverse geocodes the center of the (currently displayed) map
+  # Reverse geocodes the center of the (currently displayed) mapTarr
+nshi
+ore,
+Coun
+
   ###
   mqurl = "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=" + map.getCenter().lat + " &lon=" + map.getCenter().lng
   #close any notifications that are still hanging out on the page.
@@ -287,7 +293,7 @@ showTask = (task) ->
   # Gets a specific challenge
   ###
   console.log(getting challenge)
-  request = $.ajax {url: "/api/c/challenges/#{id}"}
+  request = $.ajax {url: "/api/challenge/#{id}"}
   request.done (data) ->
     slug = data.slug
     console.log(data)
@@ -304,11 +310,11 @@ showTask = (task) ->
   console.log('getting new challenge')
   # near default was already set in the init function, no need to do it again here?
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
-  url = "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"
-  request = $.ajax {url: "/api/c/challenges?difficulty=#{difficulty}&contains=#{near}"}
+  url = "/api/challenges?difficulty=#{difficulty}&contains=#{near}"
+  request = $.ajax {url: "/api/challenges?difficulty=#{difficulty}&contains=#{near}"}
   request.done (data) ->
     # for some reason we don't get challenge.slug but we do get challenge.id which is the slug?
-    challenge = data.challenges[0].id
+    challenge = data[0].id
     console.log(JSON.stringify(challenge, null, 4))
     console.log('we got a challenge: ' + challenge)
     updateChallenge(challenge)
@@ -323,10 +329,10 @@ showTask = (task) ->
   # location (if supplied)
   ###
   near = "#{map.getCenter().lng}|#{map.getCenter().lat}" if not near
-  url = "/api/c/challenges/#{challenge}/tasks?near=#{near}"
+  url = "/api/challenge/#{challenge}/tasks?near=#{near}"
   request = $.ajax {url: url}
   request.success (data) ->
-    currentTask = data.tasks[0]
+    currentTask = data[0]
     showTask(currentTask)
   request.fail (jqXHR, textStatus, errorThrown) ->
     ajaxErrorHandler(jqXHR, textStatus, errorThrown)
@@ -442,9 +448,9 @@ updateStats = (challenge) ->
   # Get the stats for the challenge and display the count of remaining
   # tasks
   ###
-  request = $.ajax {url: "/api/c/challenges/#{challenge}/stats"}
+  request = $.ajax {url: "/api/challenge/#{challenge}/stats"}
   request.done (data) ->
-    remaining = data.stats.total - data.stats.done
+    remaining = data.total - data.done
     $("#counter").text remaining
   request.fail (ajaxErrorHandler)
 
@@ -453,9 +459,9 @@ updateChallenge = (challenge) ->
   # Use the current challenge metadata to fill in the web page
   ###
   console.log('updating challenge')
-  request = $.ajax {url: "/api/c/challenges/#{challenge}"}
+  request = $.ajax {url: "/api/challenge/#{challenge}"}
   request.done (data) ->
-    currentChallenge = data.challenge
+    currentChallenge = data
     $('#challengeDetails').text currentChallenge.name
     if data.tileurl? and data.tileurl != tileURL
       tileURL = data.tileurl
