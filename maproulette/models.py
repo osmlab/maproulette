@@ -1,12 +1,13 @@
 """This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker, synonym
+from sqlalchemy.orm import scoped_session, sessionmaker, synonym, \
+    column_property
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
+from geoalchemy2.shape import from_shape, to_shape
 from geoalchemy2.functions import ST_AsGeoJSON
-from geoalchemy2.shape import from_shape
 import random
 from datetime import datetime
 from maproulette import app
@@ -29,41 +30,75 @@ def getrandom():
 class User(db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True, \
+    id = db.Column(
+        db.Integer, 
+        unique=True, 
+        primary_key=True,
         nullable=False)
-    oauth_token = db.Column(db.String)
-    oauth_secret = db.Column(db.String)
-    display_name = db.Column(db.String, nullable=False)
-    home_location = db.Column(Geometry('POINT', management=True))
-    languages = db.Column(db.String)
-    changeset_count = db.Column(db.Integer)
-    last_changeset_id = db.Column(db.Integer)
-    last_changeset_date = db.Column(db.DateTime)
-    last_changeset_bbox = db.Column(Geometry('POLYGON', \
+    oauth_token = db.Column(
+        db.String)
+    oauth_secret = db.Column(
+        db.String)
+    display_name = db.Column(
+        db.String, 
+        nullable=False)
+    home_location = db.Column(
+        Geometry('POINT', management=True))
+    languages = db.Column(
+        db.String)
+    changeset_count = db.Column(
+        db.Integer)
+    last_changeset_id = db.Column(
+        db.Integer)
+    last_changeset_date = db.Column(
+        db.DateTime)
+    last_changeset_bbox = db.Column(
+        Geometry('POLYGON',
         management=True))
-    osm_account_created = db.Column(db.DateTime)
-    difficulty = db.Column(db.SmallInteger)
+    osm_account_created = db.Column(
+        db.DateTime)
+    difficulty = db.Column(
+        db.SmallInteger)
 
     def __unicode__(self):
         return self.display_name
 
-
 class Challenge(db.Model):
     __tablename__ = 'challenges'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True, \
+    id = db.Column(
+        db.Integer, 
+        unique=True, 
+        primary_key=True,
         nullable=False)
-    slug = db.Column(db.String(72), unique=True, primary_key=True, \
+    slug = db.Column(
+        db.String(72), 
+        unique=True, 
+        primary_key=True,
         nullable=False)
-    title = db.Column(db.String(128), nullable=False)
-    description = db.Column(db.String)
-    blurb = db.Column(db.String, nullable=False)
-    geom = db.Column(Geometry('POLYGON'))
-    helptext = db.Column(db.String)
-    instruction = db.Column(db.String)
-    run = db.Column(db.String(72))
-    active = db.Column(db.Boolean, nullable=False)
-    difficulty = db.Column(db.SmallInteger, nullable=False)
+    title = db.Column(
+        db.String(128), 
+        nullable=False)
+    description = db.Column(
+        db.String,
+        nullable = False)
+    blurb = db.Column(
+        db.String, 
+        nullable=False)
+    geom = db.Column(
+        Geometry('POLYGON'))
+    helptext = db.Column(
+        db.String)
+    instruction = db.Column(
+        db.String)
+    run = db.Column(
+        db.String(72))
+    active = db.Column(
+        db.Boolean, 
+        nullable=False)
+    difficulty = db.Column(
+        db.SmallInteger, 
+        nullable=False)
     type = db.Column(db.String, default='default', nullable=False)
 
     # note that spatial indexes seem to be created automagically
@@ -77,7 +112,7 @@ class Challenge(db.Model):
         
     @property
     def geometry(self):
-        return ST_AsGeoJSON(self.geom)
+        return to_shape(self.geom)
     
     @geometry.setter
     def geometry(self, shape):
@@ -90,6 +125,7 @@ class Challenge(db.Model):
         available or not."""
         avail = False
         action = task.current_action
+        app.logger.debug(action)
         if action.status == 'available':
             avail = True
         if not osmid:
@@ -106,20 +142,39 @@ class Challenge(db.Model):
 class Task(db.Model):
     __tablename__ = 'tasks'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True, \
+    id = db.Column(
+        db.Integer, 
+        unique=True, 
+        primary_key=True,
         nullable=False)
-    identifier = db.Column(db.String(72), nullable=False)
-    challenge_slug = db.Column(db.String, \
+    identifier = db.Column(
+        db.String(72), 
+        nullable=False)
+    challenge_slug = db.Column(
+        db.String,
         db.ForeignKey('challenges.slug'))
-    geom = db.Column(Geometry('POINT'), nullable=False)
-    run = db.Column(db.String(72), nullable=False)
-    random = db.Column(db.Float, default=getrandom, nullable=False)
-    manifest = db.Column(db.String, nullable=False)
-    actions = db.relationship("Action", backref=db.backref("task"))
-    instructions = db.Column(db.String())
-    challenge = db.relationship("Challenge",
-                                backref=db.backref('tasks', \
-                                order_by=id))
+    geom = db.Column(
+        Geometry('POINT'), 
+        nullable=False)
+    run = db.Column(
+        db.String(72), 
+        nullable=False)
+    random = db.Column(
+        db.Float, 
+        default=getrandom, 
+        nullable=False)
+    manifest = db.Column(
+        db.String)
+    geometries = db.relationship(
+        "TaskGeometry")
+    actions = db.relationship(
+        "Action", 
+        backref=db.backref("task"))
+    instructions = db.Column(
+        db.String())
+    challenge = db.relationship(
+        "Challenge",
+        backref=db.backref('tasks', order_by=id))
     # note that spatial indexes seem to be created automagically
     __table_args__ = (
         db.Index('idx_id', id),
@@ -144,7 +199,7 @@ class Task(db.Model):
 
     @property
     def location(self):
-        return ST_AsGeoJSON(self.geom)
+        return to_shape(self.geom)
     
     @location.setter
     def location(self, shape):
@@ -152,16 +207,42 @@ class Task(db.Model):
 
     location = synonym('geom', descriptor=location)
 
+class TaskGeometry(db.Model):
+    __tablename__ = 'task_geometries'
+    task_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('tasks.id'),
+        nullable = False,
+        primary_key = True)
+    geom = db.Column(
+        Geometry, 
+        nullable = False,
+        primary_key = True) 
+        
+    def __init__(self, shape):
+        self.geom = from_shape(shape)
+                
 class Action(db.Model):
     __tablename__ = 'actions'
 
-    id = db.Column(db.Integer, unique=True, primary_key=True, \
+    id = db.Column(
+        db.Integer, 
+        unique=True, 
+        primary_key=True,
         nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.now, \
+    timestamp = db.Column(
+        db.DateTime, 
+        default=datetime.now,
         nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'))
-    status = db.Column(db.String(32), nullable=False)
+    user_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('users.id'))
+    task_id = db.Column(
+        db.Integer, 
+        db.ForeignKey('tasks.id'))
+    status = db.Column(
+        db.String(32), 
+        nullable=False)
 
     def __repr__(self):
         return "<Action %s set on %s>" % (self.status, self.timestamp)
