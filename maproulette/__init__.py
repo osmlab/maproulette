@@ -6,7 +6,7 @@ from flaskext.coffee import coffee
 
 # initialize server KV session store
 if not os.path.exists('./sessiondata'):
-	os.makedirs('./sessiondata')
+    os.makedirs('./sessiondata')
 store = FilesystemStore('./sessiondata')
 
 # instantiate flask app
@@ -15,12 +15,9 @@ app = Flask(__name__,
            template_folder = 'templates',
            static_url_path = '/static')
 
-app.config.from_pyfile('maproulette.cfg')
-app.config['SECRET_KEY'] = os.urandom(24)
-app.debug = True
-app.testing = True
+from maproulette import config
+app.config.from_object(config.DevelopmentConfig)
 
-#from maproulette import views, models
 from maproulette import models, views, oauth, api
 
 # connect flask app to server KV session store
