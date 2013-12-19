@@ -14,6 +14,7 @@ import sys
 import os
 from sqlalchemy import create_engine   
 from sqlalchemy.orm import sessionmaker
+from maproulette import app
 from maproulette.models import Challenge, Task, Action, TaskGeometry
 import simplejson as json
 from shapely.geometry import Point
@@ -52,7 +53,7 @@ def load_sampledata(datapath):
             
     print "%i tasks loaded..." % (identifier,)
     
-    feedengine = create_engine('postgresql://osm:osm@localhost/maproulette')
+    feedengine = create_engine('postgresql://osm:osm@localhost/maproulette_dev')
 
     Session = sessionmaker(bind=feedengine)
 
