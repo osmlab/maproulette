@@ -2,7 +2,6 @@ import os, sys
 from flask import Flask, session, render_template, redirect
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
-from flaskext.coffee import coffee
 
 # initialize server KV session store
 if not os.path.exists('./sessiondata'):
@@ -22,6 +21,3 @@ from maproulette import models, views, oauth, api
 
 # connect flask app to server KV session store
 KVSessionExtension(store, app)
-
-# Coffeescript enable the app
-coffee(app)
