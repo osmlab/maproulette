@@ -1,42 +1,60 @@
 from maproulette import app
-from flask.ext.restful import reqparse, fields, marshal, Api, Resource
+from flask.ext.restful import reqparse, fields, marshal,\
+marshal_with, Api, Resource
 from flask.ext.restful.fields import get_value, Raw
-from flask import session
+from flask import session, make_response
 from maproulette.helpers import GeoPoint, get_challenge_or_404, \
     get_random_task, osmlogin_required
 from maproulette.models import Challenge, Task, Action, db
-from geoalchemy2.functions import ST_Buffer
-from shapely.geometry import mapping, shape
-import json
+from geoalchemy2.functions import ST_Buffer, ST_AsGeoJSON
+from shapely import geometry
+import geojson
+import json  
 
-class GeoJsonField(Raw):
-    """A GeoJson Representation of an Shapely object"""
+class ProtectedResource(Resource):
+    method_decorators = [osmlogin_required]
+
+class PointField(Raw):
     def format(self, value):
-        app.logger.debug(value)
-        return str(value)
+        app.logger.debug(type(value))
+        return {}
 
-challenge_fields = {
-    'id':           fields.String(attribute='slug'),
-    'title':        fields.String,
+challenge_summary = {
+    'slug':         fields.String,
+    'title':        fields.String
+}
+
+challenge_details = {
     'description':  fields.String,
     'blurb':        fields.String,
     'help':         fields.String,
     'instruction':  fields.String,
     'active':       fields.Boolean,
     'difficulty':   fields.Integer,
-    'geometry':     GeoJsonField
 }
 
 task_fields = {
     'id':           fields.String(attribute='identifier'),
-    'location':     GeoJsonField,
     'text':         fields.String(attribute='instructions')
 }
 
 api = Api(app)
 
-class ApiChallengeList(Resource):
+#override the default JSON representation to support GeoJSON
+@api.representation('application/json')
+def output_json(data, code, headers=None):
+    if isinstance(data, geometry.base.BaseGeometry):
+        app.logger.debug('this is a geo element')
+        resp = make_response(geojson.dumps(data), code)
+    else:
+        app.logger.debug('this is a non geo element')
+        resp = make_response(json.dumps(data), code)
+    resp.headers.extend(headers or {})
+    return resp
+
+class ApiChallengeList(ProtectedResource):
     method_decorators = [osmlogin_required]
+    @marshal_with(challenge_summary)
     def get(self):
         """returns a list of challenges.
         Optional URL parameters are:
@@ -45,6 +63,7 @@ class ApiChallengeList(Resource):
         challenges whose bounding polygons contain this point)
         example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
         """
+        app.logger.debug('retrieving list of challenges')
 
         # initialize the parser
         parser = reqparse.RequestParser()
@@ -59,7 +78,7 @@ class ApiChallengeList(Resource):
         
         # Try to get location from argument or user prefs
         contains = None
-        
+
         if args['contains']:
             contains = args['contains']
             coordWKT = 'POINT(%s %s)' % (contains.lat, contains.lon)
@@ -67,43 +86,50 @@ class ApiChallengeList(Resource):
             contains = session['home_location']
             coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
             app.logger.debug('home location retrieved from session')
-        
+
         # get the list of challenges meeting the criteria
         query = db.session.query(Challenge)
+
         if difficulty:
             query = query.filter(Challenge.difficulty==difficulty)
         if contains:
             query = query.filter(Challenge.geom.ST_Contains(coordWKT))
 
-        challenges = [marshal(challenge, challenge_fields)
-                      for challenge in query.all() if challenge.active]
+        challenges = [challenge for challenge in query.all() 
+        if challenge.active]
         
         #if there are no near challenges, return anything
         if len(challenges) == 0:
             app.logger.debug('we have nothing close, looking all over within difficulty setting')
-            challenges = [marshal(challenge, challenge_fields)
-                          for challenge in db.session.query(Challenge).\
-                              filter(Challenge.difficulty==difficulty).all()
-                          if challenge.active]
+            challenges = [challenge for challenge in query.filter(
+                Challenge.difficulty==difficulty).all()
+                if challenge.active]
                           
+
+        app.logger.debug('we still have nothing, returning any challenge')
+
         # what if we still don't get anything? get anything!
         if len(challenges) == 0:
-            app.logger.debug('we still have nothing, returning any challenge')
-            challenges = [marshal(challenge, challenge_fields)
-                          for challenge in db.session.query(Challenge).all()
-                          if challenge.active]    
-
-        app.logger.debug(challenges)
+            challenges = [challenge
+            for challenge in query.all()
+            if challenge.active]
         return challenges
 
-class ApiChallengeDetail(Resource):
+class ApiChallengeDetail(ProtectedResource):
+    @marshal_with(challenge_details)
     def get(self, slug):
         app.logger.debug('retrieving challenge %s' % (slug,))
-        return marshal(
-            get_challenge_or_404(slug),
-            challenge_fields)
+        return get_challenge_or_404(slug)
+
+class ApiChallengePolygon(ProtectedResource):
+    def get(self, slug):
+        app.logger.debug('retrieving challenge %s' % (slug,))
+        challenge = get_challenge_or_404(slug)
+        geometry = challenge.geometry
+        app.logger.debug(geojson.dumps(geometry))
+        return geometry
         
-class ApiChallengeStats(Resource):
+class ApiChallengeStats(ProtectedResource):
     def get(self, slug):
         challenge = get_challenge_or_404(slug, True)
         
@@ -118,7 +144,7 @@ class ApiChallengeStats(Resource):
                 
         return {'total': total, 'available': available}
 
-class ApiChallengeTask(Resource):
+class ApiChallengeTask(ProtectedResource):
     def get(self, slug):
         "Returns a task for specified challenge"
         challenge = get_challenge_or_404(slug, True)
@@ -163,7 +189,7 @@ class ApiChallengeTask(Resource):
         
         return marshal(task, task_fields)
 
-class ApiChallengeTaskGeometries(Resource):
+class ApiChallengeTaskGeometries(ProtectedResource):
     def get(self, slug, identifier):
         task = Task.query.filter(
             Task.challenge_slug == slug).filter(
@@ -175,6 +201,7 @@ class ApiChallengeTaskGeometries(Resource):
 
 api.add_resource(ApiChallengeList, '/api/challenges/')
 api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
+api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/geometry')
 api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
 api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
 api.add_resource(ApiChallengeTaskGeometries, '/api/challenge/<slug>/task/<identifier>/geom')
