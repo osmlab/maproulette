@@ -35,7 +35,7 @@ challenge_details = {
 
 task_fields = {
     'id':           fields.String(attribute='identifier'),
-    'text':         fields.String(attribute='instructions')
+    'text':         fields.String(attribute='instruction')
 }
 
 api = Api(app)
@@ -48,6 +48,7 @@ def output_json(data, code, headers=None):
         resp = make_response(geojson.dumps(data), code)
     else:
         app.logger.debug('this is a non geo element')
+        app.logger.debug(data)
         resp = make_response(json.dumps(data), code)
     resp.headers.extend(headers or {})
     return resp
@@ -100,6 +101,7 @@ class ApiChallengeList(ProtectedResource):
         
         #if there are no near challenges, return anything
         if len(challenges) == 0:
+            query = db.session.query(Challenge)
             app.logger.debug('we have nothing close, looking all over within difficulty setting')
             challenges = [challenge for challenge in query.filter(
                 Challenge.difficulty==difficulty).all()
@@ -110,6 +112,7 @@ class ApiChallengeList(ProtectedResource):
 
         # what if we still don't get anything? get anything!
         if len(challenges) == 0:
+            query = db.session.query(Challenge)
             challenges = [challenge
             for challenge in query.all()
             if challenge.active]
@@ -180,6 +183,7 @@ class ApiChallengeTask(ProtectedResource):
             osmerror("ChallengeComplete",
                      "Challenge {} is complete".format(slug))
         if assign:
+            app.logger.debug('assigning task')
             task.actions.append(Action("assigned", osmid))
             db.session.add(task)
             

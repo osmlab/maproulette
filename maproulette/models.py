@@ -87,10 +87,12 @@ class Challenge(db.Model):
         nullable=False)
     geom = db.Column(
         Geometry('POLYGON'))
-    helptext = db.Column(
-        db.String)
+    help = db.Column(
+        db.String, 
+        nullable = False)
     instruction = db.Column(
-        db.String)
+        db.String,
+        nullable = False)
     run = db.Column(
         db.String(72))
     active = db.Column(
@@ -125,7 +127,6 @@ class Challenge(db.Model):
         available or not."""
         avail = False
         action = task.current_action
-        app.logger.debug(action)
         if action.status == 'available':
             avail = True
         if not osmid:
@@ -164,13 +165,13 @@ class Task(db.Model):
         default=getrandom, 
         nullable=False)
     manifest = db.Column(
-        db.String)
+        db.String) #deprecated
     geometries = db.relationship(
         "TaskGeometry")
     actions = db.relationship(
         "Action", 
         backref=db.backref("task"))
-    instructions = db.Column(
+    instruction = db.Column(
         db.String())
     challenge = db.relationship(
         "Challenge",

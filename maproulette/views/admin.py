@@ -18,19 +18,21 @@ challenge_fields = {'id': fields.String(attribute='slug'),
 task_fields = { 'id': fields.String(attribute='identifier'),
                 'location': fields.String,
                 'run': fields.String,
-                'text': fields.String(attribute='instructions')}
+                'instruction': fields.String}
 
 
 class AdminChallengeApi(Resource):
     method_decorators = [localonly]
     @marshal_with(challenge_fields)
     def get(self, challenge_slug):
-        challenge = get_challenge_or_404(challenge_slug, instance_type=False,
+        challenge = get_challenge_or_404(challenge_slug, 
+                                         instance_type=False,
                                          abort_if_inactive=False)
         return challenge
 
     def post(self, challenge_slug):
-        challenge = get_challenge_or_404(challenge_slug, instance_type=False,
+        challenge = get_challenge_or_404(challenge_slug, 
+                                         instance_type=False,
                                          abort_if_inactive=False)
         parser = reqparse.RequestParser()
         parser.add_argument('title')
@@ -54,7 +56,8 @@ class AdminChallengeApi(Resource):
 class AdminTasksApi(Resource):
     method_decorators = [localonly]
     def post(self, challenge_slug):
-        challenge = get_challenge_or_404(challenge_slug, instance_type=False,
+        challenge = get_challenge_or_404(challenge_slug, 
+                                         instance_type=False,
                                          abort_if_inactive=False)
         
 
@@ -73,7 +76,7 @@ class AdminTasksApi(Resource):
         results = []
         for t in tasks:
             task = Task(challenge.slug, t['id'])
-            task.instructions = t['text']
+            task.instruction = t['text']
             task.location = t['location']
             task.manifest = t['manifest']
             task.run = run
@@ -126,7 +129,7 @@ class AdminTaskApi(Resource):
         if request.form.get('run'):
             task['run'] = request.form['run']
         if request.form.get('text'):
-            task['instructions'] = request.form['text']
+            task['instruction'] = request.form['text']
         if request.form.get('location'):
             ### WILL THIS WORK???
             task['location'] = request.form['location']
@@ -145,7 +148,7 @@ class AdminTaskApi(Resource):
         if request.form.get('run'):
             task['run'] = request.form['run']
         if request.form.get('text'):
-            task['instructions'] = request.form['text']
+            task['instruction'] = request.form['text']
         if request.form.get('location'):
             ### WILL THIS WORK???
             task['location'] = request.form['location']
