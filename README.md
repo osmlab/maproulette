@@ -31,7 +31,7 @@ Note that on Mac OSX you may need to add a symlink to the `coffee` executable:
 	
 	ln -s ~/node_modules/coffee-script/bin/coffee /usr/local/bin/
 	
-### Setting up the DB
+### Setting up the database
 
 Then as the `postgres` user:
 
@@ -45,11 +45,15 @@ Then as you:
 
     psql -h localhost -U osm -d maproulette -c 'CREATE EXTENSION postgis'
 
-At this point you should spawn a new shell for the `virtualenvwrapper` scripts to be sourced.
+### Setting up your environment
+
+If you have not used `virtualenvwrapper` before, you should spawn a new shell at this point for the `virtualenvwrapper` scripts to be sourced.
 
 Set up the virtual environment and activate it:
 
     mkvirtualenv maproulette
+
+### Setting up MapRoulette itself
 
 Clone the repo:
 
