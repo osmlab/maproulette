@@ -11,15 +11,11 @@ Note that there is also an Amazon EC2 AMI that has all the requirements for MapR
     workon maproulette
     python manage.py runserver
 
-### Dependencies: General
+## Dependencies
 
-MapRoulette requires [CoffeeScript](http://coffeescript.org/), which can easily be installed using `npm`:
+This is different for Linux and OSX.
 
-    npm install coffee-script -g
-    
-Note that you may need to run this as root.
-
-### Dependencies: Linux
+### Linux
 
 On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
 
@@ -27,7 +23,7 @@ On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
 
 Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as part of their packages, see [here](http://trac.osgeo.org/postgis/wiki/UsersWikiInstall) for guidance.
 
-### Dependencies: OSX
+### OSX
 
 [See installation with Homebrew](https://gist.github.com/mvexel/5526126)
 
@@ -79,6 +75,10 @@ Create a configuration file. Start by copying the example and modify as needed:
 Generate the database tables:
 
     python manage.py create_db
+    
+If you're developing, you may want to load a test challenge with 1000 sample tasks:
+
+    bin/load_fixtures.py
 
 And run the server:
 
