@@ -23,6 +23,12 @@ def clean_pyc():
     subprocess.call(clean_command)
 
 @manager.command
+def drop_db():
+    """Creates the database tables"""
+    from maproulette import database
+    database.drop_db()
+
+@manager.command
 def create_db():
     """Creates the database tables"""
     from maproulette import database

@@ -16,26 +16,18 @@ class ProtectedResource(Resource):
 
 class PointField(Raw):
     def format(self, value):
-        app.logger.debug(type(value))
-        return {}
+        app.logger.debug(value.coords)
+        return '|'.join([str(value.x), str(value.y)])
 
 challenge_summary = {
     'slug':         fields.String,
     'title':        fields.String
 }
 
-challenge_details = {
-    'description':  fields.String,
-    'blurb':        fields.String,
-    'help':         fields.String,
-    'instruction':  fields.String,
-    'active':       fields.Boolean,
-    'difficulty':   fields.Integer,
-}
-
 task_fields = {
     'id':           fields.String(attribute='identifier'),
-    'text':         fields.String(attribute='instruction')
+    'text':         fields.String(attribute='instruction'),
+    'location':     PointField
 }
 
 api = Api(app)
@@ -48,7 +40,6 @@ def output_json(data, code, headers=None):
         resp = make_response(geojson.dumps(data), code)
     else:
         app.logger.debug('this is a non geo element')
-        app.logger.debug(data)
         resp = make_response(json.dumps(data), code)
     resp.headers.extend(headers or {})
     return resp
@@ -119,15 +110,16 @@ class ApiChallengeList(ProtectedResource):
         return challenges
 
 class ApiChallengeDetail(ProtectedResource):
-    @marshal_with(challenge_details)
     def get(self, slug):
         app.logger.debug('retrieving challenge %s' % (slug,))
-        return get_challenge_or_404(slug)
+        challenge = get_challenge_or_404(slug, True)
+        app.logger.debug(challenge)
+        return marshal(challenge, challenge.marshal_fields)
 
 class ApiChallengePolygon(ProtectedResource):
     def get(self, slug):
         app.logger.debug('retrieving challenge %s' % (slug,))
-        challenge = get_challenge_or_404(slug)
+        challenge = get_challenge_or_404(slug, True)
         geometry = challenge.geometry
         app.logger.debug(geojson.dumps(geometry))
         return geometry
@@ -135,16 +127,14 @@ class ApiChallengePolygon(ProtectedResource):
 class ApiChallengeStats(ProtectedResource):
     def get(self, slug):
         challenge = get_challenge_or_404(slug, True)
-        
         total = Task.query.filter(slug == challenge.slug).count()
         tasks = Task.query.filter(slug == challenge.slug).all()
         osmid = session.get('osm_id')
         available = len([task for task in tasks
                          if challenge.task_available(task, osmid)])
-        
-        app.logger.info("{user} requested challenge stats for {challenge}".format(
+        app.logger.info(
+            "{user} requested challenge stats for {challenge}".format(
                 user=osmid, challenge=slug))
-                
         return {'total': total, 'available': available}
 
 class ApiChallengeTask(ProtectedResource):

@@ -107,7 +107,7 @@ OpenStreetMap</a> contributors';
     */
         var button, buttons, dlg, dlgButtons, dlgText, item, _i, _len, _ref;
         dlgText = dlgData.text || "";
-        dlgButtons = dlgData.buttons || [];
+        dlgButtons = dlgData.buttons.split('|') || [];
         dlg = $('<div></div>').addClass("dlg");
         dlg.append(markdown.makeHtml(dlgText));
         buttons = $('<div></div>').addClass("buttons");
@@ -306,15 +306,20 @@ OpenStreetMap</a> contributors';
         }
         return _results;
     };
-    showTask = function (task) {
+    showTask = function () {
         /*
     # Displays a task to the display and waits for the user prompt
     */
-        drawFeatures(task.manifest);
-        revGeocode();
-        if(currentTask.text) {
+        $.ajax({
+          url: "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geom"
+        }).success(function(data) {
+          console.log('got geom for task: ' + data);
+          drawFeatures(data);
+          revGeocode();
+          if(currentTask.text) {
             return notifications.emit(currentTask.text);
-        }
+          }
+        })
     };
     this.getChallenge = function (id) {
         /*
@@ -384,9 +389,9 @@ OpenStreetMap</a> contributors';
             url: url
         });
         request.success(function (data) {
-            currentTask = data[0];
-            console.log('showing task ' + currentTask);
-            return showTask(currentTask);
+            currentTask = data;
+            console.log('showing task ' + currentTask.id);
+            return showTask();
         });
         return request.fail(function (jqXHR, textStatus, errorThrown) {
             return ajaxErrorHandler(jqXHR, textStatus, errorThrown);
@@ -436,7 +441,7 @@ OpenStreetMap</a> contributors';
         challenge = currentChallenge.id;
         task_id = currentTask.id;
         request = $.ajax({
-            url: "/c/" + challenge + "/task/" + task_id,
+            url: "/api/challenge/" + challenge + "/task/" + task_id,
             type: "POST",
             data: payload
         });
@@ -559,7 +564,7 @@ OpenStreetMap</a> contributors';
                 changeMapLayer(tileURL, tileAttrib);
             }
             currentChallenge.help = markdown.makeHtml(currentChallenge.help);
-            return currentChallenge.doneDlg = makeDlg(currentChallenge.doneDlg);
+            return currentChallenge.done_dlg = makeDlg(currentChallenge.done_dlg);
         });
         return request.fail(ajaxErrorHandler);
     };
