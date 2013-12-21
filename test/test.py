@@ -3,6 +3,7 @@ import maproulette
 import unittest
 import tempfile
 
+
 class MapRouletteTestCase(unittest.TestCase):
 
     def setUp(self):

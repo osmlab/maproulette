@@ -13,9 +13,10 @@ from geoalchemy2.shape import to_shape
 oauth = OAuth()
 osm = oauth.remote_app(
     'osm',
-    app_key = 'OSM'
+    app_key='OSM'
 )
 oauth.init_app(app)
+
 
 @osm.tokengetter
 def get_osm_token(token=None):
@@ -24,10 +25,12 @@ def get_osm_token(token=None):
         resp = session['osm_oauth']
         return resp['oauth_token'], resp['oauth_token_secret']
 
+
 @app.route('/login')
 def oauth_authorize():
     callback_url = url_for('oauthorized', next=request.args.get('next'))
     return osm.authorize(callback=callback_url or request.referrer or None)
+
 
 @app.route('/oauthorized')
 @osm.authorized_handler
@@ -41,6 +44,7 @@ def oauthorized(resp):
     app.logger.debug('redirecting to %s' % next_url)
     return redirect(next_url)
 
+
 def retrieve_osm_data():
     data = osm.get('user/details').data
     app.logger.debug("getting user data from osm")
@@ -50,9 +54,9 @@ def retrieve_osm_data():
     userxml = data.find('user')
     osmid = userxml.attrib['id']
     # query for existing user
-    if bool(models.User.query.filter(models.User.id==osmid).count()):
+    if bool(models.User.query.filter(models.User.id == osmid).count()):
         app.logger.debug('user exists, getting from database')
-        user = models.User.query.filter(models.User.id==osmid).first()
+        user = models.User.query.filter(models.User.id == osmid).first()
     else:
         app.logger.debug('user is new, create local account')
         user = models.User()
@@ -61,11 +65,13 @@ def retrieve_osm_data():
         user.osm_account_created = userxml.attrib['account_created']
         homexml = userxml.find('home')
         if homexml is not None:
-            user.home_location = WKTElement('POINT(%s %s)' % (homexml.attrib['lon'], homexml.attrib['lat']))
+            user.home_location = WKTElement(
+                'POINT(%s %s)' %
+                (homexml.attrib['lon'], homexml.attrib['lat']))
         else:
             app.logger.debug('no home for this user')
         languages = userxml.find('languages')
-        #FIXME parse languages and add to user.languages string field
+        # FIXME parse languages and add to user.languages string field
         user.changeset_count = userxml.find('changesets').attrib['count']
         # get last changeset info
         changesetdata = osm.get('changesets?user=%s' % (user.id)).data
@@ -73,16 +79,16 @@ def retrieve_osm_data():
             lastchangeset = changesetdata.find('changeset')
             if 'min_lon' in lastchangeset.attrib:
                 wktbbox = 'POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))' % (
-                        lastchangeset.attrib['min_lon'],
-                        lastchangeset.attrib['min_lat'],
-                        lastchangeset.attrib['min_lon'],
-                        lastchangeset.attrib['max_lat'],
-                        lastchangeset.attrib['max_lon'],
-                        lastchangeset.attrib['max_lat'],
-                        lastchangeset.attrib['max_lon'],
-                        lastchangeset.attrib['min_lat'],
-                        lastchangeset.attrib['min_lon'],
-                        lastchangeset.attrib['min_lat'])
+                    lastchangeset.attrib['min_lon'],
+                    lastchangeset.attrib['min_lat'],
+                    lastchangeset.attrib['min_lon'],
+                    lastchangeset.attrib['max_lat'],
+                    lastchangeset.attrib['max_lon'],
+                    lastchangeset.attrib['max_lat'],
+                    lastchangeset.attrib['max_lon'],
+                    lastchangeset.attrib['min_lat'],
+                    lastchangeset.attrib['min_lon'],
+                    lastchangeset.attrib['min_lat'])
                 app.logger.debug(wktbbox)
                 user.last_changeset_bbox = WKTElement(wktbbox)
                 user.last_changeset_date = lastchangeset.attrib['created_at']

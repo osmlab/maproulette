@@ -8,24 +8,28 @@ challenge_types = {}
 
 # The default challenge type. Other challenge types should
 # inherit from this.
+
+
 class Default(Challenge):
 
-    done_dialog_text    = "This area is being loaded in your editor. Did you fix it?"
+    done_dialog_text = "This area is being loaded in your editor. Did you fix it?"
     done_dialog_buttons = "fixed|skipped"
 
     marshal_fields = {
-        'description':  fields.String,
-        'blurb':        fields.String,
-        'help':         fields.String,
-        'instruction':  fields.String,
-        'active':       fields.Boolean,
-        'difficulty':   fields.Integer
+        'description': fields.String,
+        'blurb': fields.String,
+        'help': fields.String,
+        'instruction': fields.String,
+        'active': fields.Boolean,
+        'difficulty': fields.Integer
     }
- 
+
     marshal_fields['done_dlg'] = {}
-    marshal_fields['done_dlg']['text'] = fields.String(attribute='done_dialog_text')
-    marshal_fields['done_dlg']['buttons'] = fields.String(attribute='done_dialog_buttons')
-    
+    marshal_fields['done_dlg']['text'] = fields.String(
+        attribute='done_dialog_text')
+    marshal_fields['done_dlg']['buttons'] = fields.String(
+        attribute='done_dialog_buttons')
+
     @property
     def task_status(self, task):
         current_state = task.current_action.state
@@ -37,8 +41,8 @@ class Default(Challenge):
             return 'done'
         elif (current.status == 'alreadyfixed' or
               current.status == 'falsepositive'):
-            l = [i for i in task.actions if i.status == "falsepositive" \
-                     or i.status == "alreadyfixed"]
+            l = [i for i in task.actions if i.status == "falsepositive"
+                 or i.status == "alreadyfixed"]
             if len(l) >= 2:
                 return 'done'
             else:
@@ -55,11 +59,11 @@ class Default(Challenge):
             task.setavailable()
         elif current.status == 'fixed':
             task.setdone()
-        elif (current.status == 'alreadyfixed' 
+        elif (current.status == 'alreadyfixed'
               or current.status == 'falsepositive'):
             # We should see two of these before setting the task to done
-            l = [i for i in task.actions if i.status == "falsepositive" \
-                     or i.status == "alreadyfixed"]
+            l = [i for i in task.actions if i.status == "falsepositive"
+                 or i.status == "alreadyfixed"]
             if len(l) >= 2:
                 task.setdone()
             else:
