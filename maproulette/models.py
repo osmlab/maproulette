@@ -11,6 +11,7 @@ from geoalchemy2.functions import ST_AsGeoJSON
 import random
 from datetime import datetime
 from maproulette import app
+from shapely.geometry import Polygon
 
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
@@ -86,7 +87,8 @@ class Challenge(db.Model):
         db.String, 
         nullable=False)
     geom = db.Column(
-        Geometry('POLYGON'))
+        Geometry('POLYGON'),
+        nullable = False)
     help = db.Column(
         db.String, 
         nullable = False)
@@ -108,19 +110,23 @@ class Challenge(db.Model):
 
     def __init__(self, slug):
         self.slug = slug
+        self.geometry = Polygon
 
     def __unicode__(self):
         return self.slug
         
     @property
-    def geometry(self):
-        return to_shape(self.geom)
+    def polygon(self):
+        if self.geom is not None:
+            return to_shape(self.geom)
+        else:
+            return Polygon([(-180, -90), (-180, 90), (180, 90), (180, -90), (-180, -90)])
     
-    @geometry.setter
-    def geometry(self, shape):
+    @polygon.setter
+    def polygon(self, shape):
         self.geom = from_shape(shape)
 
-    geometry = synonym('geom', descriptor=geometry)
+    polygon = synonym('geom', descriptor=polygon)
 
     def task_available(self, task, osmid = None):
         """The function for a task to determine if it's 
@@ -167,7 +173,8 @@ class Task(db.Model):
     manifest = db.Column(
         db.String) #deprecated
     geometries = db.relationship(
-        "TaskGeometry")
+        "TaskGeometry",
+        backref=db.backref("task"))
     actions = db.relationship(
         "Action", 
         backref=db.backref("task"))
@@ -222,6 +229,16 @@ class TaskGeometry(db.Model):
         
     def __init__(self, shape):
         self.geom = from_shape(shape)
+
+    @property
+    def geometry(self):
+        return to_shape(self.geom)
+    
+    @geometry.setter
+    def geometry(self, shape):
+        self.geom = from_shape(shape)
+
+    geometry = synonym('geom', descriptor=geometry)
                 
 class Action(db.Model):
     __tablename__ = 'actions'
