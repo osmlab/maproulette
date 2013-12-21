@@ -4,8 +4,8 @@ marshal_with, Api, Resource
 from flask.ext.restful.fields import get_value, Raw
 from flask import session, make_response
 from maproulette.helpers import GeoPoint, get_challenge_or_404, \
-    get_random_task, osmlogin_required
-from maproulette.models import Challenge, Task, Action, db
+    get_task_or_404, get_random_task, osmlogin_required
+from maproulette.models import Challenge, Task, TaskGeometry, Action, db
 from geoalchemy2.functions import ST_Buffer, ST_AsGeoJSON
 from shapely import geometry
 import geojson
@@ -32,15 +32,28 @@ task_fields = {
 
 api = Api(app)
 
-#override the default JSON representation to support GeoJSON
+#override the default JSON representation to support the geo objects
 @api.representation('application/json')
 def output_json(data, code, headers=None):
+    app.logger.debug(data)
+    # if this is a Shapely object, sump it as geojson
     if isinstance(data, geometry.base.BaseGeometry):
         app.logger.debug('this is a geo element')
         resp = make_response(geojson.dumps(data), code)
+    # if this is a list of task geometries, we need to unpack it
+    elif not isinstance(data, dict) and isinstance(data[0], TaskGeometry):
+        app.logger.debug('these are task geometries')
+        # unpack the geometries FIXME can this be done in the model?
+        geometries =  [g.geometry for g in data]
+        app.logger.debug(geometries)
+        resp = make_response(
+            geojson.dumps(geojson.GeometryCollection(geometries)), 
+            code)
+    # otherwise perform default json representation
     else:
         app.logger.debug('this is a non geo element')
         resp = make_response(json.dumps(data), code)
+    # finish and return the response object
     resp.headers.extend(headers or {})
     return resp
 
@@ -118,11 +131,9 @@ class ApiChallengeDetail(ProtectedResource):
 
 class ApiChallengePolygon(ProtectedResource):
     def get(self, slug):
-        app.logger.debug('retrieving challenge %s' % (slug,))
+        app.logger.debug('retrieving challenge %s polygon' % (slug,))
         challenge = get_challenge_or_404(slug, True)
-        geometry = challenge.geometry
-        app.logger.debug(geojson.dumps(geometry))
-        return geometry
+        return challenge.polygon
         
 class ApiChallengeStats(ProtectedResource):
     def get(self, slug):
@@ -183,19 +194,24 @@ class ApiChallengeTask(ProtectedResource):
         
         return marshal(task, task_fields)
 
+class ApiChallengeTaskDetails(ProtectedResource):
+    def get(self, slug, identifier):
+        app.logger.debug('getting task %s details' % (identifier,))
+        task = get_task_or_404(slug, identifier)
+        app.logger.debug(task)
+        return marshal(task, task_fields)
+
 class ApiChallengeTaskGeometries(ProtectedResource):
     def get(self, slug, identifier):
-        task = Task.query.filter(
-            Task.challenge_slug == slug).filter(
-            Task.identifier == identifier).all()[-1]
-        if task is None:
-            abort(404) # FIXME is this the right error code?
-        app.logger.debug(task.geometries)
+        app.logger.debug('getting task %s geometries' % (identifier,))
+        task = get_task_or_404(slug, identifier)
+        app.logger.debug(task)
         return task.geometries
 
 api.add_resource(ApiChallengeList, '/api/challenges/')
 api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
-api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/geometry')
+api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
 api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
 api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
-api.add_resource(ApiChallengeTaskGeometries, '/api/challenge/<slug>/task/<identifier>/geom')
+api.add_resource(ApiChallengeTaskDetails, '/api/challenge/<slug>/task/<identifier>')
+api.add_resource(ApiChallengeTaskGeometries, '/api/challenge/<slug>/task/<identifier>/geometries')

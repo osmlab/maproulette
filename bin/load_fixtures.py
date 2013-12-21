@@ -3,7 +3,7 @@
 from maproulette import app, config
 from maproulette.models import db, Challenge, Task, TaskGeometry, Action
 import geojson
-from shapely.geometry import Point
+from shapely.geometry import Point, LineString, GeometryCollection
 import uuid
 import random
 
@@ -69,16 +69,32 @@ db.session.add(challenge)
 
 # add some tasks
 cnt = 0
+# generate NUM_TASKS random tasks
 for i in range(NUM_TASKS):
+	# generate a unique identifier
 	identifier = str(uuid.uuid4())
+	# instantiate the task and register it with challenge 'test'
 	task = Task('test', identifier) # Initialize a task with its challenge slug and persistent ID
-	task.location = Point(
+	# create two random points not too far apart
+	p1 = Point(
 		random.randrange(-120,-40) + random.random(),
 		random.randrange(20,50) + random.random())
+	p2 = Point(
+		p1.x + (random.random() * random.choice((1,-1))),
+		p1.y + (random.random() * random.choice((1,-1))))
+	# create a linestring connecting the two points
+	l1 = LineString([(p1.x, p1.y), (p2.x, p2.y)]) # no constructor for linestring from points?
+	# add the first point and the linestring to the task's geometries
+	task.geometries.append(TaskGeometry(p1))
+	task.geometries.append(TaskGeometry(l1))	
+	# and add the first point as the task's location
+	task.location = p1
+	# set the run number to 1, this is the initial run
 	task.run = 1
+	# generate random string for the instruction 
 	task.instruction = ' '.join([random.choice(words.split()) for _ in range(15)])
-	task.geometries.append(TaskGeometry(point))
+	# add the task to the session
 	db.session.add(task)
 
-
+# commit the generated tasks and the challenge to the database.
 db.session.commit()

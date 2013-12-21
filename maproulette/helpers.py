@@ -37,12 +37,13 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     else:
         return c
 
-def get_task_or_404(challenge, task_identifier):
+def get_task_or_404(challenge_slug, task_identifier):
     """Return a task based on its challenge and task identifier"""
     t = Task.query.filter(Task.identifier==task_identifier).\
-        filter(Task.challenge_slug==challenge.slug).first()
+        filter(Task.challenge_slug==challenge_slug).first()
     if not t:
-        return make_response("Task {} does not exist for {}".format(task_identifier, challenge.slug), 404)
+        abort(404)
+    app.logger.debug('returning task %s' % (t.identifier))
     return t
 
 def get_or_create_task(challenge, task_identifier):
