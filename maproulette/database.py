@@ -1,7 +1,9 @@
 from maproulette.models import db
 
+
 def drop_db():
     db.drop_all()
+
 
 def init_db():
     # import all modules here that might define models so that

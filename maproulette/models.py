@@ -25,15 +25,17 @@ db = SQLAlchemy(app)
 
 random.seed()
 
+
 def getrandom():
     return random.random()
+
 
 class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(
-        db.Integer, 
-        unique=True, 
+        db.Integer,
+        unique=True,
         primary_key=True,
         nullable=False)
     oauth_token = db.Column(
@@ -41,7 +43,7 @@ class User(db.Model):
     oauth_secret = db.Column(
         db.String)
     display_name = db.Column(
-        db.String, 
+        db.String,
         nullable=False)
     home_location = db.Column(
         Geometry('POINT', management=True))
@@ -55,7 +57,7 @@ class User(db.Model):
         db.DateTime)
     last_changeset_bbox = db.Column(
         Geometry('POLYGON',
-        management=True))
+                 management=True))
     osm_account_created = db.Column(
         db.DateTime)
     difficulty = db.Column(
@@ -64,44 +66,45 @@ class User(db.Model):
     def __unicode__(self):
         return self.display_name
 
+
 class Challenge(db.Model):
     __tablename__ = 'challenges'
 
     id = db.Column(
-        db.Integer, 
-        unique=True, 
+        db.Integer,
+        unique=True,
         primary_key=True,
         nullable=False)
     slug = db.Column(
-        db.String(72), 
-        unique=True, 
+        db.String(72),
+        unique=True,
         primary_key=True,
         nullable=False)
     title = db.Column(
-        db.String(128), 
+        db.String(128),
         nullable=False)
     description = db.Column(
         db.String,
-        nullable = False)
+        nullable=False)
     blurb = db.Column(
-        db.String, 
+        db.String,
         nullable=False)
     geom = db.Column(
         Geometry('POLYGON'),
-        nullable = False)
+        nullable=False)
     help = db.Column(
-        db.String, 
-        nullable = False)
+        db.String,
+        nullable=False)
     instruction = db.Column(
         db.String,
-        nullable = False)
+        nullable=False)
     run = db.Column(
         db.String(72))
     active = db.Column(
-        db.Boolean, 
+        db.Boolean,
         nullable=False)
     difficulty = db.Column(
-        db.SmallInteger, 
+        db.SmallInteger,
         nullable=False)
     type = db.Column(db.String, default='default', nullable=False)
 
@@ -114,22 +117,26 @@ class Challenge(db.Model):
 
     def __unicode__(self):
         return self.slug
-        
+
     @property
     def polygon(self):
         if self.geom is not None:
             return to_shape(self.geom)
         else:
-            return Polygon([(-180, -90), (-180, 90), (180, 90), (180, -90), (-180, -90)])
-    
+            return Polygon([(-180, -90),
+                            (-180, 90),
+                            (180, 90),
+                            (180, -90),
+                            (-180, -90)])
+
     @polygon.setter
     def polygon(self, shape):
         self.geom = from_shape(shape)
 
     polygon = synonym('geom', descriptor=polygon)
 
-    def task_available(self, task, osmid = None):
-        """The function for a task to determine if it's 
+    def task_available(self, task, osmid=None):
+        """The function for a task to determine if it's
         available or not."""
         avail = False
         action = task.current_action
@@ -146,37 +153,38 @@ class Challenge(db.Model):
                 return False
         return True
 
+
 class Task(db.Model):
     __tablename__ = 'tasks'
 
     id = db.Column(
-        db.Integer, 
-        unique=True, 
+        db.Integer,
+        unique=True,
         primary_key=True,
         nullable=False)
     identifier = db.Column(
-        db.String(72), 
+        db.String(72),
         nullable=False)
     challenge_slug = db.Column(
         db.String,
         db.ForeignKey('challenges.slug'))
     geom = db.Column(
-        Geometry('POINT'), 
+        Geometry('POINT'),
         nullable=False)
     run = db.Column(
-        db.String(72), 
+        db.String(72),
         nullable=False)
     random = db.Column(
-        db.Float, 
-        default=getrandom, 
+        db.Float,
+        default=getrandom,
         nullable=False)
     manifest = db.Column(
-        db.String) #deprecated
+        db.String)  # deprecated
     geometries = db.relationship(
         "TaskGeometry",
         backref=db.backref("task"))
     actions = db.relationship(
-        "Action", 
+        "Action",
         backref=db.backref("task"))
     instruction = db.Column(
         db.String())
@@ -208,58 +216,60 @@ class Task(db.Model):
     @property
     def location(self):
         return to_shape(self.geom)
-    
+
     @location.setter
     def location(self, shape):
         self.geom = from_shape(shape)
 
     location = synonym('geom', descriptor=location)
 
+
 class TaskGeometry(db.Model):
     __tablename__ = 'task_geometries'
     task_id = db.Column(
-        db.Integer, 
+        db.Integer,
         db.ForeignKey('tasks.id'),
-        nullable = False,
-        primary_key = True)
+        nullable=False,
+        primary_key=True)
     geom = db.Column(
-        Geometry, 
-        nullable = False,
-        primary_key = True) 
-        
+        Geometry,
+        nullable=False,
+        primary_key=True)
+
     def __init__(self, shape):
         self.geom = from_shape(shape)
 
     @property
     def geometry(self):
         return to_shape(self.geom)
-    
+
     @geometry.setter
     def geometry(self, shape):
         self.geom = from_shape(shape)
 
     geometry = synonym('geom', descriptor=geometry)
-                
+
+
 class Action(db.Model):
     __tablename__ = 'actions'
 
     id = db.Column(
-        db.Integer, 
-        unique=True, 
+        db.Integer,
+        unique=True,
         primary_key=True,
         nullable=False)
     timestamp = db.Column(
-        db.DateTime, 
+        db.DateTime,
         default=datetime.now,
         nullable=False)
     user_id = db.Column(
-        db.Integer, 
+        db.Integer,
         db.ForeignKey('users.id'))
     task_id = db.Column(
-        db.Integer, 
+        db.Integer,
         db.ForeignKey('tasks.id'))
     status = db.Column(
-        db.String(32), 
+        db.String(32),
         nullable=False)
 
     def __repr__(self):

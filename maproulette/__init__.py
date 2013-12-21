@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from flask import Flask, session, render_template, redirect
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
@@ -10,9 +11,9 @@ store = FilesystemStore('./sessiondata')
 
 # instantiate flask app
 app = Flask(__name__,
-           static_folder = 'static',
-           template_folder = 'templates',
-           static_url_path = '/static')
+            static_folder='static',
+            template_folder='templates',
+            static_url_path='/static')
 
 from maproulette import config
 app.config.from_object(config.DevelopmentConfig)

@@ -20,10 +20,13 @@ from flask.ext.restful import Api
 import geojson
 
 # By default, send out the standard client
+
+
 @app.route('/')
 def index():
     "Display the index.html"
     return render_template('index.html')
+
 
 @app.route('/logout')
 def logout():
