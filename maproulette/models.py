@@ -90,8 +90,7 @@ class Challenge(db.Model):
         db.String,
         nullable=False)
     geom = db.Column(
-        Geometry('POLYGON'),
-        nullable=False)
+        Geometry('POLYGON'))
     help = db.Column(
         db.String,
         nullable=False)
