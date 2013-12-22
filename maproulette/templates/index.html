@@ -15,25 +15,25 @@
         <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/jquery.pnotify.default.css') }}" media="all"/>
         <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/jquery.pnotify.default.icons.css') }}"/>
         <script language="javascript" type="text/javascript">
-            // {% if session.osm_oauth is not defined and g.user is not defined %}
-            // var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
-            // if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') {
-            //     alert('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain');
-            //     setTimeout(3000, msgClose);
-            // }
-            // {% else %}
-            // // we are in the oauth window and we're all done, so close the oauth window
-            // if (self != opener && opener != null) {
-            //     opener.location.reload();
-            //     self.close();
-            // }
-            // {% endif %}
+             {% if session.osm_oauth is not defined and g.user is not defined %}
+             var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
+             if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') {
+                 alert('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain');
+                 setTimeout(3000, msgClose);
+             }
+             {% else %}
+             // we are in the oauth window and we're all done, so close the oauth window
+             if (self != opener && opener != null) {
+                 opener.location.reload();
+                 self.close();
+             }
+             {% endif %}
         </script>
     </head>
     <body onload="init()">
-        <div id="map" class="fullscreen"></div>
-        <div id="msgBox"></div>
-        <div id="dlgBox"></div>
+        <div id="map" />
+        <div id="msgBox" />
+        <div id="dlgBox" />
         <div class="banner pad1">
             <h2>OpenStreetMap <em>MapRoulette</em></h2>
             <div>
