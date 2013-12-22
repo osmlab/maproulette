@@ -320,7 +320,7 @@ OpenStreetMap</a> contributors';
           url: "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geometries"
         }).success(function(data) {
           console.log('got geom for task: ' + data);
-          drawFeatures(data);
+          drawFeatures(data.features);
           revGeocode();
           if(currentTask.text) {
             return $.pnotify({
@@ -442,8 +442,8 @@ OpenStreetMap</a> contributors';
         var near, payload, request, task_id;
         dlgClose();
         $.pnotify({
-		title: 'Regular Notice',
-		text: msgMovingOnToTheNextChallenge
+            title: 'Regular Notice',
+            text: msgMovingOnToTheNextChallenge
         });
         payload = {
             "action": action,
