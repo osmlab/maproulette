@@ -263,7 +263,10 @@ OpenStreetMap</a> contributors';
         request.success(function (data) {
             var locstr;
             locstr = nomToString(data.address);
-            return notifications.emit(locstr);
+            $.pnotify({
+                title: 'Regular Notice',
+                text: locstr
+            });
         });
         return request.fail(ajaxErrorHandler);
     };
@@ -284,7 +287,10 @@ OpenStreetMap</a> contributors';
         request.done(function (data) {
             var locstr;
             locstr = nomToString(data.address);
-            return notificiations.emit(locstr);
+            $.pnotify({
+                title: 'Regular Notice',
+                text: locstr
+            });
         });
         return request.fail(ajaxErrorHandler);
     };
@@ -311,13 +317,16 @@ OpenStreetMap</a> contributors';
     # Displays a task to the display and waits for the user prompt
     */
         $.ajax({
-          url: "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geom"
+          url: "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geometries"
         }).success(function(data) {
           console.log('got geom for task: ' + data);
           drawFeatures(data);
           revGeocode();
           if(currentTask.text) {
-            return notifications.emit(currentTask.text);
+            return $.pnotify({
+                title: 'Regular Notice',
+                text: currentTask.text
+            });
           }
         })
     };
@@ -432,7 +441,10 @@ OpenStreetMap</a> contributors';
     */
         var near, payload, request, task_id;
         dlgClose();
-        notifications.emit(msgMovingOnToTheNextChallenge, 1);
+        $.pnotify({
+		title: 'Regular Notice',
+		text: msgMovingOnToTheNextChallenge
+        });
         payload = {
             "action": action,
             "editor": editor
