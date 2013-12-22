@@ -49,10 +49,12 @@ def output_json(data, code, headers=None):
     elif not isinstance(data, dict) and isinstance(data[0], TaskGeometry):
         app.logger.debug('these are task geometries')
         # unpack the geometries FIXME can this be done in the model?
-        geometries = [g.geometry for g in data]
+        geometries = [geojson.Feature(
+            geometry=g.geometry,
+            properties={'selected': True}) for g in data]
         app.logger.debug(geometries)
         resp = make_response(
-            geojson.dumps(geojson.GeometryCollection(geometries)),
+            geojson.dumps(geojson.FeatureCollection(geometries)),
             code)
     # otherwise perform default json representation
     else:
