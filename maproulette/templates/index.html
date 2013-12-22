@@ -2,22 +2,22 @@
 {% block html %}
     <head>
         <title>MapRoulette</title>
-        <script src="static/js/jquery-1.10.1.min.js"></script>
-        <script src="static/js/bootstrap.min.js"></script>
-        <script type="text/javascript" src="static/js/jquery.pnotify.min.js"></script>
-        <script src="static/js/leaflet.js"></script>
-        <script src="static/js/showdown.js" ></script>
-        <script src="static/js/mr-helpers.js"></script>
-        <script src="static/js/maproulette.js"></script>
-        <link rel="stylesheet" type="text/css" media="all" href="static/css/bootstrap.min.css"/>
-        <link rel="stylesheet" type="text/css" media="all" href="static/css/style.css"/>
-        <link rel="stylesheet" type="text/css" media="all" href="static/css/leaflet.css"/>
-        <link rel="stylesheet" type="text/css" media="all" href="static/js/jquery.pnotify.default.css" media="all"/>
-        <link rel="stylesheet" type="text/css" media="all" href="static/js/jquery.pnotify.default.icons.css"/>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-1.10.2.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.pnotify.min.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/leaflet.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/showdown.js') }}" ></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/mr-helpers.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/maproulette.js') }}"></script>
+        <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/bootstrap.min.css') }}"/>
+        <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/style.css') }}"/>
+        <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/leaflet.css') }}"/>
+        <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/jquery.pnotify.default.css') }}" media="all"/>
+        <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/jquery.pnotify.default.icons.css') }}"/>
         <script language="javascript" type="text/javascript">
             // {% if session.osm_oauth is not defined and g.user is not defined %}
             // var oauthWin = window.open('{{ url_for('oauth_authorize') }}','oauth',"height=500,width=520");
-            // if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') { 
+            // if(!oauthWin || oauthWin.closed || typeof oauthWin.closed=='undefined') {
             //     alert('You seem to have pop-up blocking enabled. Please disable pop-up blocking for the maproulette.org domain');
             //     setTimeout(3000, msgClose);
             // }
