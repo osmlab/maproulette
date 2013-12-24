@@ -214,39 +214,57 @@ OpenStreetMap</a> contributors';
     # Takes a geocode object returned from Nominatim and returns a
     # nicely formatted string
     */
-        var county, locality, str, town;
-        str = "";
+        var out, county, town;
+        if (!(addr.town || addr.county || addr.hamlet || addr.state || addr.country)){
+            return "We are somewhere on earth..";
+        }
+
+        out = "We are ";
+
         if(addr.city != null) {
-            locality = addr.city;
+            out += addr.city;
         } else {
             if(addr.town != null) {
                 town = addr.town;
             } else if(addr.hamlet != null) {
                 town = addr.hamlet;
             } else {
-                town = "Somewhere in";
+                town = "somewhere in ";
             }
+
+            out += town;
+
             if(addr.county != null) {
                 if(addr.county.toLowerCase().indexOf('county') > -1) {
-                    county = ", " + addr.county;
+                    county = ", " + addr.county + ", ";
                 } else {
-                    county = ", " + addr.county + " County";
+                    county = ", " + addr.county + " County, ";
                 }
+
             } else {
                 county = "";
             }
-            locality = "" + addr.town + " " + county;
+
+            out += county;
+
         }
-        if(addr.state != null) {
-            return "" + locality + ", " + addr.state;
-        } else {
-            if(addr.country != null) {
-                return "" + locality + ", " + addr.country;
-            } else {
-                return "Somewhere on Earth";
+
+        if(addr.state) {
+            out += addr.state + ", ";
+        }
+
+        if (addr.country) {
+            if (addr.country.indexOf("United States") > -1) {
+                out += "the "
             }
+            out += addr.country;
         }
+
+        out += ".";
+
+        return out;
     };
+
     revGeocodeOSMObj = function (feature) {
         /*
     # Reverse geocodes an OSM object as a geoJSON feature
