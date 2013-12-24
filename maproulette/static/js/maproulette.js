@@ -8,7 +8,7 @@
         mr_attrib, msgMovingOnToTheNextChallenge, msgZoomInForEdit,
         nomToString, pageStartTime, revGeocode, revGeocodeOSMObj, root,
         selectedFeature, showTask, tileAttrib, tileLayer, tileUrl,
-        totalFixed, totalTasks, updateChallenge, updateStats;
+        totalFixed, totalTasks, updateChallenge, updateStats, getLocation;
     root = typeof exports !== "undefined" && exports !== null ? exports :
         this;
     markdown = new Showdown.converter();
@@ -129,7 +129,7 @@ OpenStreetMap</a> contributors';
         dlg.apppend("<ul>");
         for(_i = 0, _len = challenges.length; _i < _len; _i++) {
             c = challenges[_i];
-            s = "\"<li><a href=\"getChallenge(" + c.id + ")\">" + c.title +
+            s = "\"<li><a href=\"retrieveChallenge(" + c.id + ")\">" + c.title +
                 "</a></li>";
             dlg.append(s);
         }
@@ -276,18 +276,23 @@ OpenStreetMap</a> contributors';
             "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=" +
             type + "@osm_id=" + id;
         request = $.ajax({
-            url: mqurl
+            url     : mqurl,
+            success : function (data)
+                {
+                    var locstr;
+                    locstr = nomToString(data.address);
+                    $.pnotify({
+                        title: 'Regular Notice',
+                        text: locstr
+                    });
+                },
+            error   : function(jqXHR, textStatus, errorThrown)
+                {
+                    return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+                }
         });
-        request.success(function (data) {
-            var locstr;
-            locstr = nomToString(data.address);
-            $.pnotify({
-                title: 'Regular Notice',
-                text: locstr
-            });
-        });
-        return request.fail(ajaxErrorHandler);
     };
+
     revGeocode = function () {
         /*
     # Reverse geocodes the center of the (currently displayed) mapTarr
@@ -335,38 +340,49 @@ OpenStreetMap</a> contributors';
     # Displays a task to the display and waits for the user prompt
     */
         $.ajax({
-          url: "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geometries"
-        }).success(function(data) {
-          console.log('got geom for task: ' + data);
-          drawFeatures(data.features);
-          revGeocode();
-          if(currentTask.text) {
-            return $.pnotify({
-                title: 'Regular Notice',
-                text: currentTask.text
-            });
-          }
+            url     : "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geometries",
+            success : function(data)
+            {
+                console.log('got geom for task: ' + data);
+                drawFeatures(data.features);
+                revGeocode();
+                if(currentTask.text) {
+                    return $.pnotify({
+                        title: 'Regular Notice',
+                        text: currentTask.text
+                    });
+                }
+            },
+            error   : function(jqXHR, textStatus, errorThrown)
+            {
+                return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+            }
         })
     };
-    this.getChallenge = function (id) {
+
+    this.retrieveChallenge = function (id) {
         /*
     # Gets a specific challenge
     */
         var request;
         console.log(getting(challenge));
         request = $.ajax({
-            url: "/api/challenge/" + id
+            url     : "/api/challenge/" + id,
+            success : function(data)
+            {
+                var slug;
+                slug = data.slug;
+                console.log(data);
+                console.log(data.slug);
+                updateChallenge(slug);
+                updateStats(slug);
+                return getTask();
+            },
+            error   : function(jqXHR, textStatus, errorThrown)
+            {
+                return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+            }
         });
-        request.done(function (data) {
-            var slug;
-            slug = data.slug;
-            console.log(data);
-            console.log(data.slug);
-            updateChallenge(slug);
-            updateStats(slug);
-            return getTask();
-        });
-        return request.fail(ajaxErrorHandler);
     };
     this.getNewChallenge = function (difficulty, near) {
         /*
@@ -380,31 +396,29 @@ OpenStreetMap</a> contributors';
         url = "/api/challenges?difficulty=" + difficulty + "&contains=" +
             near;
         request = $.ajax({
-            url: "/api/challenges?difficulty=" + difficulty +
-                "&contains=" + near
+            url     : "/api/challenges?difficulty=" + difficulty + "&contains=" + near,
+            success : function(data)
+            {
+                challenge = data[0].slug;
+                console.log(JSON.stringify(challenge, null, 4));
+                console.log('we got a challenge: ' + challenge);
+                console.log('updating challenge...');
+                updateChallenge(challenge);
+                console.log('updating challenge stats...');
+                updateStats(challenge);
+                console.log('getting a task...');
+                return getTask(near);
+            },
+            error   : function(jqXHR, textStatus, errorThrown)
+            {
+                return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+            }
         });
-        request.done(function (data) {
-            challenge = data[0].slug;
-            console.log(JSON.stringify(challenge, null, 4));
-            console.log('we got a challenge: ' + challenge);
-            console.log('updating challenge...');
-            updateChallenge(challenge);
-            console.log('updating challenge stats...');
-            updateStats(challenge);
-            console.log('getting a task...');
-            return getTask(near);
-        });
-        return request.fail(ajaxErrorHandler);
     };
+
     this.getTask = function (near) {
         var request, url;
-        if(near == null) {
-            near = null;
-        }
-        /*
-    # Gets another task from the current challenge, close to the
-    # location (if supplied)
-    */
+
         if(!near) {
             console.log('getting task near current map center');
             near = "" + (map.getCenter().lng) + "|" + (map.getCenter().lat);
@@ -413,15 +427,17 @@ OpenStreetMap</a> contributors';
         url = "/api/challenge/" + challenge + "/task?near=" + near;
         console.log('calling ' + url);
         request = $.ajax({
-            url: url
-        });
-        request.success(function (data) {
-            currentTask = data;
-            console.log('showing task ' + currentTask.id);
-            return showTask();
-        });
-        return request.fail(function (jqXHR, textStatus, errorThrown) {
-            return ajaxErrorHandler(jqXHR, textStatus, errorThrown);
+            url     : url,
+            success : function (data)
+            {
+                currentTask = data;
+                console.log('showing task ' + currentTask.id);
+                return showTask();
+            },
+            error   : function(jqXHR, textStatus, errorThrown)
+            {
+                return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+            }
         });
     };
     changeMapLayer = function (layerUrl, layerAttrib) {
@@ -451,12 +467,8 @@ OpenStreetMap</a> contributors';
         });
         return map.addLayer(geojsonLayer);
     };
+
     this.nextUp = function (action) {
-        /*
-    # Display a message that we're moving on to the next error, store
-    # the result of the confirmation dialog in the database, and load
-    # the next challenge
-    */
         var near, payload, request, task_id;
         dlgClose();
         $.pnotify({
@@ -470,23 +482,25 @@ OpenStreetMap</a> contributors';
         near = currentTask.center;
         challenge = currentChallenge.id;
         task_id = currentTask.id;
-        request = $.ajax({
-            url: "/api/challenge/" + challenge + "/task/" + task_id,
-            type: "POST",
-            data: payload
+        $.ajax({
+            url     : "/api/challenge/" + challenge + "/task/" + task_id,
+            type    : "POST",
+            data    : payload,
+            success : function (data)
+            {
+                return setDelay(1, function () {
+                    clearTask();
+                    return getTask(near);
+                });
+            },
+            error   : function(jqXHR, textStatus, errorThrown)
+            {
+                return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+            }
         });
-        request.done(function (data) {
-            return setDelay(1, function () {
-                clearTask();
-                return getTask(near);
-            });
-        });
-        return request.fail(ajaxErrorHandler);
     };
+
     this.openIn = function (e) {
-        /*
-    # Open the currently displayed OSM objects in the selected editor (e)
-    */
         var JOSMurl, PotlatchURL, bounds, id, loc, ne, selectedFeatureId,
             selectedFeatureType, sw;
         editor = e;
@@ -505,15 +519,15 @@ OpenStreetMap</a> contributors';
                 "&new_layer=0&select=" + selectedFeaturetype +
                 selectedFeatureId;
             return $.ajax({
-                url: JOSMurl,
-                complete: function (t) {
+                url     : JOSMurl,
+                success : function(t)
+                {
                     if(t.status === 200) {
                         return setTimeout(confirmMapped, 4000);
                     } else {
-                        return msg(
-                            "JOSM remote control did not respond (" + t
-                            .status + "). Do you have JOSM running?", 2
-                        );
+                        $.pnotify({
+                            text: "JOSM remote control did not respond. Do you have JOSM running?"
+                        });
                     }
                 }
             });
@@ -619,42 +633,58 @@ OpenStreetMap</a> contributors';
             }
         });
     };
-    this.init = function () {
-        /*
-    # Find a challenge and set the map up
-    */
-        var near;
-        console.log('init');
-        map = new L.Map("map");
-        map.attributionControl.setPrefix('');
-        tileLayer = new L.TileLayer(tileUrl, {
-            attribution: tileAttrib
-        });
-        map.setView(new L.LatLng(40.0, -90.0), 17);
-        map.addLayer(tileLayer);
-        addGeoJSONLayer();
-        enableKeyboardShortcuts();
+
+    this.getChallenge = function() {
+        // get preference overrides from the URL parameters
         challenge = $(document).getUrlParam("challenge");
         difficulty = $(document).getUrlParam("difficulty");
         near = $(document).getUrlParam("near");
+        // if a challenge is passed in, use that
         if(challenge != null) {
-            console.log('challenge passed in through url params');
             updateChallenge(challenge);
             updateStats(challenge);
             return getTask(near);
+        // otherwise, assign one.
         } else {
-            console.log('no challenge passed in');
             if(!difficulty) {
-                console.log(
-                    'no difficulty passed in either, defaulting to 1');
                 difficulty = 1;
             }
             if(!near) {
-                console.log(
-                    'no near coords passed in, defaulting to map center');
                 near = "" + (map.getCenter().lng) + "|" + (map.getCenter().lat);
             }
             return getNewChallenge(difficulty, near);
         }
+    }
+
+    this.init = function () {
+        var near;
+        var options = {
+            center  : new L.LatLng(40, -90),
+            zoom    : 17
+        };
+        // Set up the Leaflet map
+        map = new L.Map("map", options);
+        tileLayer = new L.TileLayer(tileUrl, {
+            attribution: tileAttrib
+        });
+        // Locate the user and define the event triggers
+        map.locate({
+            setView     : true,
+            timeout     : 1000, // this may be too short but we don't want the users to wait too much
+            maximumAge  : 0
+        });
+        map.on('locationfound', function(e) {
+            console.log('location found: ' + e);
+            getChallenge()
+        });
+        map.on('locationerror', function(e) {
+            console.log('location not found: ' + e.message);
+            getChallenge();
+        });
+        map.addLayer(tileLayer);
+        // Add the geoJSON layer to the map
+        addGeoJSONLayer();
+        // Enable the keyboard shortcuts
+        enableKeyboardShortcuts();
     };
-}).call(this);
+})();
