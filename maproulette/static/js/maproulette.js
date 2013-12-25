@@ -1,4 +1,5 @@
-(function () {
+(function ()
+{
     var addGeoJSONLayer, ajaxErrorHandler, buttonAutoChallenge,
         buttonExitApp, buttonManualChallenge, challenge, changeMapLayer,
         clearTask, currentChallenge, currentTask, difficulty, dlgOpen,
@@ -46,7 +47,8 @@ OpenStreetMap</a> contributors';
         label: "Return to homepage",
         action: 'window.location.href="/"'
     };
-    clearTask = function () {
+    clearTask = function ()
+    {
         /*
     # Clear all the task-related variables in between tasks
     */
@@ -55,28 +57,34 @@ OpenStreetMap</a> contributors';
         map.removeLayer(geojsonLayer);
         return addGeoJSONLayer();
     };
-    getExtent = function (feature) {
+    getExtent = function (feature)
+    {
         /*
     # Takes in a JSON feature and return a Leaflet LatLngBounds
     */
         var bounds, coordinates, lat, latlon, lats, lon, lons, minlat, ne,
             sw, _i, _len, _ref;
         if(!(feature.geometry.coordinates && feature.geometry.coordinates.length >
-            0)) {
+            0))
+        {
             return false;
         }
-        if(feature.geometry.type === "Point") {
+        if(feature.geometry.type === "Point")
+        {
             lon = feature.geometry.coordinates[0];
             lat = feature.geometry.coordinates[1];
             latlon = new L.LatLng(lat, lon);
             bounds = new L.LatLngBounds(latlon);
             bounds.extend(latlon);
             return bounds;
-        } else {
+        }
+        else
+        {
             lats = [];
             lons = [];
             _ref = feature.geometry.coordinates;
-            for(_i = 0, _len = _ref.length; _i < _len; _i++) {
+            for(_i = 0, _len = _ref.length; _i < _len; _i++)
+            {
                 coordinates = _ref[_i];
                 lats.push(coordinates[1]);
                 lons.push(coordinates[0]);
@@ -89,19 +97,22 @@ OpenStreetMap</a> contributors';
             return new L.LatLngBounds(sw, ne);
         }
     };
-    makeButton = function (label, action) {
+    makeButton = function (label, action)
+    {
         /*
     # Takes in a label and onclick action and returns a button div
     */
         var button;
         button = $('div').addClass("button");
-        button.attr({
+        button.attr(
+        {
             onclick: action
         });
         button.content = label;
         return button;
     };
-    makeDlg = function (dlgData) {
+    makeDlg = function (dlgData)
+    {
         /*
     # Takes dialog box data and returns a dialog box for nextUp actions
     */
@@ -112,7 +123,8 @@ OpenStreetMap</a> contributors';
         dlg.append(markdown.makeHtml(dlgText));
         buttons = $('<div></div>').addClass("buttons");
         _ref = dlgData.buttons;
-        for(_i = 0, _len = _ref.length; _i < _len; _i++) {
+        for(_i = 0, _len = _ref.length; _i < _len; _i++)
+        {
             item = _ref[_i];
             button = makeButton(item.label, item.action);
             buttons.append(button);
@@ -120,14 +132,16 @@ OpenStreetMap</a> contributors';
         dlg.append(buttons);
         return dlg;
     };
-    makeChallengeSelectionDlg = function (challenges) {
+    makeChallengeSelectionDlg = function (challenges)
+    {
         /*
     # Takes the global challenge list and returns a dialog box for it
     */
         var c, dlg, s, _i, _len;
         dlg = $('<div></div>').addClass("dlg");
         dlg.apppend("<ul>");
-        for(_i = 0, _len = challenges.length; _i < _len; _i++) {
+        for(_i = 0, _len = challenges.length; _i < _len; _i++)
+        {
             c = challenges[_i];
             s = "\"<li><a href=\"retrieveChallenge(" + c.id + ")\">" + c.title +
                 "</a></li>";
@@ -137,7 +151,8 @@ OpenStreetMap</a> contributors';
         dlg.append(makeButton("Close", "dlgClose()"));
         return dlg;
     };
-    makeWelcomeDlg = function () {
+    makeWelcomeDlg = function ()
+    {
         /*
     # Makes a Welcome to MapRoulette Dialog box
     */
@@ -150,30 +165,35 @@ OpenStreetMap</a> contributors';
         dlg.append(makeButton("Continue without logging in", "dlgClose()"));
         return dlg;
     };
-    dlgOpen = function (h) {
+    dlgOpen = function (h)
+    {
         /*
     #  Display the data (html) in a dialog box. Must be closed with dlgClose()
     */
         $("#dlgBox").html(h).fadeIn();
         return $("#dlgBox").css("display", "block");
     };
-    this.dlgClose = function () {
+    this.dlgClose = function ()
+    {
         /*
     # Closes the dialog box
     */
         return $("#dlgBox").fadeOut();
     };
-    ajaxErrorHandler = function (jqxhr, statusString, error) {
+    ajaxErrorHandler = function (jqxhr, statusString, error)
+    {
         /*
     # Handle AJAX errors in this function (or hand them over to
     # mrErrorHandler if appropriate
     */
         var dlg;
-        switch(jqxhr.status) {
+        switch(jqxhr.status)
+        {
         case 400:
             return mrErrorHandler(error);
         default:
-            dlg = makeDlg({
+            dlg = makeDlg(
+            {
                 text: "The application has encountered a critical error: " +
                     jqxhr.status + ": " + error,
                 buttons: [buttonExitApp]
@@ -181,67 +201,88 @@ OpenStreetMap</a> contributors';
             return dlgOpen(dlg);
         }
     };
-    mrErrorHandler = function (errorString) {
+    mrErrorHandler = function (errorString)
+    {
         /*
     # This function takes in MapRoulette errors and handles them
     */
         var desc, dlg, error;
         error = errorString.split(':')[0];
         desc = errorString.split(':')[1].trim();
-        switch(error) {
+        switch(error)
+        {
         case "ChallengeInactive":
-            dlg = makeDlg({
+            dlg = makeDlg(
+            {
                 text: "The current challenge is unavailable (maybe down for maintence. What should we do?",
                 buttons: [buttonAutoChallenge, buttonManualChallenge]
             });
             break;
         case "ChallengeComplete":
-            dlg = makeDlg({
+            dlg = makeDlg(
+            {
                 text: "This challenge has no tasks available (maybe it's complete!). What should we do?",
                 buttons: [buttonAutoChallenge, buttonManualChallenge]
             });
             break;
         default:
-            dlg = makeDlg({
+            dlg = makeDlg(
+            {
                 text: "An unhandled MapRoulette error has occured. Sorry :(",
                 buttons: [buttonExitApp]
             });
         }
         return dlgOpen(dlg);
     };
-    nomToString = function (addr) {
+    nomToString = function (addr)
+    {
         /*
     # Takes a geocode object returned from Nominatim and returns a
     # nicely formatted string
     */
         var out, county, town;
-        if (!(addr.town || addr.county || addr.hamlet || addr.state || addr.country)){
+        if(!(addr.town || addr.county || addr.hamlet || addr.state || addr.country))
+        {
             return "We are somewhere on earth..";
         }
 
         out = "We are ";
 
-        if(addr.city != null) {
+        if(addr.city != null)
+        {
             out += addr.city;
-        } else {
-            if(addr.town != null) {
+        }
+        else
+        {
+            if(addr.town != null)
+            {
                 town = addr.town;
-            } else if(addr.hamlet != null) {
+            }
+            else if(addr.hamlet != null)
+            {
                 town = addr.hamlet;
-            } else {
+            }
+            else
+            {
                 town = "somewhere in ";
             }
 
             out += town;
 
-            if(addr.county != null) {
-                if(addr.county.toLowerCase().indexOf('county') > -1) {
+            if(addr.county != null)
+            {
+                if(addr.county.toLowerCase().indexOf('county') > -1)
+                {
                     county = ", " + addr.county + ", ";
-                } else {
+                }
+                else
+                {
                     county = ", " + addr.county + " County, ";
                 }
 
-            } else {
+            }
+            else
+            {
                 county = "";
             }
 
@@ -249,12 +290,15 @@ OpenStreetMap</a> contributors';
 
         }
 
-        if(addr.state) {
+        if(addr.state)
+        {
             out += addr.state + ", ";
         }
 
-        if (addr.country) {
-            if (addr.country.indexOf("United States") > -1) {
+        if(addr.country)
+        {
+            if(addr.country.indexOf("United States") > -1)
+            {
                 out += "the "
             }
             out += addr.country;
@@ -265,7 +309,8 @@ OpenStreetMap</a> contributors';
         return out;
     };
 
-    revGeocodeOSMObj = function (feature) {
+    revGeocodeOSMObj = function (feature)
+    {
         /*
     # Reverse geocodes an OSM object as a geoJSON feature
     */
@@ -275,25 +320,28 @@ OpenStreetMap</a> contributors';
         mqurl =
             "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&osm_type=" +
             type + "@osm_id=" + id;
-        request = $.ajax({
-            url     : mqurl,
-            success : function (data)
+        request = $.ajax(
+        {
+            url: mqurl,
+            success: function (data)
+            {
+                var locstr;
+                locstr = nomToString(data.address);
+                $.pnotify(
                 {
-                    var locstr;
-                    locstr = nomToString(data.address);
-                    $.pnotify({
-                        title: 'Regular Notice',
-                        text: locstr
-                    });
-                },
-            error   : function(jqXHR, textStatus, errorThrown)
-                {
-                    return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
-                }
+                    title: 'Regular Notice',
+                    text: locstr
+                });
+            },
+            error: function (jqXHR, textStatus, errorThrown)
+            {
+                return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+            }
         });
     };
 
-    revGeocode = function () {
+    revGeocode = function ()
+    {
         /*
     # Reverse geocodes the center of the (currently displayed) mapTarr
     nshi
@@ -304,29 +352,35 @@ OpenStreetMap</a> contributors';
         mqurl =
             "http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=" +
             map.getCenter().lat + " &lon=" + map.getCenter().lng;
-        request = $.ajax({
+        request = $.ajax(
+        {
             url: mqurl
         });
-        request.done(function (data) {
+        request.done(function (data)
+        {
             var locstr;
             locstr = nomToString(data.address);
-            $.pnotify({
+            $.pnotify(
+            {
                 title: 'Regular Notice',
                 text: locstr
             });
         });
         return request.fail(ajaxErrorHandler);
     };
-    drawFeatures = function (features) {
+    drawFeatures = function (features)
+    {
         /*
     # Draw the features onto the current geojson layer. Also pulls out
     # selected features
     */
         var extent, feature, _i, _len, _results;
         _results = [];
-        for(_i = 0, _len = features.length; _i < _len; _i++) {
+        for(_i = 0, _len = features.length; _i < _len; _i++)
+        {
             feature = features[_i];
-            if(feature.properties.selected === true) {
+            if(feature.properties.selected === true)
+            {
                 selectedFeature = feature;
                 geojsonLayer.addData(feature);
             }
@@ -335,40 +389,46 @@ OpenStreetMap</a> contributors';
         }
         return _results;
     };
-    showTask = function () {
+    showTask = function ()
+    {
         /*
     # Displays a task to the display and waits for the user prompt
     */
-        $.ajax({
-            url     : "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geometries",
-            success : function(data)
+        $.ajax(
+        {
+            url: "/api/challenge/" + challenge + "/task/" + currentTask.id + "/geometries",
+            success: function (data)
             {
                 console.log('got geom for task: ' + data);
                 drawFeatures(data.features);
                 revGeocode();
-                if(currentTask.text) {
-                    return $.pnotify({
+                if(currentTask.text)
+                {
+                    return $.pnotify(
+                    {
                         title: 'Regular Notice',
                         text: currentTask.text
                     });
                 }
             },
-            error   : function(jqXHR, textStatus, errorThrown)
+            error: function (jqXHR, textStatus, errorThrown)
             {
                 return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
             }
         })
     };
 
-    this.retrieveChallenge = function (id) {
+    this.retrieveChallenge = function (id)
+    {
         /*
     # Gets a specific challenge
     */
         var request;
         console.log(getting(challenge));
-        request = $.ajax({
-            url     : "/api/challenge/" + id,
-            success : function(data)
+        request = $.ajax(
+        {
+            url: "/api/challenge/" + id,
+            success: function (data)
             {
                 var slug;
                 slug = data.slug;
@@ -378,26 +438,29 @@ OpenStreetMap</a> contributors';
                 updateStats(slug);
                 return getTask();
             },
-            error   : function(jqXHR, textStatus, errorThrown)
+            error: function (jqXHR, textStatus, errorThrown)
             {
                 return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
             }
         });
     };
-    this.getNewChallenge = function (difficulty, near) {
+    this.getNewChallenge = function (difficulty, near)
+    {
         /*
     # Gets a challenge based on difficulty and location
     */
         var request, url;
         console.log('getting new challenge');
-        if(!near) {
+        if(!near)
+        {
             near = "" + (map.getCenter().lng) + "|" + (map.getCenter().lat);
         }
         url = "/api/challenges?difficulty=" + difficulty + "&contains=" +
             near;
-        request = $.ajax({
-            url     : "/api/challenges?difficulty=" + difficulty + "&contains=" + near,
-            success : function(data)
+        request = $.ajax(
+        {
+            url: "/api/challenges?difficulty=" + difficulty + "&contains=" + near,
+            success: function (data)
             {
                 challenge = data[0].slug;
                 console.log(JSON.stringify(challenge, null, 4));
@@ -409,57 +472,67 @@ OpenStreetMap</a> contributors';
                 console.log('getting a task...');
                 return getTask(near);
             },
-            error   : function(jqXHR, textStatus, errorThrown)
+            error: function (jqXHR, textStatus, errorThrown)
             {
                 return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
             }
         });
     };
 
-    this.getTask = function (near) {
+    this.getTask = function (near)
+    {
         var request, url;
 
-        if(!near) {
+        if(!near)
+        {
             console.log('getting task near current map center');
             near = "" + (map.getCenter().lng) + "|" + (map.getCenter().lat);
         }
         console.log('getting task near provided coordinate: ' + near);
         url = "/api/challenge/" + challenge + "/task?near=" + near;
         console.log('calling ' + url);
-        request = $.ajax({
-            url     : url,
-            success : function (data)
+        request = $.ajax(
+        {
+            url: url,
+            success: function (data)
             {
                 currentTask = data;
                 console.log('showing task ' + currentTask.id);
                 return showTask();
             },
-            error   : function(jqXHR, textStatus, errorThrown)
+            error: function (jqXHR, textStatus, errorThrown)
             {
                 return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
             }
         });
     };
-    changeMapLayer = function (layerUrl, layerAttrib) {
-        if(layerAttrib == null) {
+    changeMapLayer = function (layerUrl, layerAttrib)
+    {
+        if(layerAttrib == null)
+        {
             layerAttrib = tileAttrib;
         }
         /*
     # Change the tile layer
     */
         map.removeLayer(tileLayer);
-        tileLayer = new TileLayer(layerUrl, {
+        tileLayer = new TileLayer(layerUrl,
+        {
             attribution: layerAttrib
         });
         return map.addLayer(tileLayer, true);
     };
-    addGeoJSONLayer = function () {
+    addGeoJSONLayer = function ()
+    {
         /*
     # Adds a GeoJSON layer to the map
     */
-        geojsonLayer = new L.geoJson(null, {
-            onEachFeature: function (feature, layer) {
-                if(feature.properties && feature.properties.text) {
+        geojsonLayer = new L.geoJson(null,
+        {
+            onEachFeature: function (feature, layer)
+            {
+                if(feature.properties && feature.properties.text)
+                {
                     layer.bindPopup(feature.properties.text);
                     return layer.openPopup();
                 }
@@ -468,10 +541,12 @@ OpenStreetMap</a> contributors';
         return map.addLayer(geojsonLayer);
     };
 
-    this.nextUp = function (action) {
+    this.nextUp = function (action)
+    {
         var near, payload, request, task_id;
         dlgClose();
-        $.pnotify({
+        $.pnotify(
+        {
             title: 'Regular Notice',
             text: msgMovingOnToTheNextChallenge
         });
@@ -482,29 +557,33 @@ OpenStreetMap</a> contributors';
         near = currentTask.center;
         challenge = currentChallenge.id;
         task_id = currentTask.id;
-        $.ajax({
-            url     : "/api/challenge/" + challenge + "/task/" + task_id,
-            type    : "POST",
-            data    : payload,
-            success : function (data)
+        $.ajax(
+        {
+            url: "/api/challenge/" + challenge + "/task/" + task_id,
+            type: "POST",
+            data: payload,
+            success: function (data)
             {
-                return setDelay(1, function () {
+                return setDelay(1, function ()
+                {
                     clearTask();
                     return getTask(near);
                 });
             },
-            error   : function(jqXHR, textStatus, errorThrown)
+            error: function (jqXHR, textStatus, errorThrown)
             {
                 return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
             }
         });
     };
 
-    this.openIn = function (e) {
+    this.openIn = function (e)
+    {
         var JOSMurl, PotlatchURL, bounds, id, loc, ne, selectedFeatureId,
             selectedFeatureType, sw;
         editor = e;
-        if(map.getZoom() < 14) {
+        if(map.getZoom() < 14)
+        {
             msg(msgZoomInForEdit, 3);
             return false;
         }
@@ -513,34 +592,47 @@ OpenStreetMap</a> contributors';
         ne = bounds.getNorthEast();
         selectedFeatureId = selectedFeature.properties.id;
         selectedFeatureType = selectedFeature.properties.type;
-        if(editor === "josm") {
+        if(editor === "josm")
+        {
             JOSMurl = "http://127.0.0.1:8111/load_and_zoom?left=" + sw.lng +
                 "&right=" + ne.lng + "&top=" + ne.lat + "&bottom=" + sw.lat +
                 "&new_layer=0&select=" + selectedFeaturetype +
                 selectedFeatureId;
-            return $.ajax({
-                url     : JOSMurl,
-                success : function(t)
+            return $.ajax(
+            {
+                url: JOSMurl,
+                success: function (t)
                 {
-                    if(t.status === 200) {
+                    if(t.status === 200)
+                    {
                         return setTimeout(confirmMapped, 4000);
-                    } else {
-                        $.pnotify({
+                    }
+                    else
+                    {
+                        $.pnotify(
+                        {
                             text: "JOSM remote control did not respond. Do you have JOSM running?"
                         });
                     }
                 }
             });
-        } else if(editor === "potlatch") {
+        }
+        else if(editor === "potlatch")
+        {
             PotlatchURL =
                 "http://www.openstreetmap.org/edit?editor=potlatch2&bbox=" +
                 map.getBounds().toBBoxString();
             window.open(PotlatchURL);
             return setTimeout(confirmMapped, 4000);
-        } else if(editor === "id") {
-            if(selectedFeatureType === "node") {
+        }
+        else if(editor === "id")
+        {
+            if(selectedFeatureType === "node")
+            {
                 id = "n" + selectedFeatureId;
-            } else if(selectedFeatureType === "way") {
+            }
+            else if(selectedFeatureType === "way")
+            {
                 id = "w" + selectedFeatureId;
             }
             loc = "" + (map.getZoom()) + "/" + (map.getCenter().lng) + "/" +
@@ -549,21 +641,28 @@ OpenStreetMap</a> contributors';
             return confirmMapped();
         }
     };
-    this.confirmMapped = function () {
+    this.confirmMapped = function ()
+    {
         /*
     # Show the mapping confirmation dialog box
     */
         var editorText;
-        if(editor === 'josm') {
+        if(editor === 'josm')
+        {
             editorText = 'JOSM';
-        } else if(editor === 'potlatch') {
+        }
+        else if(editor === 'potlatch')
+        {
             editorText = 'Potlatch';
-        } else if(editor === 'id') {
+        }
+        else if(editor === 'id')
+        {
             editorText = 'iD';
         }
         return dlgOpen(currentChallenge.doneDlg);
     };
-    this.showHelp = function () {
+    this.showHelp = function ()
+    {
         /*
     # Show the about window
     */
@@ -571,38 +670,46 @@ OpenStreetMap</a> contributors';
             "</p>\n<p><div class='button' onClick=\"dlgClose()\">OK</div></p>",
             0);
     };
-    updateStats = function (challenge) {
+    updateStats = function (challenge)
+    {
         /*
     # Get the stats for the challenge and display the count of remaining
     # tasks
     */
         var request;
-        request = $.ajax({
+        request = $.ajax(
+        {
             url: "/api/challenge/" + challenge + "/stats"
         });
-        request.done(function (data) {
+        request.done(function (data)
+        {
             var remaining;
             remaining = data.total - data.done;
             return $("#counter").text(remaining);
         });
         return request.fail(ajaxErrorHandler);
     };
-    updateChallenge = function (challenge) {
+    updateChallenge = function (challenge)
+    {
         /*
     # Use the current challenge metadata to fill in the web page
     */
         var request;
         console.log('updating challenge');
-        request = $.ajax({
+        request = $.ajax(
+        {
             url: "/api/challenge/" + challenge
         });
-        request.done(function (data) {
+        request.done(function (data)
+        {
             var tileURL;
             currentChallenge = data;
             $('#challengeDetails').text(currentChallenge.name);
-            if((data.tileurl != null) && data.tileurl !== tileURL) {
+            if((data.tileurl != null) && data.tileurl !== tileURL)
+            {
                 tileURL = data.tileurl;
-                if(data.tileattribution != null) {
+                if(data.tileattribution != null)
+                {
                     tileAttrib = data.tileasttribution;
                 }
                 changeMapLayer(tileURL, tileAttrib);
@@ -612,14 +719,17 @@ OpenStreetMap</a> contributors';
         });
         return request.fail(ajaxErrorHandler);
     };
-    enableKeyboardShortcuts = function () {
+    enableKeyboardShortcuts = function ()
+    {
         /*
     # Enables and sets the keyboard shortcuts
     */
-        return $(document).bind("keydown", function (e) {
+        return $(document).bind("keydown", function (e)
+        {
             var key;
             key = String.fromCharCode(e);
-            switch(key.which) {
+            switch(key.which)
+            {
             case "q":
                 return nextUp("falsepositive");
             case "w":
@@ -634,50 +744,61 @@ OpenStreetMap</a> contributors';
         });
     };
 
-    this.getChallenge = function() {
+    this.getChallenge = function ()
+    {
         // get preference overrides from the URL parameters
         challenge = $(document).getUrlParam("challenge");
         difficulty = $(document).getUrlParam("difficulty");
         near = $(document).getUrlParam("near");
         // if a challenge is passed in, use that
-        if(challenge != null) {
+        if(challenge != null)
+        {
             updateChallenge(challenge);
             updateStats(challenge);
             return getTask(near);
-        // otherwise, assign one.
-        } else {
-            if(!difficulty) {
+            // otherwise, assign one.
+        }
+        else
+        {
+            if(!difficulty)
+            {
                 difficulty = 1;
             }
-            if(!near) {
+            if(!near)
+            {
                 near = "" + (map.getCenter().lng) + "|" + (map.getCenter().lat);
             }
             return getNewChallenge(difficulty, near);
         }
     }
 
-    this.init = function () {
+    this.init = function ()
+    {
         var near;
         var options = {
-            center  : new L.LatLng(40, -90),
-            zoom    : 17
+            center: new L.LatLng(40, -90),
+            zoom: 17
         };
         // Set up the Leaflet map
         map = new L.Map("map", options);
-        tileLayer = new L.TileLayer(tileUrl, {
+        tileLayer = new L.TileLayer(tileUrl,
+        {
             attribution: tileAttrib
         });
         // Locate the user and define the event triggers
-        map.locate({
-            setView     : true,
-            timeout     : 1000, // this may be too short but we don't want the users to wait too much
-            maximumAge  : 0
+        map.locate(
+        {
+            setView: true,
+            timeout: 1000, // this may be too short but we don't want the users to wait too much
+            maximumAge: 0
         });
-        map.on('locationfound', function(e) {
+        map.on('locationfound', function (e)
+        {
             console.log('location found: ' + e);
             getChallenge()
         });
-        map.on('locationerror', function(e) {
+        map.on('locationerror', function (e)
+        {
             console.log('location not found: ' + e.message);
             getChallenge();
         });
