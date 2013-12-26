@@ -2,7 +2,7 @@
 {
     var addGeoJSONLayer, ajaxErrorHandler, buttonAutoChallenge,
         buttonExitApp, buttonManualChallenge, challenge, changeMapLayer,
-        clearTask, currentChallenge, currentTask, difficulty, dlgOpen,
+        clearTask, currentChallenge, currentTask, difficulty,
         drawFeatures, editor, enableKeyboardShortcuts, geojsonLayer,
         getExtent, location, makeButton, makeChallengeSelectionDlg,
         makeDlg, makeWelcomeDlg, map, markdown, mrErrorHandler,
@@ -148,7 +148,7 @@ OpenStreetMap</a> contributors';
             dlg.append(s);
         }
         dlg.append("</ul>");
-        dlg.append(makeButton("Close", "dlgClose()"));
+//        dlg.append(makeButton("Close", "dlgClose()"));
         return dlg;
     };
     makeWelcomeDlg = function ()
@@ -162,24 +162,10 @@ OpenStreetMap</a> contributors';
         dlg.append(
             "<p>Lorem ipsum dolor sit amet, consectetur adipisicing  elit, sed do eiusmod tempor incididunt ut labore et dolore magna  aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco  laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure  dolor in reprehenderit in voluptate velit esse cillum dolore eu  fugiat nulla pariatur. Excepteur sint occaecat cupidatat non  proident, sunt in culpa qui officia deserunt mollit anim id est  laborum.</p>"
         );
-        dlg.append(makeButton("Continue without logging in", "dlgClose()"));
+//        dlg.append(makeButton("Continue without logging in", "dlgClose()"));
         return dlg;
     };
-    dlgOpen = function (h)
-    {
-        /*
-    #  Display the data (html) in a dialog box. Must be closed with dlgClose()
-    */
-        $("#dlgBox").html(h).fadeIn();
-        return $("#dlgBox").css("display", "block");
-    };
-    this.dlgClose = function ()
-    {
-        /*
-    # Closes the dialog box
-    */
-        return $("#dlgBox").fadeOut();
-    };
+
     ajaxErrorHandler = function (jqxhr, statusString, error)
     {
         /*
@@ -198,7 +184,7 @@ OpenStreetMap</a> contributors';
                     jqxhr.status + ": " + error,
                 buttons: [buttonExitApp]
             });
-            return dlgOpen(dlg);
+            $.pnotify(dlg);
         }
     };
     mrErrorHandler = function (errorString)
@@ -232,7 +218,7 @@ OpenStreetMap</a> contributors';
                 buttons: [buttonExitApp]
             });
         }
-        return dlgOpen(dlg);
+        $.pnotify(dlg);
     };
     nomToString = function (addr)
     {
@@ -241,7 +227,7 @@ OpenStreetMap</a> contributors';
     # nicely formatted string
     */
         var out, county, town;
-        if(!(addr.town || addr.county || addr.hamlet || addr.state || addr.country))
+        if(!addr || !(addr.town || addr.county || addr.hamlet || addr.state || addr.country))
         {
             return "We are somewhere on earth..";
         }
@@ -269,7 +255,7 @@ OpenStreetMap</a> contributors';
 
             out += town;
 
-            if(addr.county != null)
+            if(addr.county)
             {
                 if(addr.county.toLowerCase().indexOf('county') > -1)
                 {
@@ -354,9 +340,8 @@ OpenStreetMap</a> contributors';
             map.getCenter().lat + " &lon=" + map.getCenter().lng;
         request = $.ajax(
         {
-            url: mqurl
-        });
-        request.done(function (data)
+            url     :   mqurl,
+            success :   function (data)
         {
             var locstr;
             locstr = nomToString(data.address);
@@ -365,8 +350,12 @@ OpenStreetMap</a> contributors';
                 title: 'Regular Notice',
                 text: locstr
             });
+        },
+        error: function (jqXHR, textStatus, errorThrown)
+        {
+            return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+        }
         });
-        return request.fail(ajaxErrorHandler);
     };
     drawFeatures = function (features)
     {
@@ -463,7 +452,6 @@ OpenStreetMap</a> contributors';
             success: function (data)
             {
                 challenge = data[0].slug;
-                console.log(JSON.stringify(challenge, null, 4));
                 console.log('we got a challenge: ' + challenge);
                 console.log('updating challenge...');
                 updateChallenge(challenge);
@@ -544,7 +532,7 @@ OpenStreetMap</a> contributors';
     this.nextUp = function (action)
     {
         var near, payload, request, task_id;
-        dlgClose();
+//        dlgClose();
         $.pnotify(
         {
             title: 'Regular Notice',
@@ -659,15 +647,16 @@ OpenStreetMap</a> contributors';
         {
             editorText = 'iD';
         }
-        return dlgOpen(currentChallenge.doneDlg);
+        $.pnotify(currentChallenge.doneDlg);
     };
+
     this.showHelp = function ()
     {
         /*
     # Show the about window
     */
-        return dlgOpen("" + currentChallenge.help + "\n<p>" + mr_attrib +
-            "</p>\n<p><div class='button' onClick=\"dlgClose()\">OK</div></p>",
+        $.pnotify("" + currentChallenge.help + "\n<p>" + mr_attrib +
+            "</p>",
             0);
     };
     updateStats = function (challenge)
@@ -679,15 +668,18 @@ OpenStreetMap</a> contributors';
         var request;
         request = $.ajax(
         {
-            url: "/api/challenge/" + challenge + "/stats"
-        });
-        request.done(function (data)
+            url     :   "/api/challenge/" + challenge + "/stats",
+            success :   function (data)
         {
             var remaining;
             remaining = data.total - data.done;
             return $("#counter").text(remaining);
+        },
+        error: function (jqXHR, textStatus, errorThrown)
+        {
+            return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
+        }
         });
-        return request.fail(ajaxErrorHandler);
     };
     updateChallenge = function (challenge)
     {
@@ -698,26 +690,29 @@ OpenStreetMap</a> contributors';
         console.log('updating challenge');
         request = $.ajax(
         {
-            url: "/api/challenge/" + challenge
-        });
-        request.done(function (data)
-        {
-            var tileURL;
-            currentChallenge = data;
-            $('#challengeDetails').text(currentChallenge.name);
-            if((data.tileurl != null) && data.tileurl !== tileURL)
+            url     :   "/api/challenge/" + challenge,
+            success :   function (data)
             {
-                tileURL = data.tileurl;
-                if(data.tileattribution != null)
+                var tileURL;
+                currentChallenge = data;
+                $('#challengeDetails').text(currentChallenge.name);
+                if((data.tileurl != null) && data.tileurl !== tileURL)
                 {
-                    tileAttrib = data.tileasttribution;
+                    tileURL = data.tileurl;
+                    if(data.tileattribution != null)
+                    {
+                        tileAttrib = data.tileasttribution;
+                    }
+                    changeMapLayer(tileURL, tileAttrib);
                 }
-                changeMapLayer(tileURL, tileAttrib);
+                currentChallenge.help = markdown.makeHtml(currentChallenge.help);
+                return currentChallenge.done_dlg = makeDlg(currentChallenge.done_dlg);
+            },
+            error   :    function (jqXHR, textStatus, errorThrown)
+            {
+                return ajaxErrorHandler(jqXHR, textStatus, errorThrown)
             }
-            currentChallenge.help = markdown.makeHtml(currentChallenge.help);
-            return currentChallenge.done_dlg = makeDlg(currentChallenge.done_dlg);
         });
-        return request.fail(ajaxErrorHandler);
     };
     enableKeyboardShortcuts = function ()
     {
