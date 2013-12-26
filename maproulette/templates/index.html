@@ -3,13 +3,11 @@
     <head>
         <title>MapRoulette</title>
         <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-2.0.3.min.js') }}"></script>
-        <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.pnotify.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/leaflet.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/showdown.js') }}" ></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/mr-helpers.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/maproulette.js') }}"></script>
-        <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/bootstrap.min.css') }}"/>
         <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/jquery.pnotify.default.css') }}" media="all"/>
         <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/jquery.pnotify.default.icons.css') }}"/>
         <link rel="stylesheet" type="text/css" media="all" href="{{ url_for('static', filename='css/style.css') }}"/>
@@ -31,9 +29,6 @@
         </script>
     </head>
     <body onload="init()">
-        <div id="map"></div>
-        <div id="msgBox"></div>
-        <div id="dlgBox"></div>
         <div class="banner pad1">
             <h2>OpenStreetMap <em>MapRoulette</em></h2>
             <div>
@@ -47,5 +42,6 @@
             <div id="challengeDetails"></div>
             <div id="stats"></div>
         </div>
+        <div id="map"></div>
     </body>
 {% endblock %}
