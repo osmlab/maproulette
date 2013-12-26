@@ -1,4 +1,3 @@
-CoffeeScript>=1.0.5
 Flask>=0.10.1
 Flask-KVSession>=0.4
 #Flask-SQLAlchemy>=0.17
