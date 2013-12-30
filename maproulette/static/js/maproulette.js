@@ -39,8 +39,17 @@ var MRButtons = function () {
         return '<div class=\'button\' id=\'' + buttonType + '\'>' + buttonTypes[buttonType] + '</div>';
     };
 
+    var makeButtons = function () {
+        var buttonHTML = '';
+        for (key in buttonTypes) { 
+            buttonHTML += '<div class=\'button\' id=\'' + key + '\'>' + buttonTypes[key] + '</div>\n';
+        };
+        return buttonHTML;
+    };
+
     return {
-        makeButton  : makeButton
+        makeButton  : makeButton,
+        makeButtons : makeButtons
     };
 
 }();
@@ -404,13 +413,15 @@ var MRManager = (function () {
         
         var dialogHTML = '<div class=\'text\'>' + d.text + '</div>';
 
-        if (typeof d.buttons === 'string') {
+        if (typeof d.buttons === 'string' && d.buttons.length > 0) {
             var buttons = d.buttons.split('|');
             for (var i = 0; i < buttons.length; i++) {
                 dialogHTML += MRButtons.makeButton(buttons[i]);
             };
-        };
-        $('.donedialog').html(dialogHTML).show();
+        } else {
+            dialogHTML += MRButtons.makeButtons();
+        }
+        $('.donedialog').html(dialogHTML).fadeIn();
     }
 
     var confirmRemap = function () {
