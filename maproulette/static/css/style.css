@@ -80,3 +80,9 @@ span.key {
     text-align: center;
     width: 14px;
 }
+
+.humane-taskinfo {
+    left: 40%;
+    width: 30%;
+    background-color: blue;
+}

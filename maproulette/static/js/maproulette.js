@@ -25,6 +25,99 @@ var Q = (function () {
     return query_string;
 }());
 
+var MRHelpers = (function () {
+    var constructJosmUri = function (bounds, features) {
+        var nodes = [];
+        var ways = [];
+        var sw = bounds.getSouthWest();
+        var ne = bounds.getNorthEast();
+        var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
+
+        for (f in features) {
+            var feature = features[f];
+            switch (feature.geometry.type) {
+                case 'Point':
+                    url += 'node' + feature.properties.osmid;
+                    break;
+                case 'LineString':
+                    url += 'way' + feature.properties.osmid;
+                    break;
+            }
+        }
+        return uri;
+    };
+
+    var mqResultToString = function (addr) {
+        var out, county, town;
+        if(!addr || !(addr.town || addr.county || addr.hamlet || addr.state || addr.country)) { return 'We are somewhere on earth..' };
+        out = 'We are ';
+        if(addr.city != null) { out += addr.city }
+        else {
+            if(addr.town != null) { town = 'in ' + addr.town }
+            else if(addr.hamlet != null) { town = 'in ' + addr.hamlet }
+            else { town = 'somewhere in ' };
+            out += town;
+            if(addr.county) {
+                if(addr.county.toLowerCase().indexOf('county') > -1) { county = ', ' + addr.county + ', ' }
+                else { county = ', ' + addr.county + ' County, ' };
+            } else { county = '' };
+            out += county;
+        }
+        if(addr.state) { out += addr.state + ', ' };
+        if(addr.country) {
+            if(addr.country.indexOf('United States') > -1) { out += 'the ' };
+            out += addr.country;
+        };
+        out += '.';
+        return out;
+    };
+
+    var openInJOSM = function (bounds, features) {
+        var josmUri = constructJosmUri(bounds, features);
+        console.log('opening in JOSM');
+        // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
+        $.ajax({
+            url     : josmUri,
+            success : function (t) {
+                if (t.status!=200) {
+                    notify.log('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
+                } else { setTimeout('confirmRemap(\'j\')', 4000); }
+            }
+        });
+    };
+
+    return {
+        mqResultToString    : mqResultToString,
+        openInJOSM          : openInJOSM
+    }
+}());
+
+var MRConfig = (function () {
+    // the UI strings
+    return {
+        strings:  {
+            msgNextChallenge: 'Faites vos jeux...',
+            msgMovingOnToNextChallenge: 'OK, moving right along...',
+            msgZoomInForEdit: 'Please zoom in a little so we don\'t have to load a huge area from the API.'
+        },
+
+        // the default map options
+        mapOptions: {
+            center: new L.LatLng(40, -90),
+            zoom: 17
+        },
+
+        // default tile URL
+        tileUrl: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+        // default tile attribution
+        tileAttrib: '&copy; <a href=\'http://openstreetmap.org\'> OpenStreetMap</a> contributors',
+
+        // minimum zoom level for enabling edit buttons
+        minZoomLevelForEditing: 14
+    };
+}());
+
 var MRManager = (function () {
     var map;
     var challenge;
@@ -33,26 +126,8 @@ var MRManager = (function () {
     var difficulty = Q.difficulty;
     var taskLayer;
 
-    /*
-     * CONFIGURATION PARAMETERS
-     */
-    var config = {
-        // The UI strings FIXME languages?
-        strings         : {
-            msgNextChallenge: 'Faites vos jeux...',
-            msgMovingOnToNextChallenge: 'OK, moving right along...',
-            msgZoomInForEdit: 'Please zoom in a little so we don\'t have to load a huge area from the API.'
-        },
-        // the default map options
-        mapOptions      : {
-            center: new L.LatLng(40, -90),
-            zoom: 17
-        },
-        // default tile URL
-        tileUrl         : 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        // default tile attribution
-        tileAttrib      : '&copy; <a href=\'http://openstreetmap.org\'> OpenStreetMap</a> contributors'
-    };
+    // define humane notification instance
+    var notify = humane.create({ timeout: 1500 });
 
     /*
      * This function initializes the leaflet map.
@@ -70,8 +145,8 @@ var MRManager = (function () {
             }
         });
 
-        map = new L.Map(identifier, config.mapOptions);
-        var tileLayer = new L.TileLayer(config.tileUrl, { attribution: config.tileAttrib });
+        map = new L.Map(identifier, MRConfig.mapOptions);
+        var tileLayer = new L.TileLayer(MRConfig.tileUrl, { attribution: MRConfig.tileAttrib });
 
         // Locate the user and define the event triggers
         map.locate({ setView: true, timeout: 1000, maximumAge: 0 });
@@ -212,42 +287,16 @@ var MRManager = (function () {
         // fit the map snugly to the task features
         map.fitBounds(taskLayer.getBounds().pad(0.2));
         // show the task text as a notification
-        humane.log(task.text);
+        notify.log(task.text, { timeout: 3000 });
         // let the user know where we are
         displayAdminArea();
-    };
-
-    var mqResultToString = function (addr)
-    {
-        var out, county, town;
-        if(!addr || !(addr.town || addr.county || addr.hamlet || addr.state || addr.country)) { return 'We are somewhere on earth..' };
-        out = 'We are ';
-        if(addr.city != null) { out += addr.city }
-        else {
-            if(addr.town != null) { town = 'in ' + addr.town }
-            else if(addr.hamlet != null) { town = 'in ' + addr.hamlet }
-            else { town = 'somewhere in ' };
-            out += town;
-            if(addr.county) {
-                if(addr.county.toLowerCase().indexOf('county') > -1) { county = ', ' + addr.county + ', ' }
-                else { county = ', ' + addr.county + ' County, ' };
-            } else { county = '' };
-            out += county;
-        }
-        if(addr.state) { out += addr.state + ', ' };
-        if(addr.country) {
-            if(addr.country.indexOf('United States') > -1) { out += 'the ' };
-            out += addr.country;
-        };
-        out += '.';
-        return out;
     };
 
     var displayAdminArea = function() {
         var mqurl = 'http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=' + map.getCenter().lat + ' &lon=' + map.getCenter().lng;
         $.ajax({
             url     : mqurl,
-            success : function (data) { humane.log(mqResultToString(data.address)); },
+            success : function (data) { notify.log(MRHelpers.mqResultToString(data.address)); },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
     }
@@ -266,26 +315,14 @@ var MRManager = (function () {
         drawTask();
     }
 
-    var openIn = function (editor) {
-        if (map.getZoom() < 14){
-            humane.log(config.strings.msgZoomInForEdit, 3);
+    var openTaskInEditor = function (editor) {
+        if (map.getZoom() < MRConfig.minZoomLevelForEditing){
+            notify.log(MRConfig.strings.msgZoomInForEdit, 3);
             return false;
         };
-        var bounds = map.getBounds();
-        var sw = bounds.getSouthWest();
-        var ne = bounds.getNorthEast();
-        if (editor == 'j') { // JOSM
-            var JOSMurl = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=node' + currentWayId + ',way' + currentWayId;
-            // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
-            $.ajax({
-                url     : JOSMurl,
-                success : function (t) {
-                    if (t.status!=200) {
-                        humane.log('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
-                    } else { setTimeout('confirmRemap(\'j\')', 4000); }
-                }
-            });
-        } else if (editor == 'o') { // OSM default
+        console.log('opening in ' + editor);
+        if (editor === 'j') { MRHelpers.openInJOSM(map.getBounds(), task.features) }
+        else { // OSM default
             var editURL = 'http://www.openstreetmap.org/edit?bbox=' + map.getBounds().toBBoxString();
             window.open(editURL);
             setTimeout('confirmRemap(\'p\')', 4000)
@@ -294,7 +331,8 @@ var MRManager = (function () {
 
     return {
         init            : initialize,
-        nextTask        : next
+        nextTask        : next,
+        openTaskInEditor: openTaskInEditor
     };
 }());
 
