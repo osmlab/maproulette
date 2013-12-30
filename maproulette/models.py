@@ -273,14 +273,18 @@ class Action(db.Model):
         db.Integer,
         db.ForeignKey('tasks.id'))
     status = db.Column(
-        db.String(32),
+        db.String(),
         nullable=False)
+    editor = db.Column(
+        db.String())
 
     def __repr__(self):
         return "<Action %s set on %s>" % (self.status, self.timestamp)
 
-    def __init__(self, status, user_id=None):
+    def __init__(self, status, user_id=None, editor=None):
         self.status = status
         self.timestamp = datetime.now()
         if user_id:
             self.user_id = user_id
+        if editor:
+            self.editor = editor
