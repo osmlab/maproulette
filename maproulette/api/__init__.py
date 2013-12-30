@@ -4,7 +4,7 @@ from flask.ext.restful import reqparse, fields, marshal,\
 from flask.ext.restful.fields import get_value, Raw
 from flask import session, make_response
 from maproulette.helpers import GeoPoint, get_challenge_or_404, \
-    get_task_or_404, get_random_task, osmlogin_required
+    get_task_or_404, get_random_task, osmlogin_required, osmerror
 from maproulette.models import Challenge, Task, TaskGeometry, Action, db
 from geoalchemy2.functions import ST_Buffer, ST_AsGeoJSON
 from shapely import geometry
@@ -75,9 +75,9 @@ class ApiChallengeList(ProtectedResource):
         """returns a list of challenges.
         Optional URL parameters are:
         difficulty: the desired difficulty to filter on (1=easy, 2=medium, 3=hard)
-        contains: the coordinate to filter on (as lon|lat, returns only
+        lon/lat: the coordinate to filter on (returns only
         challenges whose bounding polygons contain this point)
-        example: /api/c/challenges?contains=-100.22|40.45&difficulty=2
+        example: /api/c/challenges?lon=-100.22&lat=40.45&difficulty=2
         """
         app.logger.debug('retrieving list of challenges')
 
@@ -85,8 +85,10 @@ class ApiChallengeList(ProtectedResource):
         parser = reqparse.RequestParser()
         parser.add_argument('difficulty', type=int, choices=["1", "2", "3"],
                             help='difficulty cannot be parsed')
-        parser.add_argument('contains', type=GeoPoint,
-                            help="Could not parse contains")
+        parser.add_argument('lon', type=float,
+                            help="lon cannot be parsed")
+        parser.add_argument('lat', type=float,
+                            help="lat cannot be parsed")
         args = parser.parse_args()
 
         # Try to get difficulty from argument, or users prefers or default
@@ -95,9 +97,9 @@ class ApiChallengeList(ProtectedResource):
         # Try to get location from argument or user prefs
         contains = None
 
-        if args['contains']:
-            contains = args['contains']
-            coordWKT = 'POINT(%s %s)' % (contains.lat, contains.lon)
+        if args.lon and args.lat:
+            app.logger.debug('we have a location passed in')
+            coordWKT = 'POINT(%s %s)' % (args.lat, args.lon)
         elif 'home_location' in session:
             contains = session['home_location']
             coordWKT = 'POINT(%s %s)' % tuple(contains)
@@ -174,32 +176,36 @@ class ApiChallengeTask(ProtectedResource):
         parser = reqparse.RequestParser()
         parser.add_argument('num', type=int, default=1,
                             help='Number of return results cannot be parsed')
-        parser.add_argument('near', type=GeoPoint,
-                            help='Near argument could not be parsed')
+        parser.add_argument('lon', type=float,
+                            help='longitude could not be parsed')
+        parser.add_argument('lat', type=float,
+                            help='longitude could not be parsed')
         parser.add_argument('assign', type=int, default=1,
                             help='Assign could not be parsed')
         args = parser.parse_args()
         osmid = session.get('osm_id')
         assign = args['assign']
-        near = args['near']
+        lon = args['lon']
+        lat = args['lat']
 
         app.logger.info(
-            "{user} requesting task from {challenge} near {near} assiging: {assign}".format(
+            "{user} requesting task from {challenge} near ({lon}, {lat}) assiging: {assign}".format(
                 user=osmid,
                 challenge=slug,
-                near=near,
+                lon=lon,
+                lat=lat,
                 assign=assign))
 
         task = None
-        if near:
-            coordWKT = 'POINT(%s %s)' % (near.lat, near.lon)
-            task_query = Task.query.filter(Task.location.ST_Intersects(
-                ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).limit(1)
-            task_list = [task for task in task_query
-                         if challenge.task_available(task, osmid)]
-        if not near or not task:
+        if lon and lat:
+            app.logger.debug('getting a task near %f,%f' % (lon,lat))
+            coordWKT = 'POINT(%s %s)' % (lat, lon)
+            task = Task.query.filter(Task.location.ST_Intersects(
+                ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).first()
+        if not task: # we did not get a lon/lat or there was no task close to there
             # If no location is specified, or no tasks were found, gather
             # random tasks
+            app.logger.debug('getting a random task')
             task = get_random_task(challenge)
             # If no tasks are found with this method, then this challenge
             # is complete
