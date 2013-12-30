@@ -81,8 +81,8 @@ for i in range(NUM_TASKS):
         random.randrange(-120, -40) + random.random(),
         random.randrange(20, 50) + random.random())
     p2 = Point(
-        p1.x + (random.random() * random.choice((1, -1))),
-        p1.y + (random.random() * random.choice((1, -1))))
+        p1.x + (random.random() * random.choice((1, -1)) * 0.1),
+        p1.y + (random.random() * random.choice((1, -1)) * 0.1))
     # create a linestring connecting the two points
     # no constructor for linestring from points?
     l1 = LineString([(p1.x, p1.y), (p2.x, p2.y)])
