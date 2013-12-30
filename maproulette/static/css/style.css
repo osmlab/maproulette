@@ -84,6 +84,21 @@ div#stats {
     color: rgb(100,100,100);
 }
 
+div.donedialog {
+    position:absolute;
+    display: none;
+    width: 30%;
+    left: 35%;
+    top: 20%;
+    border: 1px solid #aaa;
+    z-index:15;
+    padding: 5px;
+    text-align: center;
+    background-color:#fff;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+}
+
 /*
  * the key 'icons'
  */
