@@ -13,7 +13,7 @@ challenge_types = {}
 class Default(Challenge):
 
     done_dialog_text = "This area is being loaded in your editor. Did you fix it?"
-    done_dialog_buttons = "fixed|skipped"
+    done_dialog_buttons = "fixed|skipped|falsepositive"
 
     marshal_fields = {
         'description': fields.String,
