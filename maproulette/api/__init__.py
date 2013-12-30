@@ -98,7 +98,7 @@ class ApiChallengeList(ProtectedResource):
             coordWKT = 'POINT(%s %s)' % (contains.lat, contains.lon)
         elif 'home_location' in session:
             contains = session['home_location']
-            coordWKT = 'POINT(%s %s)' % tuple(contains.split("|"))
+            coordWKT = 'POINT(%s %s)' % tuple(contains)
             app.logger.debug('home location retrieved from session')
 
         # get the list of challenges meeting the criteria
