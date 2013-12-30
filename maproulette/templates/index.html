@@ -10,7 +10,7 @@
 </body>
 <div class='controlpanel'>
     <div class='title'>OpenStreetMap <em>MapRoulette</em></div>
-    <div>
+    <div id='user'>
         {%- if session.osm_oauth -%}
         logged in as {{ session.display_name }}. <a href='{{ url_for('logout') }}'>log out</a>
         {%- else -%}
@@ -20,8 +20,8 @@
     <div id='challenge_title'></div>
     <div id='challenge_description'></div>
     <div id='stats'>This challenge has <span id='total'></span> tasks, and we still need to complete <span id='available'></span> of them.</div>
-    <div class="button" onClick=MRManager.nextTask()>THIS IS NOT AN ERROR <span class=key>q</span></div>
-    <div class="button" onClick=MRManager.nextTask()>I'M NOT SURE / SKIP <span class=key>w</span></div>
+    <div class="button" onClick=MRManager.nextTask('falsepositive')>THIS IS NOT AN ERROR <span class=key>q</span></div>
+    <div class="button" onClick=MRManager.nextTask('skip')>I'M NOT SURE / SKIP <span class=key>w</span></div>
     <div class=button onClick=MRManager.openTaskInEditor()>EDIT<span class=key>e</span></div>
     <div class=button onClick=MRManager.openTaskInEditor('j')>EDIT IN JOSM <span class=key>r</span></div>
 </div>
