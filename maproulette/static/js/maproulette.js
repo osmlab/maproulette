@@ -26,26 +26,6 @@ var Q = (function () {
 }());
 
 var MRHelpers = (function () {
-    var constructJosmUri = function (bounds, features) {
-        var nodes = [];
-        var ways = [];
-        var sw = bounds.getSouthWest();
-        var ne = bounds.getNorthEast();
-        var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
-
-        for (f in features) {
-            var feature = features[f];
-            switch (feature.geometry.type) {
-                case 'Point':
-                    url += 'node' + feature.properties.osmid;
-                    break;
-                case 'LineString':
-                    url += 'way' + feature.properties.osmid;
-                    break;
-            }
-        }
-        return uri;
-    };
 
     var addComma = function(str) {
         return (str.match(/\,\s+$/) || str.match(/in\s+$/))?'':', ';
@@ -57,7 +37,7 @@ var MRHelpers = (function () {
         out = 'We are ';
         if(addr.city != null) { out += 'in ' + addr.city }
         else if (addr.town != null) { out += 'in ' + addr.town }
-        else if (addr.hamlet != null) { out + 'in ' + addr.hamlet  }
+        else if (addr.hamlet != null) { out += 'in ' + addr.hamlet }
         else { out += 'somewhere in ' };
         out += addComma(out); 
         if(addr.county) {
@@ -75,23 +55,8 @@ var MRHelpers = (function () {
         return out;
     };
 
-    var openInJOSM = function (bounds, features) {
-        var josmUri = constructJosmUri(bounds, features);
-        console.log('opening in JOSM');
-        // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
-        $.ajax({
-            url     : josmUri,
-            success : function (t) {
-                if (t.status!=200) {
-                    notify.log('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
-                } else { setTimeout('confirmRemap(\'j\')', 4000); }
-            }
-        });
-    };
-
     return {
         mqResultToString    : mqResultToString,
-        openInJOSM          : openInJOSM
     }
 }());
 
@@ -125,12 +90,52 @@ var MRManager = (function () {
     var map;
     var challenge;
     var task;
+    var editor;
     var near = (Q.lon && Q.lat) ? { 'lon': parseFloat(Q.lon), 'lat': parseFloat(Q.lat) } : {};
     var difficulty = parseInt(Q.difficulty);
     var taskLayer;
 
     // define humane notification instance
     var notify = humane.create({ timeout: 1500 });
+
+    var constructJosmUri = function () {
+        var bounds = map.getBounds();
+        var nodes = [];
+        var ways = [];
+        var sw = bounds.getSouthWest();
+        var ne = bounds.getNorthEast();
+        var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
+
+        for (f in task.features) {
+            var feature = features[f];
+            switch (feature.geometry.type) {
+                case 'Point':
+                    url += 'node' + feature.properties.osmid;
+                    break;
+                case 'LineString':
+                    url += 'way' + feature.properties.osmid;
+                    break;
+            }
+        }
+        return uri;
+    };
+
+    var openInJOSM = function () {
+        var josmUri = constructJosmUri();
+        console.log('opening in JOSM');
+        // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
+        $.ajax({
+            url     : josmUri,
+            success : function (t) {
+                if (t.status!=200) {
+                    notify.log('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
+                } else { 
+                    updateTask('editing');
+                    setTimeout('confirmRemap()', 4000); 
+                }
+            }
+        });
+    };
 
     /* 
      * A helper function to construct the URL parameters for location and difficulty
@@ -179,7 +184,7 @@ var MRManager = (function () {
             console.log('location found: ' + e.latlng);
             near.lat = parseFloat(e.latlng.lat);
             near.lon = parseFloat(e.latlng.lng);
-            notify.log('We found your location. You next task will be closer to home!');
+            notify.log('We found your location. MapRoulette will try and give you tasks closer to home if they are available.', { timeout: 3000 });
         });
         // If the location is not found, meh.
         map.on('locationerror', function (e) {
@@ -261,6 +266,27 @@ var MRManager = (function () {
         });
     };
 
+    var updateTask = function (action) {
+        // if we don't have a task yet, return immediately
+        if (!task) { return false };
+
+        var payload = {
+            "action": action,
+            "editor": editor
+        };
+        $.ajax({
+            url     : "/api/challenge/" + challenge.slug + "/task/" + task.id,
+            type    : "POST",
+            data    : payload,
+            success : function (data) {
+                console.log('task ' + task.id + ' updated')
+            },
+            error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
+        });
+        
+
+    }
+
     /*
      * get a task for the current challenge
      */
@@ -324,22 +350,28 @@ var MRManager = (function () {
         });
     }
 
-    var nextTask = function () {
+    var nextTask = function (action) {
+        updateTask(action);
         getTask();
         drawTask();
     }
 
     var openTaskInEditor = function (editor) {
+        editor = editor;
         if (map.getZoom() < MRConfig.minZoomLevelForEditing){
             notify.log(MRConfig.strings.msgZoomInForEdit, 3);
             return false;
         };
         console.log('opening in ' + editor);
-        if (editor === 'j') { MRHelpers.openInJOSM(map.getBounds(), task.features) }
+        if (editor === 'j') { openInJOSM() }
         else { // OSM default
             var editURL = 'http://www.openstreetmap.org/edit?bbox=' + map.getBounds().toBBoxString();
+            // open a new window with the edit URL
             window.open(editURL);
-            setTimeout('confirmRemap(\'p\')', 4000)
+            // update the task
+            updateTask('editing')
+            // display the confirmation dialog
+            setTimeout('confirmRemap()', 4000)
         }
     }
 
