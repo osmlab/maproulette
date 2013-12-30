@@ -13,13 +13,13 @@ import json
 
 
 class ProtectedResource(Resource):
+
     method_decorators = [osmlogin_required]
 
 
 class PointField(Raw):
 
     def format(self, value):
-        app.logger.debug(value.coords)
         return '|'.join([str(value.x), str(value.y)])
 
 challenge_summary = {
@@ -40,27 +40,22 @@ api = Api(app)
 
 @api.representation('application/json')
 def output_json(data, code, headers=None):
-    app.logger.debug(data)
     # if this is a Shapely object, sump it as geojson
     if isinstance(data, geometry.base.BaseGeometry):
-        app.logger.debug('this is a geo element')
         resp = make_response(geojson.dumps(data), code)
     # if this is a list of task geometries, we need to unpack it
     elif not isinstance(data, dict) and isinstance(data[0], TaskGeometry):
-        app.logger.debug('these are task geometries')
         # unpack the geometries FIXME can this be done in the model?
         geometries = [geojson.Feature(
             geometry=g.geometry,
             properties={
                 'selected'  : True,
                 'osmid'     : g.osmid }) for g in data]
-        app.logger.debug(geometries)
         resp = make_response(
             geojson.dumps(geojson.FeatureCollection(geometries)),
             code)
     # otherwise perform default json representation
     else:
-        app.logger.debug('this is a non geo element')
         resp = make_response(json.dumps(data), code)
     # finish and return the response object
     resp.headers.extend(headers or {})
@@ -68,7 +63,6 @@ def output_json(data, code, headers=None):
 
 
 class ApiChallengeList(ProtectedResource):
-    method_decorators = [osmlogin_required]
 
     @marshal_with(challenge_summary)
     def get(self):
@@ -79,8 +73,6 @@ class ApiChallengeList(ProtectedResource):
         challenges whose bounding polygons contain this point)
         example: /api/c/challenges?lon=-100.22&lat=40.45&difficulty=2
         """
-        app.logger.debug('retrieving list of challenges')
-
         # initialize the parser
         parser = reqparse.RequestParser()
         parser.add_argument('difficulty', type=int, choices=["1", "2", "3"],
@@ -98,13 +90,10 @@ class ApiChallengeList(ProtectedResource):
         contains = None
 
         if args.lon and args.lat:
-            app.logger.debug('we have a location passed in')
             coordWKT = 'POINT(%s %s)' % (args.lat, args.lon)
         elif 'home_location' in session:
             contains = session['home_location']
             coordWKT = 'POINT(%s %s)' % tuple(contains)
-            app.logger.debug('home location retrieved from session')
-
         # get the list of challenges meeting the criteria
         query = db.session.query(Challenge)
 
@@ -119,13 +108,9 @@ class ApiChallengeList(ProtectedResource):
         # if there are no near challenges, return anything
         if len(challenges) == 0:
             query = db.session.query(Challenge)
-            app.logger.debug(
-                'we have nothing close, looking all over within difficulty setting')
             challenges = [challenge for challenge in query.filter(
                 Challenge.difficulty == difficulty).all()
                 if challenge.active]
-
-        app.logger.debug('we still have nothing, returning any challenge')
 
         # what if we still don't get anything? get anything!
         if len(challenges) == 0:
@@ -139,16 +124,13 @@ class ApiChallengeList(ProtectedResource):
 class ApiChallengeDetail(ProtectedResource):
 
     def get(self, slug):
-        app.logger.debug('retrieving challenge %s' % (slug,))
         challenge = get_challenge_or_404(slug, True)
-        app.logger.debug(challenge)
         return marshal(challenge, challenge.marshal_fields)
 
 
 class ApiChallengePolygon(ProtectedResource):
 
     def get(self, slug):
-        app.logger.debug('retrieving challenge %s polygon' % (slug,))
         challenge = get_challenge_or_404(slug, True)
         return challenge.polygon
 
@@ -198,14 +180,12 @@ class ApiChallengeTask(ProtectedResource):
 
         task = None
         if lon and lat:
-            app.logger.debug('getting a task near %f,%f' % (lon,lat))
             coordWKT = 'POINT(%s %s)' % (lat, lon)
             task = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).first()
         if not task: # we did not get a lon/lat or there was no task close to there
             # If no location is specified, or no tasks were found, gather
             # random tasks
-            app.logger.debug('getting a random task')
             task = get_random_task(challenge)
             # If no tasks are found with this method, then this challenge
             # is complete
@@ -214,32 +194,43 @@ class ApiChallengeTask(ProtectedResource):
             osmerror("ChallengeComplete",
                      "Challenge {} is complete".format(slug))
         if assign:
-            app.logger.debug('assigning task')
             task.actions.append(Action("assigned", osmid))
             db.session.add(task)
 
         db.session.commit()
-
-        app.logger.debug("task found matching criteria")
-
         return marshal(task, task_fields)
-
 
 class ApiChallengeTaskDetails(ProtectedResource):
 
     def get(self, slug, identifier):
-        app.logger.debug('getting task %s details' % (identifier,))
         task = get_task_or_404(slug, identifier)
-        app.logger.debug(task)
         return marshal(task, task_fields)
+
+    def post(self, slug, identifier):
+        app.logger.debug('updating task %s' % (identifier,))
+        # initialize the parser
+        parser = reqparse.RequestParser()
+        parser.add_argument('action', type=str,
+                            help='action cannot be parsed')
+        parser.add_argument('editor', type=str,
+                            help="editor cannot be parsed")
+        args = parser.parse_args()
+
+        # get the task
+        task = get_task_or_404(slug, identifier)
+        task.actions.append(Action(args.action, 
+                                   session.get('osm_id'), 
+                                   args.editor))
+        db.session.add(task)
+        db.session.commit()        
+        return {'message': 'OK'}
+
 
 
 class ApiChallengeTaskGeometries(ProtectedResource):
 
     def get(self, slug, identifier):
-        app.logger.debug('getting task %s geometries' % (identifier,))
         task = get_task_or_404(slug, identifier)
-        app.logger.debug(task)
         return task.geometries
 
 api.add_resource(ApiChallengeList, '/api/challenges/')
