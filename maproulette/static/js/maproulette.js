@@ -25,6 +25,26 @@ var Q = (function () {
     return query_string;
 }());
 
+var MRButtons = function () {
+
+    var buttonTypes = {
+        'fixed'         : 'I fixed it!',
+        'skipped'       : 'Too difficult / Couldn\'t see',
+        'falsepositive' : 'It was not an error',
+        'alreadyfixed'  : 'Someone beat me to it'  
+    };
+
+    var makeButton = function (buttonType) {
+        if (!(buttonType in buttonTypes)) { return false };
+        return '<div class=\'button\' id=\'' + buttonType + '\'>' + buttonTypes[buttonType] + '</div>';
+    };
+
+    return {
+        makeButton  : makeButton
+    };
+
+}();
+
 var MRHelpers = (function () {
 
     var addComma = function(str) {
@@ -107,7 +127,7 @@ var MRManager = (function () {
         var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
 
         for (f in task.features) {
-            var feature = features[f];
+            var feature = task.features[f];
             switch (feature.geometry.type) {
                 case 'Point':
                     url += 'node' + feature.properties.osmid;
@@ -122,16 +142,16 @@ var MRManager = (function () {
 
     var openInJOSM = function () {
         var josmUri = constructJosmUri();
-        console.log('opening in JOSM');
         // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
         $.ajax({
             url     : josmUri,
             success : function (t) {
-                if (t.status!=200) {
+                if (t.indexOf('OK') === -1) {
                     notify.log('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
                 } else { 
+                    console.log('the data was loaded in JOSM, now waiting for callback');
                     updateTask('editing');
-                    setTimeout('confirmRemap()', 4000); 
+                    setTimeout(confirmRemap, 4000); 
                 }
             }
         });
@@ -354,7 +374,7 @@ var MRManager = (function () {
         updateTask(action);
         getTask();
         drawTask();
-    }
+    };
 
     var openTaskInEditor = function (editor) {
         editor = editor;
@@ -369,11 +389,34 @@ var MRManager = (function () {
             // open a new window with the edit URL
             window.open(editURL);
             // update the task
-            updateTask('editing')
+            updateTask('editing');
             // display the confirmation dialog
-            setTimeout('confirmRemap()', 4000)
+            setTimeout(confirmRemap, 4000);
         }
+    };
+
+    var presentDoneDialog = function() {
+        var d = challenge.done_dlg;
+        
+        // if there is no done dialog info, bail
+        // FIXME we should be reverting to a default
+        if (typeof d === 'undefined') { return false };
+        
+        var dialogHTML = '<div class=\'text\'>' + d.text + '</div>';
+
+        if (typeof d.buttons === 'string') {
+            var buttons = d.buttons.split('|');
+            for (var i = 0; i < buttons.length; i++) {
+                dialogHTML += MRButtons.makeButton(buttons[i]);
+            };
+        };
+        $('.donedialog').html(dialogHTML).show();
     }
+
+    var confirmRemap = function () {
+        console.log('confirming remap');
+        presentDoneDialog();
+    };
 
     return {
         init            : init,
