@@ -225,6 +225,10 @@ class Task(db.Model):
 
 class TaskGeometry(db.Model):
     __tablename__ = 'task_geometries'
+    osmid = db.Column(
+        db.BigInteger,
+        primary_key=True,
+        nullable=False)
     task_id = db.Column(
         db.Integer,
         db.ForeignKey('tasks.id'),
@@ -235,7 +239,8 @@ class TaskGeometry(db.Model):
         nullable=False,
         primary_key=True)
 
-    def __init__(self, shape):
+    def __init__(self, osmid, shape):
+        self.osmid = osmid
         self.geom = from_shape(shape)
 
     @property

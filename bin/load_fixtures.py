@@ -86,9 +86,11 @@ for i in range(NUM_TASKS):
     # create a linestring connecting the two points
     # no constructor for linestring from points?
     l1 = LineString([(p1.x, p1.y), (p2.x, p2.y)])
+    # generate some random 'osm ids'
+    osmids = [random.randrange(1000000, 1000000000) for _ in range(2)]
     # add the first point and the linestring to the task's geometries
-    task.geometries.append(TaskGeometry(p1))
-    task.geometries.append(TaskGeometry(l1))
+    task.geometries.append(TaskGeometry(osmids[0], p1))
+    task.geometries.append(TaskGeometry(osmids[1], l1))
     # and add the first point as the task's location
     task.location = p1
     # set the run number to 1, this is the initial run

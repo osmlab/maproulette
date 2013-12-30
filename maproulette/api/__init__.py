@@ -51,7 +51,9 @@ def output_json(data, code, headers=None):
         # unpack the geometries FIXME can this be done in the model?
         geometries = [geojson.Feature(
             geometry=g.geometry,
-            properties={'selected': True}) for g in data]
+            properties={
+                'selected'  : True,
+                'osmid'     : g.osmid }) for g in data]
         app.logger.debug(geometries)
         resp = make_response(
             geojson.dumps(geojson.FeatureCollection(geometries)),
