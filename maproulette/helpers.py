@@ -33,7 +33,6 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     if not c or (abort_if_inactive and not c.active):
         abort(404)
     if instance_type:
-        app.logger.debug('returning instance type')
         challenge_class = challenge_types[c.type]
         challenge = challenge_class.query.filter(Challenge.id == c.id).first()
         return challenge
@@ -47,7 +46,6 @@ def get_task_or_404(challenge_slug, task_identifier):
         filter(Task.challenge_slug == challenge_slug).first()
     if not t:
         abort(404)
-    app.logger.debug('returning task %s' % (t.identifier))
     return t
 
 
@@ -63,11 +61,8 @@ def get_or_create_task(challenge, task_identifier):
 def osmlogin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        app.logger.debug('checking login status...')
         if not app.debug and not 'osm_token' in session:
-            app.logger.debug('no logged in user, aborting')
             abort(403)
-        app.logger.debug('either we are in debug mode or we have a user')
         return f(*args, **kwargs)
     return decorated_function
 
