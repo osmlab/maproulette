@@ -55,6 +55,12 @@ div.button {
     padding: 4px;
 }
 
+div#fixed.button {
+    background-color: rgb(120,230,100);
+    border-width: 2px;
+    font-weight: bold;
+}
+
 /*
  * the button hover
  */
