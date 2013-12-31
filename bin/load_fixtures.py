@@ -3,11 +3,23 @@
 from maproulette import app, config
 from maproulette.models import db, Challenge, Task, TaskGeometry, Action
 import geojson
-from shapely.geometry import Point, LineString, GeometryCollection
+from shapely.geometry import Point, LineString, Polygon, GeometryCollection, box
 import uuid
 import random
 
-NUM_TASKS = 1000
+NUM_TASKS = 100
+NUM_CHALLENGES = 10
+
+ordinals = ['first',
+            'second',
+            'third',
+            'fourth',
+            'fifth',
+            'sixth',
+            'seventh',
+            'eighth',
+            'ninth',
+            'tenth']
 
 # the gettysburg address
 words = """Four score and seven years ago our fathers
@@ -67,39 +79,64 @@ challenge.help = words
 challenge.instruction = words2
 db.session.add(challenge)
 
-# add some tasks
-cnt = 0
-# generate NUM_TASKS random tasks
-for i in range(NUM_TASKS):
-    # generate a unique identifier
-    identifier = str(uuid.uuid4())
-    # instantiate the task and register it with challenge 'test'
-    # Initialize a task with its challenge slug and persistent ID
-    task = Task('test', identifier)
-    # create two random points not too far apart
-    p1 = Point(
-        random.randrange(-120, -40) + random.random(),
-        random.randrange(20, 50) + random.random())
-    p2 = Point(
-        p1.x + (random.random() * random.choice((1, -1)) * 0.1),
-        p1.y + (random.random() * random.choice((1, -1)) * 0.1))
-    # create a linestring connecting the two points
-    # no constructor for linestring from points?
-    l1 = LineString([(p1.x, p1.y), (p2.x, p2.y)])
-    # generate some random 'osm ids'
-    osmids = [random.randrange(1000000, 1000000000) for _ in range(2)]
-    # add the first point and the linestring to the task's geometries
-    task.geometries.append(TaskGeometry(osmids[0], p1))
-    task.geometries.append(TaskGeometry(osmids[1], l1))
-    # and add the first point as the task's location
-    task.location = p1
-    # set the run number to 1, this is the initial run
-    task.run = 1
-    # generate random string for the instruction
-    task.instruction = ' '.join([random.choice(words.split())
-                                for _ in range(15)])
-    # add the task to the session
-    db.session.add(task)
+for i in range(NUM_CHALLENGES):
+    minx = -120
+    maxx = -40
+    miny = 20
+    maxy = 50
+    challengepoly = None
+    challenge = Challenge('test%i' % (i+1))
+    challenge.title = 'Test Challenge %i' % (i+1)
+    challenge.difficulty = random.choice([1,2,3])
+    challenge.active = True
+    challenge.blurb = 'This is the %s test challenge' % (ordinals[i])
+    challenge.description = 'This describes the %s test challenge in more detail' % (ordinals[i])
+    challenge.help = words
+    challenge.instruction = words2
+    # have bounding boxes for all but the first two challenges.
+    if i > 1:
+        minx = random.randrange(-120, -40) 
+        miny = random.randrange(20, 50)
+        maxx = minx + 1
+        maxy = miny + 1
+        challengepoly = box (minx, miny, maxx, maxy)
+        challenge.polygon = challengepoly
+    
+    db.session.add(challenge)
 
-# commit the generated tasks and the challenge to the database.
-db.session.commit()
+    # add some tasks
+    cnt = 0
+    # generate NUM_TASKS random tasks
+    for j in range(NUM_TASKS):
+        # generate a unique identifier
+        identifier = str(uuid.uuid4())
+        # instantiate the task and register it with challenge 'test'
+        # Initialize a task with its challenge slug and persistent ID
+        task = Task(challenge.slug, identifier)
+        # create two random points not too far apart
+        p1 = Point(
+            random.randrange(minx, maxx) + random.random(),
+            random.randrange(miny, maxy) + random.random())
+        p2 = Point(
+            p1.x + (random.random() * random.choice((1, -1)) * 0.01),
+            p1.y + (random.random() * random.choice((1, -1)) * 0.01))
+        # create a linestring connecting the two points
+        # no constructor for linestring from points?
+        l1 = LineString([(p1.x, p1.y), (p2.x, p2.y)])
+        # generate some random 'osm ids'
+        osmids = [random.randrange(1000000, 1000000000) for _ in range(2)]
+        # add the first point and the linestring to the task's geometries
+        task.geometries.append(TaskGeometry(osmids[0], p1))
+        task.geometries.append(TaskGeometry(osmids[1], l1))
+        # and add the first point as the task's location
+        task.location = p1
+        # set the run number to 1, this is the initial run
+        task.run = 1
+        # generate random string for the instruction
+        task.instruction = ' '.join([random.choice(words.split())
+                                    for _ in range(15)])
+        # add the task to the session
+        db.session.add(task)
+
+    # commit the generated tasks and the challenge to the database.
+    db.session.commit()
