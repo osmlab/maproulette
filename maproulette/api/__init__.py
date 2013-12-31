@@ -156,8 +156,6 @@ class ApiChallengeTask(ProtectedResource):
         "Returns a task for specified challenge"
         challenge = get_challenge_or_404(slug, True)
         parser = reqparse.RequestParser()
-        parser.add_argument('num', type=int, default=1,
-                            help='Number of return results cannot be parsed')
         parser.add_argument('lon', type=float,
                             help='longitude could not be parsed')
         parser.add_argument('lat', type=float,
