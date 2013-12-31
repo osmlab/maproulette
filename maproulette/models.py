@@ -123,9 +123,9 @@ class Challenge(db.Model):
             return to_shape(self.geom)
         else:
             return Polygon([(-180, -90),
-                            (-180, 90),
-                            (180, 90),
-                            (180, -90),
+                            (-180,  90),
+                            (180 ,  90),
+                            (180 , -90),
                             (-180, -90)])
 
     @polygon.setter
@@ -133,6 +133,10 @@ class Challenge(db.Model):
         self.geom = from_shape(shape)
 
     polygon = synonym('geom', descriptor=polygon)
+
+    @property
+    def centroid(self):
+        return self.polygon.centroid
 
     def task_available(self, task, osmid=None):
         """The function for a task to determine if it's

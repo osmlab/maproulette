@@ -24,7 +24,8 @@ class PointField(Raw):
 
 challenge_summary = {
     'slug': fields.String,
-    'title': fields.String
+    'title': fields.String,
+    'centroid': PointField
 }
 
 task_fields = {
