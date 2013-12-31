@@ -36,13 +36,13 @@ var MRButtons = function () {
 
     var makeButton = function (buttonType) {
         if (!(buttonType in buttonTypes)) { return false };
-        return '<div class=\'button\' id=\'' + buttonType + '\'>' + buttonTypes[buttonType] + '</div>';
+        return '<div class=\'button\' onClick=MRManager.nextTask(\'' + buttontype + '\') id=\'' + buttonType + '\'>' + buttonTypes[buttonType] + '</div>';
     };
 
     var makeButtons = function () {
         var buttonHTML = '';
         for (key in buttonTypes) { 
-            buttonHTML += '<div class=\'button\' id=\'' + key + '\'>' + buttonTypes[key] + '</div>\n';
+            buttonHTML += '<div class=\'button\' onClick=MRManager.nextTask(\'' + key + '\') id=\'' + key + '\'>' + buttonTypes[key] + '</div>\n';
         };
         return buttonHTML;
     };
@@ -380,8 +380,13 @@ var MRManager = (function () {
     }
 
     var nextTask = function (action) {
+        // make the done dialog disappear if it is there
+        $('.donedialog').delay(1000).fadeOut();
+        // update the outgoing task
         updateTask(action);
+        // get the next task
         getTask();
+        // and draw it
         drawTask();
     };
 
