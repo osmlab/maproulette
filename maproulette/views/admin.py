@@ -110,7 +110,7 @@ class AdminTaskApi(Resource):
     def put(self, challenge_slug, task_id):
         challenge = get_challenge_or_404(challenge_slug, instance_type=False,
                                          abort_if_inactive=False)
-        task = Task.query(Task.identifier == task_id).\
+        task = Task.query(Task.identifier == task_id). \
             filter(Task.challenge_slug == challenge.slug).first()
         if task:
             action = Action(task.id, "modified")

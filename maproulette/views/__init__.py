@@ -21,7 +21,6 @@ import geojson
 
 # By default, send out the standard client
 
-
 @app.route('/')
 def index():
     "Display the index.html"

@@ -85,9 +85,9 @@ for i in range(NUM_CHALLENGES):
     miny = 20
     maxy = 50
     challengepoly = None
-    challenge = Challenge('test%i' % (i+1))
-    challenge.title = 'Test Challenge %i' % (i+1)
-    challenge.difficulty = random.choice([1,2,3])
+    challenge = Challenge('test%i' % (i + 1))
+    challenge.title = 'Test Challenge %i' % (i + 1)
+    challenge.difficulty = random.choice([1, 2, 3])
     challenge.active = True
     challenge.blurb = 'This is the %s test challenge' % (ordinals[i])
     challenge.description = 'This describes the %s test challenge in more detail' % (ordinals[i])
@@ -95,13 +95,13 @@ for i in range(NUM_CHALLENGES):
     challenge.instruction = words2
     # have bounding boxes for all but the first two challenges.
     if i > 1:
-        minx = random.randrange(-120, -40) 
+        minx = random.randrange(-120, -40)
         miny = random.randrange(20, 50)
         maxx = minx + 1
         maxy = miny + 1
-        challengepoly = box (minx, miny, maxx, maxy)
+        challengepoly = box(minx, miny, maxx, maxy)
         challenge.polygon = challengepoly
-    
+
     db.session.add(challenge)
 
     # add some tasks
