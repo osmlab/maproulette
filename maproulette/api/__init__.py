@@ -1,5 +1,5 @@
 from maproulette import app
-from flask.ext.restful import reqparse, fields, marshal,\
+from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import get_value, Raw
 from flask import session, make_response
@@ -38,7 +38,6 @@ api = Api(app)
 
 # override the default JSON representation to support the geo objects
 
-
 @api.representation('application/json')
 def output_json(data, code, headers=None):
     # if this is a Shapely object, sump it as geojson
@@ -50,8 +49,8 @@ def output_json(data, code, headers=None):
         geometries = [geojson.Feature(
             geometry=g.geometry,
             properties={
-                'selected'  : True,
-                'osmid'     : g.osmid }) for g in data]
+                'selected': True,
+                'osmid': g.osmid}) for g in data]
         resp = make_response(
             geojson.dumps(geojson.FeatureCollection(geometries)),
             code)
@@ -182,7 +181,7 @@ class ApiChallengeTask(ProtectedResource):
             coordWKT = 'POINT(%s %s)' % (lat, lon)
             task = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).first()
-        if not task: # we did not get a lon/lat or there was no task close to there
+        if not task:  # we did not get a lon/lat or there was no task close to there
             # If no location is specified, or no tasks were found, gather
             # random tasks
             task = get_random_task(challenge)
@@ -199,6 +198,7 @@ class ApiChallengeTask(ProtectedResource):
         db.session.commit()
         return marshal(task, task_fields)
 
+
 class ApiChallengeTaskDetails(ProtectedResource):
 
     def get(self, slug, identifier):
@@ -206,7 +206,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
         return marshal(task, task_fields)
 
     def post(self, slug, identifier):
-        app.logger.debug('updating task %s' % (identifier,))
+        app.logger.debug('updating task %s' % (identifier, ))
         # initialize the parser
         parser = reqparse.RequestParser()
         parser.add_argument('action', type=str,
@@ -217,13 +217,12 @@ class ApiChallengeTaskDetails(ProtectedResource):
 
         # get the task
         task = get_task_or_404(slug, identifier)
-        task.actions.append(Action(args.action, 
-                                   session.get('osm_id'), 
+        task.actions.append(Action(args.action,
+                                   session.get('osm_id'),
                                    args.editor))
         db.session.add(task)
-        db.session.commit()        
+        db.session.commit()
         return {'message': 'OK'}
-
 
 
 class ApiChallengeTaskGeometries(ProtectedResource):

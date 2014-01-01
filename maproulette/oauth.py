@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-import json  # @UnusedImport
 from maproulette import app, models
 from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
@@ -20,7 +17,7 @@ oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
-#    session.regenerate() this should be done elsewhere.
+  # session.regenerate() this should be done elsewhere.
     if 'osm_oauth' in session:
         resp = session['osm_oauth']
         return resp['oauth_token'], resp['oauth_token_secret']

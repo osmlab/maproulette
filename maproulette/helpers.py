@@ -42,7 +42,7 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
 
 def get_task_or_404(challenge_slug, task_identifier):
     """Return a task based on its challenge and task identifier"""
-    t = Task.query.filter(Task.identifier == task_identifier).\
+    t = Task.query.filter(Task.identifier == task_identifier). \
         filter(Task.challenge_slug == challenge_slug).first()
     if not t:
         abort(404)
@@ -51,7 +51,7 @@ def get_task_or_404(challenge_slug, task_identifier):
 
 def get_or_create_task(challenge, task_identifier):
     """Return a task, either pull a new one or create a new one"""
-    task = (Task.identifier == task_identifier).\
+    task = (Task.identifier == task_identifier). \
         filter(Task.challenge_slug == challenge.slug).first()
     if not task:
         task = Task(challenge.id, task_identifier)
@@ -70,6 +70,7 @@ def osmlogin_required(f):
 def localonly(f):
     """Restricts the view to only localhost. If there is a proxy, it
     will handle that too"""
+
     @wraps(f)
     def recordated_function(*args, **hwargs):
         if not request.headers.getlist("X-Forwarded-For"):

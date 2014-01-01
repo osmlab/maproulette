@@ -1,4 +1,4 @@
-# """This file contains the SQLAlchemy ORM models"""
+  # """This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker, synonym, \
@@ -108,7 +108,7 @@ class Challenge(db.Model):
     type = db.Column(db.String, default='default', nullable=False)
 
     # note that spatial indexes seem to be created automagically
-    __table_args__ = (db.Index('idx_run', run),)
+    __table_args__ = (db.Index('idx_run', run), )
 
     def __init__(self, slug):
         self.slug = slug
@@ -123,9 +123,9 @@ class Challenge(db.Model):
             return to_shape(self.geom)
         else:
             return Polygon([(-180, -90),
-                            (-180,  90),
-                            (180 ,  90),
-                            (180 , -90),
+                            (-180, 90),
+                            (180, 90),
+                            (180, -90),
                             (-180, -90)])
 
     @polygon.setter
