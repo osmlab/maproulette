@@ -61,9 +61,14 @@ def retrieve_osm_data():
         user.osm_account_created = userxml.attrib['account_created']
         homexml = userxml.find('home')
         if homexml is not None:
+            lon = float(homexml.attrib['lon'])
+            # this is to work around a bug in OSM where the set user longitude can be outside of the -180 ... 180 range if the user panned the map across the 180 / -180 meridian
+            lon = abs(lon) % 180 * (lon / abs(lon))
+            lat = homexml.attrib['lat']
             user.home_location = WKTElement(
                 'POINT(%s %s)' %
-                (homexml.attrib['lon'], homexml.attrib['lat']))
+                (lon, lat))
+            app.logger.debug('setting user home location')
         else:
             app.logger.debug('no home for this user')
         languages = userxml.find('languages')
