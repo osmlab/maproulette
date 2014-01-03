@@ -72,7 +72,8 @@ def localonly(f):
     will handle that too"""
 
     @wraps(f)
-    def recordated_function(*args, **hwargs):
+    def decorated_function(*args, **hwargs):
+        # FIXME request is not defined here
         if not request.headers.getlist("X-Forwarded-For"):
             ip = request.remote_addr
         else:
