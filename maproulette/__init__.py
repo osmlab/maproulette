@@ -1,6 +1,5 @@
 import os
-import sys
-from flask import Flask, session, render_template, redirect
+from flask import Flask
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
 
