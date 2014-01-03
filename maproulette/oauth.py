@@ -1,7 +1,6 @@
 from maproulette import app, models
 from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
-from flask.ext.sqlalchemy import SQLAlchemy
 from maproulette.database import db
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
