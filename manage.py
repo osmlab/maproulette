@@ -5,6 +5,7 @@ import sys
 import subprocess
 from flask.ext.script import Manager, Server
 from maproulette import app
+from maproulette.models import db
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -29,15 +30,13 @@ def clean_pyc():
 @manager.command
 def drop_db():
     """Creates the database tables"""
-    from maproulette import database
-    database.drop_db()
+    db.drop_all()
 
 
 @manager.command
 def create_db():
     """Creates the database tables"""
-    from maproulette import database
-    database.init_db()
+    db.create_all()
 
 if __name__ == "__main__":
     manager.run()
