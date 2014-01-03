@@ -44,7 +44,7 @@ class ProductionConfig(Config):
 
 class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette_dev"
-    # DEBUG = True
+    DEBUG = True
 
 
 class TestingConfig(Config):
