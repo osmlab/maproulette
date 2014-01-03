@@ -2,6 +2,7 @@ from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import get_value, Raw
+from flask.ext.sqlalchemy import get_debug_queries
 from flask import session, make_response
 from maproulette.helpers import GeoPoint, get_challenge_or_404, \
     get_task_or_404, get_random_task, osmlogin_required, osmerror
@@ -25,7 +26,7 @@ class PointField(Raw):
 challenge_summary = {
     'slug': fields.String,
     'title': fields.String,
-    'centroid': PointField
+    'difficulty': fields.Integer
 }
 
 task_fields = {
@@ -40,8 +41,11 @@ api = Api(app)
 
 @api.representation('application/json')
 def output_json(data, code, headers=None):
+    # return empty result if data contains nothing
+    if not data:
+        resp = make_response(geojson.dumps({}), code)
     # if this is a Shapely object, sump it as geojson
-    if isinstance(data, geometry.base.BaseGeometry):
+    elif isinstance(data, geometry.base.BaseGeometry):
         resp = make_response(geojson.dumps(data), code)
     # if this is a list of task geometries, we need to unpack it
     elif not isinstance(data, dict) and isinstance(data[0], TaskGeometry):
@@ -83,41 +87,33 @@ class ApiChallengeList(ProtectedResource):
                             help="lat cannot be parsed")
         args = parser.parse_args()
 
-        # Try to get difficulty from argument, or users prefers or default
-        difficulty = args['difficulty'] or session.get('difficulty') or 1
-
-        # Try to get location from argument or user prefs
+        difficulty = None
         contains = None
 
+        # Try to get difficulty from argument, or users preference
+        difficulty = args['difficulty'] or session.get('difficulty')
+
+        # for local challenges, first look at lon / lat passed in 
         if args.lon and args.lat:
-            coordWKT = 'POINT(%s %s)' % (args.lat, args.lon)
+            contains = 'POINT(%s %s)' % (args.lon, args.lat)
+        # if there is none, look at the user's home location from OSM
         elif 'home_location' in session:
-            contains = session['home_location']
-            coordWKT = 'POINT(%s %s)' % tuple(contains)
+            contains = 'POINT(%s %s)' % tuple(session['home_location'])
+        
         # get the list of challenges meeting the criteria
         query = db.session.query(Challenge)
 
         if difficulty:
             query = query.filter(Challenge.difficulty == difficulty)
         if contains:
-            query = query.filter(Challenge.geom.ST_Contains(coordWKT))
+            query = query.filter(Challenge.polygon.ST_Contains(contains))
 
-        challenges = [challenge for challenge in query.all()
-                      if challenge.active]
+        # finally filter on active challenges only
+            query = query.filter(Challenge.active == True)
+        
+        challenges = query.all()
+        app.logger.debug(get_debug_queries())
 
-        # if there are no near challenges, return anything
-        if len(challenges) == 0:
-            query = db.session.query(Challenge)
-            challenges = [challenge for challenge in query.filter(
-                Challenge.difficulty == difficulty).all()
-                if challenge.active]
-
-        # what if we still don't get anything? get anything!
-        if len(challenges) == 0:
-            query = db.session.query(Challenge)
-            challenges = [challenge
-                          for challenge in query.all()
-                          if challenge.active]
         return challenges
 
 
