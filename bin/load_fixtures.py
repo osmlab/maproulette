@@ -2,8 +2,7 @@
 
 from maproulette import app, config
 from maproulette.models import db, Challenge, Task, TaskGeometry, Action
-import geojson
-from shapely.geometry import Point, LineString, Polygon, GeometryCollection, box
+from shapely.geometry import Point, LineString, box
 import uuid
 import random
 
@@ -67,17 +66,6 @@ db.session.query(Action).delete()
 db.session.query(Task).delete()
 db.session.query(Challenge).delete()
 db.session.commit()
-
-# add a new challenge
-challenge = Challenge('test')
-challenge.title = 'Test Challenge'
-challenge.difficulty = 1
-challenge.active = True
-challenge.blurb = 'This is a test challenge'
-challenge.description = 'This is a test challenge'
-challenge.help = words
-challenge.instruction = words2
-db.session.add(challenge)
 
 for i in range(NUM_CHALLENGES):
     minx = -120
