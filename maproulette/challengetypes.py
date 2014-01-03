@@ -38,8 +38,8 @@ class Default(Challenge):
             return 'available'
         elif current_state == 'fixed':
             return 'done'
-        elif (current.status == 'alreadyfixed' or
-              current.status == 'falsepositive'):
+        elif (current_state == 'alreadyfixed' or
+              current_state == 'falsepositive'):
             l = [i for i in task.actions if i.status == "falsepositive"
                  or i.status == "alreadyfixed"]
             if len(l) >= 2:
