@@ -7,7 +7,7 @@ from flask import session, make_response
 from maproulette.helpers import GeoPoint, get_challenge_or_404, \
     get_task_or_404, get_random_task, osmlogin_required, osmerror
 from maproulette.models import Challenge, Task, TaskGeometry, Action, db
-from geoalchemy2.functions import ST_Buffer, ST_AsGeoJSON
+from geoalchemy2.functions import ST_Buffer
 from shapely import geometry
 import geojson
 import json
@@ -26,7 +26,8 @@ class PointField(Raw):
 challenge_summary = {
     'slug': fields.String,
     'title': fields.String,
-    'difficulty': fields.Integer
+    'difficulty': fields.Integer,
+    'islocal': fields.Boolean
 }
 
 task_fields = {
@@ -76,6 +77,7 @@ class ApiChallengeList(ProtectedResource):
         lon/lat: the coordinate to filter on (returns only
         challenges whose bounding polygons contain this point)
         example: /api/c/challenges?lon=-100.22&lat=40.45&difficulty=2
+        all: if true, return all challenges regardless of OSM user home location
         """
         # initialize the parser
         parser = reqparse.RequestParser()
@@ -85,6 +87,8 @@ class ApiChallengeList(ProtectedResource):
                             help="lon cannot be parsed")
         parser.add_argument('lat', type=float,
                             help="lat cannot be parsed")
+        parser.add_argument('all', type=bool,
+                            help="all cannot be parsed")
         args = parser.parse_args()
 
         difficulty = None
@@ -101,15 +105,12 @@ class ApiChallengeList(ProtectedResource):
             contains = 'POINT(%s %s)' % tuple(session['home_location'])
         
         # get the list of challenges meeting the criteria
-        query = db.session.query(Challenge)
+        query = db.session.query(Challenge).filter(Challenge.active == True)
 
         if difficulty:
             query = query.filter(Challenge.difficulty == difficulty)
-        if contains:
+        if contains and not args.all:
             query = query.filter(Challenge.polygon.ST_Contains(contains))
-
-        # finally filter on active challenges only
-            query = query.filter(Challenge.active == True)
         
         challenges = query.all()
         app.logger.debug(get_debug_queries())
