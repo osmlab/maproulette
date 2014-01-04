@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
+from geoalchemy2.functions import ST_Area
 import random
 from datetime import datetime
 from maproulette import app
@@ -14,15 +15,10 @@ from shapely.geometry import Polygon
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
                        convert_unicode=True)
-db_session = scoped_session(sessionmaker(autocommit=False,
-                                         autoflush=False,
-                                         bind=engine))
 Base = declarative_base()
-Base.query = db_session.query_property()
 db = SQLAlchemy(app)
 
 random.seed()
-
 
 def getrandom():
     return random.random()
@@ -133,8 +129,13 @@ class Challenge(db.Model):
     polygon = synonym('geom', descriptor=polygon)
 
     @property
-    def centroid(self):
-        return self.polygon.centroid
+    def islocal(self):
+        # If the challange has no geometry, it is global 
+        if self.geom is None:
+            return False
+        # otherwise get the area and compare against local threshold
+        area = db.session.query(self.geom.ST_Area()).one()[0]
+        return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])
 
     def task_available(self, task, osmid=None):
         """The function for a task to determine if it's

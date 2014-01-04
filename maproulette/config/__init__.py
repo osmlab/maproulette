@@ -13,6 +13,9 @@ class Config(object):
     # lon/lat
     NEARBUFFER = 0.01
 
+    # this is the threshold in square degrees for considering a challenge 'local'
+    MAX_SQ_DEGREES_FOR_LOCAL = 25
+
     # The OAuth configuration paramters for OSM.
     # The example key and secret point to the MapRoulette application
     # registered at http://api06.dev.openstreetmap.org/api/0.6/
