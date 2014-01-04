@@ -68,6 +68,7 @@ db.session.query(Challenge).delete()
 db.session.commit()
 
 for i in range(NUM_CHALLENGES):
+    print "Generating Test Challenge #", i
     minx = -120
     maxx = -40
     miny = 20
@@ -88,12 +89,13 @@ for i in range(NUM_CHALLENGES):
         maxx = minx + 1
         maxy = miny + 1
         challengepoly = box(minx, miny, maxx, maxy)
+        print "\tChallenge has a bounding box of ", challengepoly
         challenge.polygon = challengepoly
 
     db.session.add(challenge)
 
-    # add some tasks
-    cnt = 0
+    # add some tasks to the challenge
+    print "\tGenerating %i tasks for challenge %i" % (NUM_TASKS,i)
     # generate NUM_TASKS random tasks
     for j in range(NUM_TASKS):
         # generate a unique identifier
