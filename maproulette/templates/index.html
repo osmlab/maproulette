@@ -1,12 +1,12 @@
 <html><head>
 <script type='text/javascript' src='{{ url_for('static', filename='js/jquery-2.0.3.min.js') }}'></script>
-<script type='text/javascript' src='{{ url_for('static', filename='js/humane.min.js') }}'></script>
+<script type='text/javascript' src='{{ url_for('static', filename='js/jquery.noty.packaged.min.js') }}'></script>
 <script type='text/javascript' src='{{ url_for('static', filename='js/leaflet.js') }}'></script>
 <script type='text/javascript' src='{{ url_for('static', filename='js/maproulette.js') }}'></script>
 <link rel='stylesheet' type='text/css' href='{{ url_for('static', filename='css/style.css') }}' />
 <link rel='stylesheet' type='text/css' href='{{ url_for('static', filename='css/leaflet.css') }}' />
 <link rel='stylesheet' type='text/css' href='{{ url_for('static', filename='css/humane-maproulette.css') }}' />
-<body onload='init()'>
+<body onload='init("map")'>
 </body>
 <div class='controlpanel'>
     <div class='title'>OpenStreetMap <em>MapRoulette</em></div>
@@ -27,6 +27,7 @@
     <div class=button onClick=MRManager.openTaskInEditor()>EDIT<span class=key>e</span></div>
     <div class=button onClick=MRManager.openTaskInEditor('j')>EDIT IN JOSM <span class=key>r</span></div>
 </div>
+<div class='notifications'></div>
 <div class='donedialog'></div>
 <div id='map'></div>
 </html>
