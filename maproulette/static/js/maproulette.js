@@ -25,6 +25,40 @@ var Q = (function () {
     return query_string;
 }());
 
+var MRNotifier = function () {
+
+    // play a notification using options
+    // the options are specific to the notification framework used.
+    // currently we use noty, see http://ned.im/noty/#options
+    var play = function (text, options) {
+        // if an array (of lines) was passed in, join them
+        if( Object.prototype.toString.call( text ) === '[object Array]' ) {
+            text = text.join('<br />');
+        }
+        // if no options were passed in, initialize options object
+        if (!options) var options = {};
+        options.text = text;
+        var n = $('.notifications').noty(options);
+        return n;
+    }
+
+    // clear the notification queue
+    var clear = function () {
+        $.noty.clearQueue();
+    }
+
+    // cancel a notification by id
+    var close = function(n) {
+        if (typeof n === 'noty') n.close();
+    }
+
+    return {
+        play            : play,
+        clear           : clear,
+        close           : close,
+    }
+}();
+
 var MRButtons = function () {
 
     var buttonTypes = {
@@ -124,11 +158,11 @@ var MRManager = (function () {
     var difficulty = parseInt(Q.difficulty);
     var taskLayer;
 
+    // create a notifier
+    notify = MRNotifier
+
     // are we logged in?
     this.loggedIn = false;
-
-    // define humane notification instance
-    var notify = humane.create({ timeout: 3000 });
 
     var constructJosmUri = function () {
         var bounds = map.getBounds();
@@ -159,7 +193,7 @@ var MRManager = (function () {
             url     : josmUri,
             success : function (t) {
                 if (t.indexOf('OK') === -1) {
-                    notify.log('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
+                    notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
                 } else { 
                     console.log('the data was loaded in JOSM, now waiting for callback');
                     updateTask('editing');
@@ -191,10 +225,11 @@ var MRManager = (function () {
     var init = function (identifier) {
 
         // a friendly welcome
-        lines = ['Welcome to MapRoulette!']
-        if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('Please log in');
+        var lines = ['Welcome to MapRoulette!'];
+        var options = {};
+        if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('Please log in to get started','(You will be logging in via OpenStreetMap.)');
         else lines.push('You are logged in as ' + this.loggedIn);
-        notify.log(lines);
+        notify.play(lines, options);
  
         // map GeoJSON layer
         taskLayer = new L.geoJson(null, {
@@ -251,7 +286,7 @@ var MRManager = (function () {
         if (!challenge) {
             // if we got no challenges, there is something wrong.
             console.log('no challenges returned');
-            notify.log('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {addnCls: 'humane-maproulette-info'})
+            notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {addnCls: 'humane-maproulette-info'})
             selectChallenge(true);
         };
     };
@@ -373,7 +408,7 @@ var MRManager = (function () {
         // fit the map snugly to the task features
         map.fitBounds(taskLayer.getBounds().pad(0.2));
         // show the task text as a notification
-        notify.log(task.text, { timeout: 3000 });
+        notify.play(task.text, { timeout: 3000 });
         // let the user know where we are
         displayAdminArea();
     };
@@ -382,7 +417,7 @@ var MRManager = (function () {
         var mqurl = 'http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=' + map.getCenter().lat + ' &lon=' + map.getCenter().lng;
         $.ajax({
             url     : mqurl,
-            success : function (data) { notify.log(MRHelpers.mqResultToString(data.address)); },
+            success : function (data) { notify.play(MRHelpers.mqResultToString(data.address)); },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
     }
@@ -401,7 +436,7 @@ var MRManager = (function () {
     var openTaskInEditor = function (editor) {
         editor = editor;
         if (map.getZoom() < MRConfig.minZoomLevelForEditing){
-            notify.log(MRConfig.strings.msgZoomInForEdit, 3);
+            notify.play(MRConfig.strings.msgZoomInForEdit, 3);
             return false;
         };
         console.log('opening in ' + editor);
@@ -445,7 +480,7 @@ var MRManager = (function () {
             console.log('location found: ' + e.latlng);
             near.lat = parseFloat(e.latlng.lat);
             near.lon = parseFloat(e.latlng.lng);
-            notify.log('We found your location. MapRoulette will try and give you tasks closer to home if they are available.', { timeout: 3000 });
+            notify.play('We found your location. MapRoulette will try and give you tasks closer to home if they are available.', { timeout: 3000 });
         });
         // If the location is not found, meh.
         map.on('locationerror', function (e) {

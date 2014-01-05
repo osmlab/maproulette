@@ -28,9 +28,18 @@ div.controlpanel {
     padding: 5px;
     text-align: center;
     background-color:#fff;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
 }
+
+div.notifications {
+    z-index:15;
+    position:absolute;
+    left:50px;
+    top:10px;
+    width:250px;
+}
+
 
 /*
  * the MapRoulette title
@@ -101,8 +110,8 @@ div.donedialog {
     padding: 5px;
     text-align: center;
     background-color:#fff;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
 }
 
 /*
