@@ -101,7 +101,7 @@ var MRConfig = (function () {
         // the default map options
         mapOptions: {
             center: new L.LatLng(40, -90),
-            zoom: 17
+            zoom: 4
         },
 
         // default tile URL
@@ -123,9 +123,12 @@ var MRManager = (function () {
     var near = (Q.lon && Q.lat) ? { 'lon': parseFloat(Q.lon), 'lat': parseFloat(Q.lat) } : {};
     var difficulty = parseInt(Q.difficulty);
     var taskLayer;
+    
+    // are we logged in?
+    this.loggedIn = false;
 
     // define humane notification instance
-    var notify = humane.create({ timeout: 1500 });
+    var notify = humane.create({ timeout: 3000 });
 
     var constructJosmUri = function () {
         var bounds = map.getBounds();
@@ -188,7 +191,10 @@ var MRManager = (function () {
     var init = function (identifier) {
 
         // a friendly welcome
-        notify.log(['Welcome to MapRoulette!']);
+        lines = ['Welcome to MapRoulette!']
+        if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('Please log in');
+        else lines.push('You are logged in as ' + this.loggedIn);
+        notify.log(lines);
  
         // map GeoJSON layer
         taskLayer = new L.geoJson(null, {
@@ -206,20 +212,6 @@ var MRManager = (function () {
         // and the tile layer
         var tileLayer = new L.TileLayer(MRConfig.tileUrl, { attribution: MRConfig.tileAttrib });
 
-        // Locate the user and define the event triggers
-        map.locate({ setView: false, timeout: 10000, maximumAge: 0 });
-        // If the location is found, let the user know, and store.
-        map.on('locationfound', function (e) {
-            console.log('location found: ' + e.latlng);
-            near.lat = parseFloat(e.latlng.lat);
-            near.lon = parseFloat(e.latlng.lng);
-            notify.log('We found your location. MapRoulette will try and give you tasks closer to home if they are available.', { timeout: 3000 });
-        });
-        // If the location is not found, meh.
-        map.on('locationerror', function (e) {
-            console.log('location not found or not permitted: ' + e.message);
-        });
-
         // Add both the tile layer and the task layer to the map
         map.addLayer(tileLayer);
         map.addLayer(taskLayer);
@@ -234,16 +226,29 @@ var MRManager = (function () {
     /*
      * get a random challenge with optional near and difficulty paramters
      */
-    var selectChallenge = function () {
+    var selectChallenge = function (all) {
 
         var url = '/api/challenges/' + constructUrlParameters();
+
+        if (all) url += 'all=true';
+
+        console.log(url);
 
         // fire the request for a new challenge with the contructed URL
         $.ajax(
         {
             url     : url,
             async   : false,
-            success : function (data) { challenge = data[0]; },
+            success : function (data) { 
+                if (!data.length) {
+                    // if we got no challenges, there is something wrong.
+                    notify.log('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {addnCls: 'humane-maproulette-info'})
+                    selectChallenge(true);
+                }
+                // select a random challenge
+                challenge = data[Math.floor(Math.random() * data.length)]; 
+                console.log(challenge);
+            },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
     };
@@ -325,7 +330,7 @@ var MRManager = (function () {
         if (typeof challenge === 'undefined') {
             selectChallenge();
         };
-
+        console.log('challenge got: ' + challenge);
         // get a task
         $.ajax({
             url     : '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(),
@@ -429,6 +434,22 @@ var MRManager = (function () {
         $('.donedialog').html(dialogHTML).fadeIn();
     }
 
+    var geolocateUser = function () {
+        // Locate the user and define the event triggers
+        map.locate({ setView: false, timeout: 10000, maximumAge: 0 });
+        // If the location is found, let the user know, and store.
+        map.on('locationfound', function (e) {
+            console.log('location found: ' + e.latlng);
+            near.lat = parseFloat(e.latlng.lat);
+            near.lon = parseFloat(e.latlng.lng);
+            notify.log('We found your location. MapRoulette will try and give you tasks closer to home if they are available.', { timeout: 3000 });
+        });
+        // If the location is not found, meh.
+        map.on('locationerror', function (e) {
+            console.log('location not found or not permitted: ' + e.message);
+        });
+    };
+
     var confirmRemap = function () {
         console.log('confirming remap');
         presentDoneDialog();
@@ -437,7 +458,8 @@ var MRManager = (function () {
     return {
         init            : init,
         nextTask        : nextTask,
-        openTaskInEditor: openTaskInEditor
+        openTaskInEditor: openTaskInEditor,
+        geolocateUser   : geolocateUser, 
     };
 }());
 
