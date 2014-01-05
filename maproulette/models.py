@@ -142,7 +142,8 @@ class Challenge(db.Model):
         available or not."""
         avail = False
         action = task.current_action
-        if action.status == 'available':
+        app.logger.debug('current action for task %s is %s' % (task.id, action))
+        if action.status in ['available', 'created', 'skipped']:
             avail = True
         if not osmid:
             return avail
