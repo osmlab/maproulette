@@ -12,8 +12,10 @@
     <div class='title'>OpenStreetMap <em>MapRoulette</em></div>
     <div id='user'>
         {%- if session.osm_oauth -%}
+        <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
         logged in as {{ session.display_name }}. <a href='{{ url_for('logout') }}'>log out</a>
         {%- else -%}
+        <script type="text/javascript">MRManager.loggedIn = false;</script>
         not logged in. <a href='{{ url_for('oauth_authorize') }}'>log in</a>
         {%- endif -%}
     </div>
