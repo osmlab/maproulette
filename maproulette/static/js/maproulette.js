@@ -123,7 +123,7 @@ var MRManager = (function () {
     var near = (Q.lon && Q.lat) ? { 'lon': parseFloat(Q.lon), 'lat': parseFloat(Q.lat) } : {};
     var difficulty = parseInt(Q.difficulty);
     var taskLayer;
-    
+
     // are we logged in?
     this.loggedIn = false;
 
@@ -228,6 +228,7 @@ var MRManager = (function () {
      */
     var selectChallenge = function (all) {
 
+        console.log('selecting a challenge');
         var url = '/api/challenges/' + constructUrlParameters();
 
         if (all) url += 'all=true';
@@ -240,17 +241,19 @@ var MRManager = (function () {
             url     : url,
             async   : false,
             success : function (data) { 
-                if (!data.length) {
-                    // if we got no challenges, there is something wrong.
-                    notify.log('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {addnCls: 'humane-maproulette-info'})
-                    selectChallenge(true);
-                }
+                console.log(data.length + ' challenges returned');
                 // select a random challenge
                 challenge = data[Math.floor(Math.random() * data.length)]; 
                 console.log(challenge);
             },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
+        if (!challenge) {
+            // if we got no challenges, there is something wrong.
+            console.log('no challenges returned');
+            notify.log('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {addnCls: 'humane-maproulette-info'})
+            selectChallenge(true);
+        };
     };
 
     /*
