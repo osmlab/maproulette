@@ -253,10 +253,13 @@ var MRManager = (function () {
     var init = function (identifier) {
 
         // a friendly welcome
+        var opts = {timeout: false};
+        if (!this.loggedIn) opts.callback = {afterClose: function(){location.href=$('#loginlink').attr('href')}};
         var lines = ['Welcome to MapRoulette!'];
         if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('<em>Please log in to get started.</em>','(You will be logging in via OpenStreetMap.)');
         else lines.push('You are logged in as ' + this.loggedIn);
-        notify.play(lines, {timeout: false});
+        
+        notify.play(lines, opts);
  
         // map GeoJSON layer
         taskLayer = new L.geoJson(null, {
@@ -278,7 +281,7 @@ var MRManager = (function () {
         map.addLayer(tileLayer);
         map.addLayer(taskLayer);
 
-        if (loggedIn) {
+        if (this.loggedIn) {
             // now load a task (this will select a challenge first)
             nextTask();
 
