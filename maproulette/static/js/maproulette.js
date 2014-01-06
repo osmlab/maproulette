@@ -474,7 +474,8 @@ var MRManager = (function () {
         console.log('opening in ' + editor);
         if (editor === 'j') { openInJOSM() }
         else { // OSM default
-            var editURL = 'http://www.openstreetmap.org/edit?bbox=' + map.getBounds().toBBoxString();
+            //edit#map=16/31.8289/-112.5948
+            var editURL = 'http://osm.org/edit#map=' + map.getZoom() + '/' + map.getCenter().lat + '/' + map.getCenter().lng;
             // open a new window with the edit URL
             window.open(editURL);
             // update the task
