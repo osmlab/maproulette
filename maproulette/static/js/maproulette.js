@@ -27,6 +27,34 @@ var Q = (function () {
 
 var MRNotifier = function () {
 
+    // defaults for noty engine
+    $.noty.defaults = {
+        layout: 'top',
+        theme: 'mapRouletteTheme',
+        type: 'alert',
+        text: '', 
+        dismissQueue: true,
+        template: '<div class="noty_message"><span class="noty_text"></span><div class="noty_close"></div></div>',
+        animation: {
+            open: {height: 'toggle'},
+            close: {height: 'toggle'},
+            easing: 'swing',
+            speed: 500 
+        },
+        timeout: 5000, 
+        force: false,
+        modal: false,
+        maxVisible: 5, 
+        killer: false, 
+        closeWith: ['click'],
+        callback: {
+            onShow: function() {},
+            afterShow: function() {},
+            onClose: function() {},
+            afterClose: function() {}
+        },
+        buttons: false // an array of buttons
+    };
     // play a notification using options
     // the options are specific to the notification framework used.
     // currently we use noty, see http://ned.im/noty/#options
@@ -226,10 +254,9 @@ var MRManager = (function () {
 
         // a friendly welcome
         var lines = ['Welcome to MapRoulette!'];
-        var options = {};
-        if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('Please log in to get started','(You will be logging in via OpenStreetMap.)');
+        if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('<em>Please log in to get started.</em>','(You will be logging in via OpenStreetMap.)');
         else lines.push('You are logged in as ' + this.loggedIn);
-        notify.play(lines, options);
+        notify.play(lines, {timeout: false});
  
         // map GeoJSON layer
         taskLayer = new L.geoJson(null, {
@@ -251,11 +278,13 @@ var MRManager = (function () {
         map.addLayer(tileLayer);
         map.addLayer(taskLayer);
 
-        // now load a task (this will select a challenge first)
-        nextTask();
+        if (loggedIn) {
+            // now load a task (this will select a challenge first)
+            nextTask();
 
-        // and request the challenge details and stats (slow)
-        getChallengeDetails();
+            // and request the challenge details and stats (slow)
+            getChallengeDetails();
+        };
     };
 
     /*
@@ -408,7 +437,7 @@ var MRManager = (function () {
         // fit the map snugly to the task features
         map.fitBounds(taskLayer.getBounds().pad(0.2));
         // show the task text as a notification
-        notify.play(task.text, { timeout: 3000 });
+        notify.play(task.text);
         // let the user know where we are
         displayAdminArea();
     };
@@ -436,7 +465,7 @@ var MRManager = (function () {
     var openTaskInEditor = function (editor) {
         editor = editor;
         if (map.getZoom() < MRConfig.minZoomLevelForEditing){
-            notify.play(MRConfig.strings.msgZoomInForEdit, 3);
+            notify.play(MRConfig.strings.msgZoomInForEdit);
             return false;
         };
         console.log('opening in ' + editor);
@@ -480,7 +509,7 @@ var MRManager = (function () {
             console.log('location found: ' + e.latlng);
             near.lat = parseFloat(e.latlng.lat);
             near.lon = parseFloat(e.latlng.lng);
-            notify.play('We found your location. MapRoulette will try and give you tasks closer to home if they are available.', { timeout: 3000 });
+            notify.play('We found your location. MapRoulette will try and give you tasks closer to home if they are available.');
         });
         // If the location is not found, meh.
         map.on('locationerror', function (e) {
@@ -502,6 +531,6 @@ var MRManager = (function () {
 }());
 
 // initialization
-function init() {
-    MRManager.init('map');
+function init(elemName) {
+    MRManager.init(elemName);
 };
