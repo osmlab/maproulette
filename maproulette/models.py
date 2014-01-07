@@ -179,6 +179,8 @@ class Task(db.Model):
         backref=db.backref("task"))
     instruction = db.Column(
         db.String())
+    available = db.Column(
+        db.Boolean)
     challenge = db.relationship(
         "Challenge",
         backref=db.backref('tasks', order_by=id))
