@@ -10,7 +10,7 @@ First we need to set up system level dependencies. This is different for Linux a
 
 ### Linux
 
-On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04):
+On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04 and 13.10):
 
     sudo apt-get install software-properties-common python-software-properties postgresql-server-dev-9.1 python-dev git virtualenvwrapper
 
@@ -34,11 +34,19 @@ As the `postgres` user:
 
 Enter the password `osm` twice.
 
-    createdb -O osm maproulette
+Now create the three databases for the production, test and dev environments: 
 
-Then as you:
+    createdb -O osm maproulette
+    createdb -O osm maproulette_test
+    createdb -O osm maproulett_dev
+
+Now you can switch back to a non-postgres user.
+
+Add PostGIS extensions to the databases:
 
     psql -h localhost -U osm -d maproulette -c 'CREATE EXTENSION postgis'
+    psql -h localhost -U osm -d maproulette_test -c 'CREATE EXTENSION postgis'
+    psql -h localhost -U osm -d maproulette_dev -c 'CREATE EXTENSION postgis'
 
 ### Setting up your environment
 
@@ -67,19 +75,17 @@ Generate a Flask application secret:
 
     python bin/make_secret.py
     
-Create a configuration file. Start by copying the example and modify as needed:
-
-    cp maproulette/maproulette.cfg.example maproulette/maproulette.cfg
+Have a look at the configuration defaults at `maproulette/config/__init__.py` and adapt as needed.
 
 Generate the database tables:
 
     python manage.py create_db
     
-If you're developing, you may want to load a test challenge with 1000 sample tasks:
+If you're developing, you may want to load some test challenges and tasks:
 
     bin/load_fixtures.py
 
-And run the server:
+Finally, run the server:
 
     python manage.py runserver
 
@@ -92,7 +98,7 @@ And you should have a MapRoulette instance at [http://localhost:3000/](http://lo
 
 ## Frameworks used
 
-MapRoulette relies heavily on the lightweight Flask web application framework, and some of its extensions, notably Flask-OAuth, Flask-RESTful and Flask-Script. We do not use the Flask-SQLAlchemy bindings but rather work directly with the SQLAlchemy (and GeoAlchemy2) ORM frameworks.
+MapRoulette relies heavily on the lightweight Flask web application framework, and some of its extensions, notably Flask-OAuth, Flask-RESTful, Flask-Script and Flask-SQLAlchemy. For working with geospatial data, MapRoulette relies on GeoAlchemy2 and Shapely.
 
 ## See also
 
