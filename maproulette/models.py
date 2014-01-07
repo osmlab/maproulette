@@ -1,9 +1,10 @@
   # """This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker, synonym
+from sqlalchemy.orm import scoped_session, object_session, sessionmaker, synonym
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.declarative import declarative_base
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask.ext.sqlalchemy import SQLAlchemy, get_debug_queries
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 from geoalchemy2.functions import ST_Area
@@ -22,7 +23,6 @@ random.seed()
 
 def getrandom():
     return random.random()
-
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -129,6 +129,14 @@ class Challenge(db.Model):
     polygon = synonym('geom', descriptor=polygon)
 
     @property
+    def tasks_available(self):
+        return len([task for task in self.tasks if \
+            task.current_action.status in \
+            ('created', 'skipped', 'available') or \
+            (task.current_action.status == 'assigned' and \
+            (datetime.now() - task.current_action.timestamp).seconds // 60 > 60)])
+
+    @property
     def islocal(self):
         # If the challange has no geometry, it is global 
         if self.geom is None:
@@ -136,26 +144,6 @@ class Challenge(db.Model):
         # otherwise get the area and compare against local threshold
         area = db.session.query(self.geom.ST_Area()).one()[0]
         return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])
-
-    def task_available(self, task, osmid=None):
-        """The function for a task to determine if it's
-        available or not."""
-        avail = False
-        action = task.current_action
-        app.logger.debug('current action for task %s is %s' % (task.id, action))
-        if action.status in ['available', 'created', 'skipped']:
-            avail = True
-        if not osmid:
-            return avail
-        # If osmid is present, then we will need to check every action
-        # of this task against the previous actions
-        for action in task.actions:
-            # If it's just been assigned but no action was taken, we
-            # can re-assign it, otherwise, we'll toss it
-            if not action.status == 'assigned':
-                return False
-        return True
-
 
 class Task(db.Model):
     __tablename__ = 'tasks'
@@ -211,10 +199,6 @@ class Task(db.Model):
     @property
     def current_action(self):
         return self.actions[-1]
-
-    def current_state(self):
-        """Displays the current state of a task"""
-        return self.current_action.state
 
     @property
     def location(self):
