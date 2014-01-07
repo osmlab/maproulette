@@ -136,14 +136,10 @@ class ApiChallengeStats(ProtectedResource):
 
     def get(self, slug):
         challenge = get_challenge_or_404(slug, True)
-        total = Task.query.filter(slug == challenge.slug).count()
-        tasks = Task.query.filter(slug == challenge.slug).all()
-        osmid = session.get('osm_id')
-        available = len([task for task in tasks
-                         if challenge.task_available(task, osmid)])
-        app.logger.info(
-            "{user} requested challenge stats for {challenge}".format(
-                user=osmid, challenge=slug))
+        total = len(challenge.tasks)
+        #for task in Task.query.filter(Task.challenge_slug == slug):
+        #    app.logger.debug(task.available)
+        available = challenge.tasks_available
         return {'total': total, 'available': available}
 
 
@@ -221,6 +217,11 @@ class ApiChallengeTaskDetails(ProtectedResource):
         db.session.commit()
         return {'message': 'OK'}
 
+class ApiChallengeTaskStatus(ProtectedResource):
+
+    def get(self, slug, identifier):
+        task = get_task_or_404(slug, identifier)
+        return task.currentaction
 
 class ApiChallengeTaskGeometries(ProtectedResource):
 
@@ -239,3 +240,6 @@ api.add_resource(
 api.add_resource(
     ApiChallengeTaskGeometries,
     '/api/challenge/<slug>/task/<identifier>/geometries')
+api.add_resource(
+    ApiChallengeTaskStatus,
+    '/api/challenge/<slug>/task/<identifier>/status')
