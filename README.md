@@ -4,6 +4,10 @@ This README deals with development related topics only. If you are interested in
 
 That said, read on if you want to contribute to MapRoulette development and are ready to deploy your local instance.
 
+## Contributing
+
+Please fork the project and submit pull requests on the `develop` branch.
+
 ## Dependencies
 
 First we need to set up system level dependencies. This is different for Linux and OSX.
