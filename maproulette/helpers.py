@@ -85,10 +85,12 @@ def localonly(f):
 def get_random_task(challenge):
     rn = random.random()
     t = Task.query.filter(Task.challenge_slug == challenge.slug,
-                          Task.random <= rn).first()
+                          Task.random <= rn).order_by(
+                          Task.random.desc()).first()
     if not t:
         t = Task.query.filter(Task.challenge_slug == challenge.slug,
-                              Task.random > rn).first()
+                              Task.random > rn).order_by(
+                              Task.random).first()
     return t
 
 
