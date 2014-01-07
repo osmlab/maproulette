@@ -1,3 +1,4 @@
+/* the main container and global styles */
 body, #map {
     height: 100%;
     width: 100%;
@@ -7,17 +8,13 @@ body, #map {
     font: 11pt arial, sans-serif;
 }
 
-/*
- * emphasized text is green
- */
+/* emphasized text */
 em {
     font-style:normal;
     color:#44cc33;
 }
 
-/*
- * the main MapRoulette control panel
- */
+/* the main MapRoulette control panel */
 div.controlpanel {
     border: 1px solid #aaa;
     z-index:15;
@@ -32,6 +29,7 @@ div.controlpanel {
     border-radius: 5px;
 }
 
+/* the notifications container */
 div.notifications {
     z-index:15;
     position:absolute;
@@ -41,22 +39,19 @@ div.notifications {
 }
 
 
-/*
- * the MapRoulette title
- */
+/* the MapRoulette title */
 div.title {
     text-align: center;
     font-size: 16pt;
     font-weight: bold;
 }
 
-/*
- * the buttons
- */
+/* all buttons */
 div.button {
     background-color: #66CCFF;
     border: 1px solid #000000;
     border-radius: 3px;
+    -webkit-border-radius: 3px;
     color: #000000;
     font-size: 14px;
     line-height: 20px;
@@ -64,41 +59,45 @@ div.button {
     padding: 4px;
 }
 
+/* the 'fixed' button */
 div#fixed.button {
     background-color: rgb(120,230,100);
     border-width: 2px;
     font-weight: bold;
 }
 
-/*
- * the button hover
- */
+/* the button hover */
 div.button:hover {
     background-color: #666666 !important;
     color: #FFFFFF !important;
     cursor: pointer;
 }
 
+/* user display name */
 div#user {
     font-size: smaller;
     color: rgb(100,100,100);
 }
 
+/* the challenge title */
 div#challenge_title {
     font-size: bigger;
     padding: 3px;
 }
 
+/* the description for the challenge */
 div#challenge_description {
     font-style: italic;
     font-size: smaller;
 }
 
+/* the little stats section */
 div#stats {
     font-size: x-small;
     color: rgb(100,100,100);
 }
 
+/* the dialog presented after clicking 'edit' */
 div.donedialog {
     position:absolute;
     display: none;
@@ -114,9 +113,7 @@ div.donedialog {
     border-radius: 5px;
 }
 
-/*
- * the key 'icons'
- */
+/* the key 'icons' */
 span.key {
     background-color: #FFFFFF;
     border: 1px solid #000000;
@@ -130,4 +127,14 @@ span.key {
     padding: 2px;
     text-align: center;
     width: 14px;
+}
+
+/* hide the challenge menu for now while the backend is not implemented. */
+#challengemenu {
+    display: none;
+}
+
+#challengemenu div.button {
+    font-size: small;
+    background-color: #cfc;
 }
