@@ -463,6 +463,8 @@ var MRManager = (function () {
         getTask();
         // and draw it
         drawTask();
+        // update challenge stats
+        getChallengeStats()
     };
 
     var openTaskInEditor = function (editor) {
