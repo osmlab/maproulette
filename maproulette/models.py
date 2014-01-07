@@ -1,10 +1,10 @@
   # """This file contains the SQLAlchemy ORM models"""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, object_session, sessionmaker, synonym
+from sqlalchemy.orm import scoped_session, sessionmaker, synonym
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.declarative import declarative_base
-from flask.ext.sqlalchemy import SQLAlchemy, get_debug_queries
+from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 from geoalchemy2.functions import ST_Area
