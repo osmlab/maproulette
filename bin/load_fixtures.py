@@ -9,7 +9,7 @@ import random
 # the number of challenges to create, and the number of
 # tasks per challenge.
 NUM_CHALLENGES = 10
-NUM_TASKS = 10000
+NUM_TASKS = 100
 
 # the gettysburg address
 words = """Four score and seven years ago our fathers
@@ -49,6 +49,7 @@ long night of captivity."""
 
 point = Point(0.0, 0.0)
 
+# This determines which database is going to be populated
 app.config.from_object(config.DevelopmentConfig)
 
 # delete old tasks and challenges
