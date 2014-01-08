@@ -69,8 +69,8 @@ for i in range(NUM_CHALLENGES):
     challenge.title = 'Test Challenge %i' % (i + 1)
     challenge.difficulty = random.choice([1, 2, 3])
     challenge.active = True
-    challenge.blurb = 'This is test challenge number %i' % (i,)
-    challenge.description = 'This describes test challenge number %i in more detail' % (i,)
+    challenge.blurb = 'This is test challenge number %i' % (i + 1,)
+    challenge.description = 'This describes test challenge number %i in more detail' % (i + 1,)
     challenge.help = words
     challenge.instruction = words2
     # have bounding boxes for all but the first two challenges.
