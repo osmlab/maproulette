@@ -528,11 +528,21 @@ var MRManager = (function () {
         presentDoneDialog();
     };
 
+    var userPickChallenge = function () {
+        console.log('user picking challenge');
+    }
+
+    var userPreferences = function () {
+        console.log('user setting preferences');
+    }
+
     return {
-        init            : init,
-        nextTask        : nextTask,
-        openTaskInEditor: openTaskInEditor,
-        geolocateUser   : geolocateUser, 
+        init                : init,
+        nextTask            : nextTask,
+        openTaskInEditor    : openTaskInEditor,
+        geolocateUser       : geolocateUser, 
+        userPreferences     : userPreferences,
+        userPickChallenge   : userPickChallenge
     };
 }());
 

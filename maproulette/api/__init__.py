@@ -210,9 +210,15 @@ class ApiChallengeTaskDetails(ProtectedResource):
 
         # get the task
         task = get_task_or_404(slug, identifier)
+        # append the latest action to it.
         task.actions.append(Action(args.action,
                                    session.get('osm_id'),
                                    args.editor))
+        # then set the tasks availability based on this
+        if args.action in ['fixed', 'falsepositive', 'alreadyfixed']:
+            task.available = False
+        else:
+            task.available = True
         db.session.add(task)
         db.session.commit()
         return {'message': 'OK'}
