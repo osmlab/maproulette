@@ -130,11 +130,9 @@ class Challenge(db.Model):
 
     @property
     def tasks_available(self):
-        return len([task for task in self.tasks if \
-            task.current_action.status in \
-            ('created', 'skipped', 'available') or \
-            (task.current_action.status == 'assigned' and \
-            (datetime.now() - task.current_action.timestamp).seconds // 60 > 60)])
+        return Task.query.filter_by(
+            available=True, 
+            challenge_slug=self.slug).count()
 
     @property
     def islocal(self):
@@ -179,6 +177,8 @@ class Task(db.Model):
         backref=db.backref("task"))
     instruction = db.Column(
         db.String())
+    available = db.Column(
+        db.Boolean)
     challenge = db.relationship(
         "Challenge",
         backref=db.backref('tasks', order_by=id))
@@ -192,6 +192,7 @@ class Task(db.Model):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.actions.append(Action('created'))
+        self.available = True
 
     def __repr__(self):
         return '<Task %s>' % (self.identifier)
