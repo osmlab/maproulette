@@ -6,19 +6,10 @@ from shapely.geometry import Point, LineString, box
 import uuid
 import random
 
-NUM_TASKS = 100
+# the number of challenges to create, and the number of
+# tasks per challenge.
 NUM_CHALLENGES = 10
-
-ordinals = ['first',
-            'second',
-            'third',
-            'fourth',
-            'fifth',
-            'sixth',
-            'seventh',
-            'eighth',
-            'ninth',
-            'tenth']
+NUM_TASKS = 10000
 
 # the gettysburg address
 words = """Four score and seven years ago our fathers
@@ -78,8 +69,8 @@ for i in range(NUM_CHALLENGES):
     challenge.title = 'Test Challenge %i' % (i + 1)
     challenge.difficulty = random.choice([1, 2, 3])
     challenge.active = True
-    challenge.blurb = 'This is the %s test challenge' % (ordinals[i])
-    challenge.description = 'This describes the %s test challenge in more detail' % (ordinals[i])
+    challenge.blurb = 'This is test challenge number %i' % (i,)
+    challenge.description = 'This describes test challenge number %i in more detail' % (i,)
     challenge.help = words
     challenge.instruction = words2
     # have bounding boxes for all but the first two challenges.
