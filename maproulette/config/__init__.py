@@ -3,10 +3,13 @@ import os
 # Configuration classes
 
 class Config(object):
+
+    # by default, disable Flask debug and testing modes
     DEBUG = False
     TESTING = False
 
     # The application secret key
+    # fixme this should be the same key every time, probably
     SECRET_KEY = os.urandom(24)
 
     # This is the buffer for looking for tasks / challenges near the given
