@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+  # !/usr/bin/env python
 
 import os
 import sys
@@ -13,10 +13,10 @@ manager = Manager(app)
 
 # Turn on debugger by default and reloader
 manager.add_command("runserver", Server(
-    use_debugger=False,
     host='0.0.0.0',
     port=3000)
 )
+
 
 @manager.command
 def clean_pyc():
