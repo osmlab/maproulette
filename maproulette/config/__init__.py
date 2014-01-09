@@ -3,10 +3,13 @@ import os
 # Configuration classes
 
 class Config(object):
+    """Base configuration class"""
+    # by default, disable Flask debug and testing modes
     DEBUG = False
     TESTING = False
 
     # The application secret key
+    # fixme this should be the same key every time, probably
     SECRET_KEY = os.urandom(24)
 
     # This is the buffer for looking for tasks / challenges near the given
@@ -33,6 +36,7 @@ class Config(object):
 
 
 class ProductionConfig(Config):
+    """Production configuration class"""
     SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette"
     OSM = {
         'base_url': 'http://www.openstreetmap.org/api/0.6/',
@@ -46,10 +50,12 @@ class ProductionConfig(Config):
 
 
 class DevelopmentConfig(Config):
+    """Development configuration class"""
     SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette_dev"
     DEBUG = True
 
 
 class TestingConfig(Config):
+    """Test configuration class"""
     SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette_test"
     TESTING = True
