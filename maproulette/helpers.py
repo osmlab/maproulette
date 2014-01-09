@@ -11,14 +11,13 @@ from maproulette import app
 
 def osmerror(error, description):
     """Return an OSMError to the client"""
+
     response = make_response("%s: %s" % (error, description), 400)
     return response
 
 
 def get_or_abort(model, object_id, code=404):
-    """
-    get an object with his given id or an abort error (404 is the default)
-    """
+    """Get an object with his given id or an abort error (404 is the default)"""
     result = model.query.get(object_id)
     return result or abort(code)
 
@@ -27,8 +26,8 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
                          abort_if_inactive=True):
     """Return a challenge by its id or return 404.
 
-    If instance_type is True, return the correct Challenge Type
-    """
+    If instance_type is True, return the correct Challenge Type"""
+
     c = Challenge.query.filter(Challenge.slug == challenge_slug).first()
     if not c or (abort_if_inactive and not c.active):
         abort(404)
@@ -42,6 +41,7 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
 
 def get_task_or_404(challenge_slug, task_identifier):
     """Return a task based on its challenge and task identifier"""
+
     t = Task.query.filter(Task.identifier == task_identifier). \
         filter(Task.challenge_slug == challenge_slug).first()
     if not t:
@@ -51,6 +51,7 @@ def get_task_or_404(challenge_slug, task_identifier):
 
 def get_or_create_task(challenge, task_identifier):
     """Return a task, either pull a new one or create a new one"""
+
     task = (Task.identifier == task_identifier). \
         filter(Task.challenge_slug == challenge.slug).first()
     if not task:
@@ -59,9 +60,11 @@ def get_or_create_task(challenge, task_identifier):
 
 
 def osmlogin_required(f):
+    """Require the caller to be authenticated against OSM"""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        app.logger.debug('osm login required. app.debug is %s' % (app.debug,))
+        app.logger.debug('osm login required. app.debug is %s' % (app.debug, ))
         if not app.debug and not 'osm_token' in session:
             abort(403)
         return f(*args, **kwargs)
@@ -84,6 +87,8 @@ def localonly(f):
 
 
 def get_random_task(challenge):
+    """Get a random task"""
+
     rn = random.random()
     t = Task.query.filter(Task.challenge_slug == challenge.slug,
                           Task.random <= rn).order_by(
@@ -96,7 +101,6 @@ def get_random_task(challenge):
 
 
 class GeoPoint(object):
-
     """A geo-point class for use as a validation in the req parser"""
 
     def __init__(self, value):
@@ -112,7 +116,6 @@ class GeoPoint(object):
 
 
 class JsonData(object):
-
     """A simple class for use as a validation that a manifest is valid"""
 
     def __init__(self, value):
@@ -124,7 +127,6 @@ class JsonData(object):
 
 
 class JsonTasks(object):
-
     """A class for validation of a mass tasks insert"""
 
     def __init__(self, value):
