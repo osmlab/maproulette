@@ -24,6 +24,8 @@ def get_osm_token(token=None):
 
 @app.route('/login')
 def oauth_authorize():
+    """Redirect to the authorize URL"""
+
     callback_url = url_for('oauthorized', next=request.args.get('next'))
     return osm.authorize(callback=callback_url or request.referrer or None)
 
@@ -32,6 +34,7 @@ def oauth_authorize():
 @osm.authorized_handler
 def oauthorized(resp):
     """Receives the OAuth callback from OSM"""
+
     next_url = request.args.get('next') or url_for('index')
     if resp is None:
         return redirect(next_url)
@@ -42,6 +45,9 @@ def oauthorized(resp):
 
 
 def retrieve_osm_data():
+    """Get and store the user data from OSM"""
+
+    # FIXME this is a messy function.
     data = osm.get('user/details').data
     app.logger.debug("getting user data from osm")
     if not data:

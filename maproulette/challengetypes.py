@@ -10,6 +10,7 @@ challenge_types = {}
 # inherit from this.
 
 class Default(Challenge):
+    """The default challenge class"""
 
     done_dialog_text = "This area is being loaded in your editor. Did you fix it?"
     done_dialog_buttons = ""  # an empty string will trigger the default buttons.
