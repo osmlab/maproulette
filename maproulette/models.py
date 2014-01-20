@@ -155,7 +155,7 @@ class Challenge(db.Model):
             return False
         # otherwise get the area and compare against local threshold
         area = db.session.query(self.geom.ST_Area()).one()[0]
-        return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])
+        return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])        
 
 
 class Task(db.Model):
@@ -192,8 +192,10 @@ class Task(db.Model):
     actions = db.relationship(
         "Action",
         backref=db.backref("task"))
+    currentaction = db.Column(
+        db.String)
     instruction = db.Column(
-        db.String())
+        db.String)
     available = db.Column(
         db.Boolean)
     challenge = db.relationship(
@@ -208,17 +210,11 @@ class Task(db.Model):
     def __init__(self, challenge_slug, identifier):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
-        self.actions.append(Action('created'))
+        self.append_action(Action('created'))
         self.available = True
 
     def __repr__(self):
         return '<Task %s>' % (self.identifier)
-
-    @property
-    def current_action(self):
-        """Return the latest action set on this task"""
-
-        return self.actions[-1]
 
     @property
     def location(self):
@@ -234,6 +230,10 @@ class Task(db.Model):
 
     location = synonym('geom', descriptor=location)
 
+    def append_action(self, action):
+        self.actions.append(action)
+        self.currentaction = action.status
+        app.logger.debug('appended action %s to task %s' % (action, self.id))
 
 class TaskGeometry(db.Model):
     """The collection of geometries (1+) belonging to a task"""

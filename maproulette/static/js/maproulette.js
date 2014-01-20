@@ -318,7 +318,7 @@ var MRManager = (function () {
         if (!challenge) {
             // if we got no challenges, there is something wrong.
             console.log('no challenges returned');
-            notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {addnCls: 'humane-maproulette-info'})
+            notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.')
             selectChallenge(true);
         };
     };
@@ -379,11 +379,11 @@ var MRManager = (function () {
             "editor": editor
         };
         $.ajax({
-            url     : "/api/challenge/" + challenge.slug + "/task/" + task.id,
+            url     : "/api/challenge/" + challenge.slug + "/task/" + task.identifier,
             type    : "POST",
             data    : payload,
             success : function (data) {
-                console.log('task ' + task.id + ' updated')
+                console.log('task ' + task.identifier + ' updated')
             },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
@@ -411,7 +411,7 @@ var MRManager = (function () {
 
         //...and its geometries
         $.ajax({
-            url     : '/api/challenge/' + challenge.slug + '/task/' + task.id + '/geometries',
+            url     : '/api/challenge/' + challenge.slug + '/task/' + task.identifier + '/geometries',
             async   : false,
             success : function (data) { task.features = data.features; },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
