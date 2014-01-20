@@ -32,10 +32,18 @@ challenge_summary = {
 }
 
 task_fields = {
-    'id': fields.String(attribute='identifier'),
+    'identifier': fields.String(attribute='identifier'),
     'text': fields.String(attribute='instruction'),
     'location': PointField
 }
+
+action_fields = {
+    'task': fields.String(attribute='task_id'),
+    'timestamp': fields.DateTime,
+    'status': fields.String,
+    'user': fields.String(attribute='user_id')
+}
+
 
 api = Api(app)
 
@@ -44,6 +52,7 @@ api = Api(app)
 @api.representation('application/json')
 def output_json(data, code, headers=None):
     """Automatic JSON / GeoJSON output"""
+    app.logger.debug(data)
     # return empty result if data contains nothing
     if not data:
         resp = make_response(geojson.dumps({}), code)
@@ -152,6 +161,16 @@ class ApiChallengeStats(ProtectedResource):
         return {'total': total, 'available': available}
 
 
+class ApiChallengeTasks(ProtectedResource):
+    """Challenge Task Statuses endpoint"""
+
+    def get(self, slug):
+        """Return task statuses for the challenge identified by 'slug'"""
+        challenge = get_challenge_or_404(slug, True)
+        return [{
+            'identifier': task.identifier, 
+            'status': task.currentaction} for task in challenge.tasks]
+
 class ApiChallengeTask(ProtectedResource):
     """Random Task endpoint"""
 
@@ -195,7 +214,7 @@ class ApiChallengeTask(ProtectedResource):
             osmerror("ChallengeComplete",
                      "Challenge {} is complete".format(slug))
         if assign:
-            task.actions.append(Action("assigned", osmid))
+            task.append_action(Action("assigned", osmid))
             db.session.add(task)
 
         db.session.commit()
@@ -224,7 +243,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
         # get the task
         task = get_task_or_404(slug, identifier)
         # append the latest action to it.
-        task.actions.append(Action(args.action,
+        task.append_action(Action(args.action,
                                    session.get('osm_id'),
                                    args.editor))
         # then set the tasks availability based on this
@@ -240,6 +259,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
 class ApiChallengeTaskStatus(ProtectedResource):
     """Task status endpoint"""
 
+    @marshal_with(action_fields)
     def get(self, slug, identifier):
         """Returns current status for the task identified by 'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
@@ -259,6 +279,7 @@ api.add_resource(ApiChallengeList, '/api/challenges/')
 api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
 api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
 api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
+api.add_resource(ApiChallengeTasks, '/api/challenge/<string:slug>/tasks')
 api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
 api.add_resource(
     ApiChallengeTaskDetails,
