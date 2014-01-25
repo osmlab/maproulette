@@ -3,9 +3,8 @@ from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import get_value, Raw
 from flask.ext.sqlalchemy import get_debug_queries
-from flask import session, make_response
-from maproulette.helpers import get_challenge_or_404, \
-    get_task_or_404, get_random_task, osmlogin_required, osmerror
+from flask import session, make_response, request
+from maproulette.helpers import *
 from maproulette.models import Challenge, Task, TaskGeometry, Action, db
 from geoalchemy2.functions import ST_Buffer
 from shapely import geometry
@@ -161,16 +160,6 @@ class ApiChallengeStats(ProtectedResource):
         return {'total': total, 'available': available}
 
 
-class ApiChallengeTasks(ProtectedResource):
-    """Challenge Task Statuses endpoint"""
-
-    def get(self, slug):
-        """Return task statuses for the challenge identified by 'slug'"""
-        challenge = get_challenge_or_404(slug, True)
-        return [{
-            'identifier': task.identifier, 
-            'status': task.currentaction} for task in challenge.tasks]
-
 class ApiChallengeTask(ProtectedResource):
     """Random Task endpoint"""
 
@@ -259,12 +248,11 @@ class ApiChallengeTaskDetails(ProtectedResource):
 class ApiChallengeTaskStatus(ProtectedResource):
     """Task status endpoint"""
 
-    @marshal_with(action_fields)
     def get(self, slug, identifier):
         """Returns current status for the task identified by 'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
-        return task.currentaction
-
+        app.logger.debug(task.currentaction)
+        return {'status': task.currentaction}
 
 class ApiChallengeTaskGeometries(ProtectedResource):
     """Task geometry endpoint"""
@@ -275,11 +263,10 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return task.geometries
 
 # Add all resources to the RESTful API
-api.add_resource(ApiChallengeList, '/api/challenges/')
+api.add_resource(ApiChallengeList, '/api/challenges')
 api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
 api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
 api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
-api.add_resource(ApiChallengeTasks, '/api/challenge/<string:slug>/tasks')
 api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
 api.add_resource(
     ApiChallengeTaskDetails,
@@ -290,3 +277,61 @@ api.add_resource(
 api.add_resource(
     ApiChallengeTaskStatus,
     '/api/challenge/<slug>/task/<identifier>/status')
+
+################################
+# The Admin API ################
+################################
+
+class AdminApiTaskStatuses(ProtectedResource):
+    """Admin Task status endpoint"""
+
+    def get(self, slug):
+        """Return task statuses for the challenge identified by 'slug'"""
+        challenge = get_challenge_or_404(slug, True)
+        return [{
+            'identifier': task.identifier, 
+            'status': task.currentaction} for task in challenge.tasks]
+
+class AdminApiUpdateTask(ProtectedResource):
+    """Challenge Task Statuses endpoint"""
+
+    def put(self, slug, identifier):
+        """Create or update one task"""
+
+        app.logger.debug('putting task %s' % (identifier))
+        # get the POSTed JSON
+        #payload = request.get_json()
+        
+        payload = json.loads(request.data)
+        app.logger.debug(payload.keys())
+        # there's a few possible scenarios:
+        # 1.    An existing task gets an update, in that case 
+        #       we only need the identifier
+        # 2.    A new task is inserted, in this case we need at  
+        #       least an identifier and encoded geometries.
+
+        # now we check if the task exists
+        if task_exists(slug, identifier):
+            # if it does, update it 
+            task = get_task_or_404(slug, identifier)
+            if not task.update(payload):
+               abort(400)
+        else:
+            # if it does not, create it
+            new_task = Task(slug, identifier)
+            new_task.update(payload)
+            db.session.add(new_task)
+            db.session.commit()
+
+    def delete(self, slug, identifier):
+        """Delete a task"""
+
+        task = get_task_or_404(slug,identifier)
+        task.append_action(Action('deleted')) 
+        task.available = False
+        db.session.add(task)
+        db.session.commit()
+
+
+api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks')
+api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>')

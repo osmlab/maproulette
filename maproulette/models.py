@@ -204,6 +204,7 @@ class Task(db.Model):
     # note that spatial indexes seem to be created automagically
     __table_args__ = (
         db.Index('idx_id', id),
+        db.Index('idx_identifer', identifier),
         db.Index('idx_challenge', challenge_slug),
         db.Index('idx_random', random))
 
@@ -220,7 +221,7 @@ class Task(db.Model):
     def location(self):
         """Return the location for this task as a Shapely geometry"""
 
-        return to_shape(self.geom)
+        return self.geometries[0].geom
 
     @location.setter
     def location(self, shape):
@@ -233,7 +234,19 @@ class Task(db.Model):
     def append_action(self, action):
         self.actions.append(action)
         self.currentaction = action.status
-        app.logger.debug('appended action %s to task %s' % (action, self.id))
+
+    def update(self, new_values):
+        """This updates a task based on a dict with new values"""
+        app.logger.debug('updating task %s ' % (self.identifier))
+        for k,v in new_values.iteritems():
+            app.logger.debug('updating %s to %s' % (k,v))
+            if not hasattr(self, k):
+                return False
+            setattr(self, k, v)
+            db.session.add(self)
+            db.session.commit()
+            return True
+
 
 class TaskGeometry(db.Model):
     """The collection of geometries (1+) belonging to a task"""
