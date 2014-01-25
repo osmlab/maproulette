@@ -22,8 +22,6 @@ app.config.from_object(config.DevelopmentConfig)
 # app.config.from_object(config.TestConfig)
 #app.config.from_object(config.ProductionConfig)
 
-app.logger.debug(app.debug)
-
 from maproulette import models, views, oauth, api
 
 # connect flask app to server KV session store
