@@ -9,7 +9,7 @@ import random
 # the number of challenges to create, and the number of
 # tasks per challenge.
 NUM_CHALLENGES = 10
-NUM_TASKS = 100
+NUM_TASKS = 100000
 
 # the gettysburg address
 words = """Four score and seven years ago our fathers
