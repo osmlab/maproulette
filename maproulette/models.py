@@ -174,9 +174,11 @@ class Task(db.Model):
     challenge_slug = db.Column(
         db.String,
         db.ForeignKey('challenges.slug'))
-    geom = db.Column(
-        Geometry('POINT'),
-        nullable=False)
+    # this is now deprecated by the location function
+    # below.
+    #geom = db.Column(
+    #    Geometry('POINT'),
+    #    nullable=False)
     run = db.Column(
         db.String(72),
         nullable=False)
@@ -208,9 +210,10 @@ class Task(db.Model):
         db.Index('idx_challenge', challenge_slug),
         db.Index('idx_random', random))
 
-    def __init__(self, challenge_slug, identifier):
+    def __init__(self, challenge_slug, identifier, instruction=None):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
+        self.instruction = instruction
         self.append_action(Action('created'))
         self.available = True
 
@@ -219,17 +222,24 @@ class Task(db.Model):
 
     @property
     def location(self):
-        """Return the location for this task as a Shapely geometry"""
+        """Returns the location for this task as a Shapely geometry. 
+        This is meant to give the client a quick hint about where the
+        task is located without having to transfer and decode the entire
+        task geometry. In reality what we do is transmit the first
+        geometry we find for the task. This is then parsed into a single
+        representative lon/lat in the API by getting the first coordinate
+        of the geometry retrieved here. See also the PointField class in 
+        the API code."""
 
-        return self.geometries[0].geom
+        g = self.geometries[0].geom
+        app.logger.debug(to_shape(g))
+        return to_shape(g)
 
     @location.setter
     def location(self, shape):
         """Set the location for this task from a Shapely object"""
 
         self.geom = from_shape(shape)
-
-    location = synonym('geom', descriptor=location)
 
     def append_action(self, action):
         self.actions.append(action)

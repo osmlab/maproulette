@@ -20,8 +20,11 @@ class ProtectedResource(Resource):
 class PointField(Raw):
     """An encoded point"""
 
-    def format(self, value):
-        return '|'.join([str(value.x), str(value.y)])
+    def format(self, geometry):
+        # if we get a linestring, take the first point, 
+        # else, just get the point.
+        point = geometry.coords[0]
+        return '%f|%f' % point
 
 challenge_summary = {
     'slug': fields.String,
@@ -32,7 +35,7 @@ challenge_summary = {
 
 task_fields = {
     'identifier': fields.String(attribute='identifier'),
-    'text': fields.String(attribute='instruction'),
+    'instruction': fields.String(attribute='instruction'),
     'location': PointField
 }
 
