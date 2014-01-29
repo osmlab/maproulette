@@ -7,7 +7,9 @@ from flask import session, make_response, request
 from maproulette.helpers import *
 from maproulette.models import Challenge, Task, TaskGeometry, Action, db
 from geoalchemy2.functions import ST_Buffer
-from shapely import geometry
+from shapely.geometry.base import BaseGeometry
+from shapely.geometry import asShape
+from shapely import wkb
 import geojson
 import json
 
@@ -59,7 +61,7 @@ def output_json(data, code, headers=None):
     if not data:
         resp = make_response(geojson.dumps({}), code)
     # if this is a Shapely object, dump it as geojson
-    elif isinstance(data, geometry.base.BaseGeometry):
+    elif isinstance(data, BaseGeometry):
         resp = make_response(geojson.dumps(data), code)
     # if this is a list of task geometries, we need to unpack it
     elif not isinstance(data, dict) and isinstance(data[0], TaskGeometry):
@@ -238,11 +240,6 @@ class ApiChallengeTaskDetails(ProtectedResource):
         task.append_action(Action(args.action,
                                    session.get('osm_id'),
                                    args.editor))
-        # then set the tasks availability based on this
-        if args.action in ['fixed', 'falsepositive', 'alreadyfixed']:
-            task.available = False
-        else:
-            task.available = True
         db.session.add(task)
         db.session.commit()
         return {'message': 'OK'}
@@ -299,15 +296,59 @@ class AdminApiUpdateTask(ProtectedResource):
     """Challenge Task Statuses endpoint"""
 
     def put(self, slug, identifier):
-        """Create or update one task"""
+        """Create or update one task. By default, the
+        geometry must be supplied as WKB, but this can
+        be overridden by adding ?geoformat=geojson to
+        the URL"""
 
-        app.logger.debug('putting task %s' % (identifier))
-        # get the POSTed JSON
-        #payload = request.get_json()
-        
-        payload = json.loads(request.data)
-        app.logger.debug(payload.keys())
-        # there's a few possible scenarios:
+        task_geometries = []
+
+        # by default, we will process the incoming 
+        # task geometries as WKB
+        geometries_as_geojson = False
+ 
+        # parse the format argument, 
+        parser = reqparse.RequestParser()
+        parser.add_argument('geoformat', type=str, location='args')
+        args = parser.parse_args()
+
+        # if geoformat=geojson was supplied, we will process
+        # incoming geometries as geojson instead.
+        if args.geoformat == 'geojson':
+            geometries_as_geojson = True
+
+        app.logger.debug('as geojson? %s' % (geometries_as_geojson))
+
+        # Get the posted data
+        taskdata = json.loads(request.data)
+    
+        # abort if the taskdata does not contain geometries    
+        if not 'geometries' in taskdata:
+            abort(400) 
+
+        # extract the geometries
+        geometries = taskdata.pop('geometries')
+
+        # parse the geometries
+        app.logger.debug(geometries)
+        for geometry in geometries:
+            osmid = geometry['osmid']
+            app.logger.debug(geometry)
+            if geometries_as_geojson:
+                shape = asShape(
+                    geojson.loads(
+                        json.dumps(geometry['geometry'])))
+            else:
+                shape = wkb.loads(geometry['geometry'].decode('hex'))
+            app.logger.debug(shape)
+            t = TaskGeometry(osmid, shape)
+            task_geometries.append(t)
+
+        app.logger.debug(task_geometries)
+
+        app.logger.debug(taskdata)
+
+        # there's two possible scenarios:
         # 1.    An existing task gets an update, in that case 
         #       we only need the identifier
         # 2.    A new task is inserted, in this case we need at  
@@ -317,12 +358,12 @@ class AdminApiUpdateTask(ProtectedResource):
         if task_exists(slug, identifier):
             # if it does, update it 
             task = get_task_or_404(slug, identifier)
-            if not task.update(payload):
+            if not task.update(taskdata, task_geometries):
                abort(400)
         else:
             # if it does not, create it
             new_task = Task(slug, identifier)
-            new_task.update(payload)
+            new_task.update(taskdata, task_geometries)
             db.session.add(new_task)
             db.session.commit()
 
@@ -331,7 +372,6 @@ class AdminApiUpdateTask(ProtectedResource):
 
         task = get_task_or_404(slug,identifier)
         task.append_action(Action('deleted')) 
-        task.available = False
         db.session.add(task)
         db.session.commit()
 

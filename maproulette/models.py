@@ -1,6 +1,6 @@
   # """This file contains the SQLAlchemy ORM models"""
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import scoped_session, sessionmaker, synonym
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.declarative import declarative_base
@@ -61,6 +61,7 @@ class User(db.Model):
     difficulty = db.Column(
         db.SmallInteger)
 
+
     def __unicode__(self):
         return self.display_name
 
@@ -97,18 +98,18 @@ class Challenge(db.Model):
     instruction = db.Column(
         db.String,
         nullable=False)
-    run = db.Column(
-        db.String(72))
     active = db.Column(
         db.Boolean,
         nullable=False)
     difficulty = db.Column(
         db.SmallInteger,
         nullable=False)
-    type = db.Column(db.String, default='default', nullable=False)
+    type = db.Column(
+        db.String, 
+        default='default', 
+        nullable=False)
 
     # note that spatial indexes seem to be created automagically
-    __table_args__ = (db.Index('idx_run', run), )
 
     def __init__(self, slug):
         self.slug = slug
@@ -117,7 +118,7 @@ class Challenge(db.Model):
     def __unicode__(self):
         return self.slug
 
-    @property
+    @hybrid_property
     def polygon(self):
         """Retrieve the polygon for this challenge, or return the World if there is none"""
 
@@ -138,15 +139,15 @@ class Challenge(db.Model):
 
     polygon = synonym('geom', descriptor=polygon)
 
-    @property
+    @hybrid_property
     def tasks_available(self):
         """Return the number of tasks available for this challenge."""
 
-        return Task.query.filter_by(
-            available=True,
-            challenge_slug=self.slug).count()
+        return Task.query.filter(
+            Task.challenge_slug == self.slug).filter(
+            Task.isavailable == True).count()
 
-    @property
+    @hybrid_property
     def islocal(self):
         """Returns the localness of a challenge (is it small)"""
 
@@ -179,7 +180,7 @@ class Task(db.Model):
     #geom = db.Column(
     #    Geometry('POINT'),
     #    nullable=False)
-    run = db.Column(
+    version = db.Column(
         db.String(72),
         nullable=False)
     random = db.Column(
@@ -190,16 +191,16 @@ class Task(db.Model):
         db.String)  # deprecated
     geometries = db.relationship(
         "TaskGeometry",
+        cascade='all,delete-orphan',
         backref=db.backref("task"))
     actions = db.relationship(
         "Action",
+        cascade='all,delete-orphan',
         backref=db.backref("task"))
     currentaction = db.Column(
         db.String)
     instruction = db.Column(
         db.String)
-    available = db.Column(
-        db.Boolean)
     challenge = db.relationship(
         "Challenge",
         backref=db.backref('tasks', order_by=id))
@@ -214,13 +215,24 @@ class Task(db.Model):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.instruction = instruction
+        self.version = 1
         self.append_action(Action('created'))
-        self.available = True
 
     def __repr__(self):
         return '<Task %s>' % (self.identifier)
 
-    @property
+    @hybrid_property
+    def isavailable(self):
+
+        return (self.currentaction in ['created', 'skipped', 'available'])
+
+    @isavailable.expression
+    def isavailable(cls):
+
+        return cls.currentaction.in_(('created', 'skipped', 'available'))
+
+
+    @hybrid_property
     def location(self):
         """Returns the location for this task as a Shapely geometry. 
         This is meant to give the client a quick hint about where the
@@ -232,7 +244,6 @@ class Task(db.Model):
         the API code."""
 
         g = self.geometries[0].geom
-        app.logger.debug(to_shape(g))
         return to_shape(g)
 
     @location.setter
@@ -243,44 +254,61 @@ class Task(db.Model):
 
     def append_action(self, action):
         self.actions.append(action)
+        # duplicate the action status string in the tasks table to save lookups
         self.currentaction = action.status
 
-    def update(self, new_values):
+    def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
-        app.logger.debug('updating task %s ' % (self.identifier))
+        app.logger.debug(new_values)
         for k,v in new_values.iteritems():
             app.logger.debug('updating %s to %s' % (k,v))
             if not hasattr(self, k):
                 return False
             setattr(self, k, v)
-            db.session.add(self)
-            db.session.commit()
-            return True
+
+        # 
+        self.geometries = []
+
+        for geometry in geometries:
+            self.geometries = geometries
+        db.session.merge(self)
+        db.session.commit()
+        return True
+
+# add a listener to update the version
+@event.listens_for(Task, 'before_update')
+def receive_before_update(mapper, connection, target):
+    """listen for the 'before_update' event"""
+    app.logger.debug('going to update task')
+    app.logger.debug(target)
+    # ... (event handling logic) ...
 
 
 class TaskGeometry(db.Model):
     """The collection of geometries (1+) belonging to a task"""
 
     __tablename__ = 'task_geometries'
+    id = db.Column(
+        db.Integer, 
+        nullable=False, 
+        unique=True,
+        primary_key=True)
     osmid = db.Column(
         db.BigInteger,
-        primary_key=True,
         nullable=False)
     task_id = db.Column(
         db.Integer,
         db.ForeignKey('tasks.id'),
-        nullable=False,
-        primary_key=True)
+        nullable=False)
     geom = db.Column(
         Geometry,
-        nullable=False,
-        primary_key=True)
+        nullable=False)
 
     def __init__(self, osmid, shape):
         self.osmid = osmid
         self.geom = from_shape(shape)
 
-    @property
+    @hybrid_property
     def geometry(self):
         """Return the task geometry collection as a Shapely object"""
 
@@ -293,7 +321,6 @@ class TaskGeometry(db.Model):
         self.geom = from_shape(shape)
 
     geometry = synonym('geom', descriptor=geometry)
-
 
 class Action(db.Model):
     """An action on a task"""
