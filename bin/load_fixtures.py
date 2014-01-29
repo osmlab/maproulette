@@ -112,8 +112,6 @@ for i in range(NUM_CHALLENGES):
         task.geometries.append(TaskGeometry(osmids[1], l1))
         # and add the first point as the task's location
         task.location = p1
-        # set the run number to 1, this is the initial run
-        task.run = 1
         # generate random string for the instruction
         task.instruction = ' '.join([random.choice(words.split())
                                     for _ in range(15)])
