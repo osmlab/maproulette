@@ -282,6 +282,33 @@ api.add_resource(
 # The Admin API ################
 ################################
 
+class AdminApiChallengeCreate(ProtectedResource):
+    """Admin challenge creation endpoint"""
+    def put(self, slug):
+        if challenge_exists(slug):
+            app.logger.debug('challenge exists')
+            abort(400)
+        try:
+            payload = json.loads(request.data)
+        except Exception, e:
+            app.logger.debug('payload invalid, no json')            
+            abort(400)
+        if not 'title' in payload:
+            app.logger.debug('payload invalid, no title')
+            abort(400)
+        c = Challenge(
+            slug,
+            payload.get('title'),
+            payload.get('geometry'),
+            payload.get('description'), 
+            payload.get('blurb'), 
+            payload.get('help'), 
+            payload.get('instruction'), 
+            payload.get('active'), 
+            payload.get('difficulty'))
+        db.session.add(c)
+        db.session.commit()
+
 class AdminApiTaskStatuses(ProtectedResource):
     """Admin Task status endpoint"""
 
@@ -303,50 +330,25 @@ class AdminApiUpdateTask(ProtectedResource):
 
         task_geometries = []
 
-        # by default, we will process the incoming 
-        # task geometries as WKB
-        geometries_as_geojson = False
- 
-        # parse the format argument, 
-        parser = reqparse.RequestParser()
-        parser.add_argument('geoformat', type=str, location='args')
-        args = parser.parse_args()
-
-        # if geoformat=geojson was supplied, we will process
-        # incoming geometries as geojson instead.
-        if args.geoformat == 'geojson':
-            geometries_as_geojson = True
-
-        app.logger.debug('as geojson? %s' % (geometries_as_geojson))
-
         # Get the posted data
         taskdata = json.loads(request.data)
     
-        # abort if the taskdata does not contain geometries    
+        exists = task_exists(slug, identifier)
+
+        # abort if the taskdata does not contain geometries and it's a new task
         if not 'geometries' in taskdata:
-            abort(400) 
+            if not exists:
+                abort(400) 
+        else:
+            # extract the geometries
+            geometries = geojson.loads(json.dumps(taskdata.pop('geometries')))
 
-        # extract the geometries
-        geometries = taskdata.pop('geometries')
-
-        # parse the geometries
-        app.logger.debug(geometries)
-        for geometry in geometries:
-            osmid = geometry['osmid']
-            app.logger.debug(geometry)
-            if geometries_as_geojson:
-                shape = asShape(
-                    geojson.loads(
-                        json.dumps(geometry['geometry'])))
-            else:
-                shape = wkb.loads(geometry['geometry'].decode('hex'))
-            app.logger.debug(shape)
-            t = TaskGeometry(osmid, shape)
-            task_geometries.append(t)
-
-        app.logger.debug(task_geometries)
-
-        app.logger.debug(taskdata)
+            # parse the geometries
+            for feature in geometries['features']:
+                osmid = feature.properties['osmid']
+                shape = asShape(feature['geometry'])
+                t = TaskGeometry(osmid, shape)
+                task_geometries.append(t)
 
         # there's two possible scenarios:
         # 1.    An existing task gets an update, in that case 
@@ -355,17 +357,18 @@ class AdminApiUpdateTask(ProtectedResource):
         #       least an identifier and encoded geometries.
 
         # now we check if the task exists
-        if task_exists(slug, identifier):
+        if exists:
             # if it does, update it 
+            app.logger.debug('existing task')
             task = get_task_or_404(slug, identifier)
             if not task.update(taskdata, task_geometries):
                abort(400)
         else:
             # if it does not, create it
+            app.logger.debug('new task')
             new_task = Task(slug, identifier)
             new_task.update(taskdata, task_geometries)
-            db.session.add(new_task)
-            db.session.commit()
+        return {"message": "ok"}
 
     def delete(self, slug, identifier):
         """Delete a task"""
@@ -375,6 +378,6 @@ class AdminApiUpdateTask(ProtectedResource):
         db.session.add(task)
         db.session.commit()
 
-
+api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>')
 api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks')
 api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>')

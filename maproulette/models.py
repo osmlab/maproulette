@@ -21,6 +21,7 @@ db = SQLAlchemy(app)
 
 random.seed()
 
+world_polygon = Polygon([(-180, -90), (-180, 90), (180, 90), (180, -90), (-180, -90)])
 
 def getrandom():
     return random.random()
@@ -86,24 +87,25 @@ class Challenge(db.Model):
         nullable=False)
     description = db.Column(
         db.String,
-        nullable=False)
+        default="")
     blurb = db.Column(
         db.String,
-        nullable=False)
+        default="")
     geom = db.Column(
         Geometry('POLYGON'))
     help = db.Column(
-        db.String,
-        nullable=False)
+        db.String, 
+        default="")
     instruction = db.Column(
         db.String,
-        nullable=False)
+        default="")
     active = db.Column(
         db.Boolean,
         nullable=False)
     difficulty = db.Column(
         db.SmallInteger,
-        nullable=False)
+        nullable=False,
+        default=1)
     type = db.Column(
         db.String, 
         default='default', 
@@ -111,9 +113,29 @@ class Challenge(db.Model):
 
     # note that spatial indexes seem to be created automagically
 
-    def __init__(self, slug):
+    def __init__(self, 
+                 slug,
+                 title,
+                 geometry=None, 
+                 description=None, 
+                 blurb=None, 
+                 help=None, 
+                 instruction=None, 
+                 active=None, 
+                 difficulty=None):
+        if geometry is None:
+            geometry = world_polygon
+        if active is None:
+            active = False
         self.slug = slug
-        self.geometry = Polygon
+        self.title = title
+        self.geometry = from_shape(geometry) 
+        self.description = description
+        self.blurb = blurb
+        self.help = help
+        self.instruction = instruction
+        self.active = active
+        self.difficulty = difficulty
 
     def __unicode__(self):
         return self.slug
@@ -262,7 +284,11 @@ class Task(db.Model):
         app.logger.debug(new_values)
         for k,v in new_values.iteritems():
             app.logger.debug('updating %s to %s' % (k,v))
-            if not hasattr(self, k):
+            # if a status is set, append an action
+            if k == 'status':
+                self.append_action(Action(v))
+            elif not hasattr(self, k):
+                app.logger.debug('task does not have %s' % (k,))
                 return False
             setattr(self, k, v)
 

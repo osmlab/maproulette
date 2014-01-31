@@ -38,6 +38,14 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
         return c
 
 
+def challenge_exists(challenge_slug):
+    q = Challenge.query.filter(
+        Challenge.slug == challenge_slug).first()
+    if q is None:  
+        return False
+    return True
+
+
 def get_task_or_404(challenge_slug, task_identifier):
     """Return a task based on its challenge and task identifier"""
 
