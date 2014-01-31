@@ -296,7 +296,7 @@ var MRManager = (function () {
     var selectChallenge = function (all) {
 
         console.log('selecting a challenge');
-        var url = '/api/challenges/' + constructUrlParameters();
+        var url = '/api/challenges' + constructUrlParameters();
 
         if (all) url += 'all=true';
 
@@ -440,7 +440,7 @@ var MRManager = (function () {
         // fit the map snugly to the task features
         map.fitBounds(taskLayer.getBounds().pad(0.2));
         // show the task text as a notification
-        notify.play(task.text);
+        notify.play(task.instruction);
         // let the user know where we are
         displayAdminArea();
     };
