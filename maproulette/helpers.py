@@ -5,9 +5,8 @@ from maproulette.challengetypes import challenge_types
 from functools import wraps
 import random
 import json
-
 from maproulette import app
-
+from sqlalchemy.sql.expression import select, exists
 
 def osmerror(error, description):
     """Return an OSMError to the client"""
@@ -39,15 +38,31 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
         return c
 
 
+def challenge_exists(challenge_slug):
+    q = Challenge.query.filter(
+        Challenge.slug == challenge_slug).first()
+    if q is None:  
+        return False
+    return True
+
+
 def get_task_or_404(challenge_slug, task_identifier):
     """Return a task based on its challenge and task identifier"""
 
-    t = Task.query.filter(Task.identifier == task_identifier). \
-        filter(Task.challenge_slug == challenge_slug).first()
+    t = Task.query.filter(
+        Task.challenge_slug == challenge_slug).filter(
+        Task.identifier == task_identifier).first()
     if not t:
         abort(404)
     return t
 
+def task_exists(challenge_slug, task_identifier):
+    q = Task.query.filter(
+        Task.challenge_slug == challenge_slug).filter(
+        Task.identifier == task_identifier).first()
+    if q is None:  
+        return False
+    return True
 
 def get_or_create_task(challenge, task_identifier):
     """Return a task, either pull a new one or create a new one"""

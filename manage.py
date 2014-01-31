@@ -3,20 +3,13 @@
 import os
 import sys
 import subprocess
-from flask.ext.script import Manager, Server
+from flask.ext.runner import Manager
 from maproulette import app
 from maproulette.models import db
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 manager = Manager(app)
-
-# Turn on debugger by default and reloader
-manager.add_command("runserver", Server(
-    host='0.0.0.0',
-    port=3000)
-)
-
 
 @manager.command
 def clean_pyc():
