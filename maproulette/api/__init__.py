@@ -83,7 +83,7 @@ def output_json(data, code, headers=None):
 
 
 class ApiChallengeList(ProtectedResource):
-    """Challenges endpoint"""
+    """Challenge list endpoint"""
 
     @marshal_with(challenge_summary)
     def get(self):
@@ -92,7 +92,7 @@ class ApiChallengeList(ProtectedResource):
         difficulty: the desired difficulty to filter on (1=easy, 2=medium, 3=hard)
         lon/lat: the coordinate to filter on (returns only
         challenges whose bounding polygons contain this point)
-        example: /api/c/challenges?lon=-100.22&lat=40.45&difficulty=2
+        example: /api/challenges?lon=-100.22&lat=40.45&difficulty=2
         all: if true, return all challenges regardless of OSM user home location
         """
         # initialize the parser
@@ -287,7 +287,7 @@ class AdminApiChallengeCreate(ProtectedResource):
     def put(self, slug):
         if challenge_exists(slug):
             app.logger.debug('challenge exists')
-            abort(400)
+            abort(403)
         try:
             payload = json.loads(request.data)
         except Exception, e:
@@ -335,20 +335,25 @@ class AdminApiUpdateTask(ProtectedResource):
     
         exists = task_exists(slug, identifier)
 
+        app.logger.debug("taskdata: %s" % (taskdata,))
+
         # abort if the taskdata does not contain geometries and it's a new task
         if not 'geometries' in taskdata:
             if not exists:
                 abort(400) 
         else:
             # extract the geometries
-            geometries = geojson.loads(json.dumps(taskdata.pop('geometries')))
+            geometries = json.dumps(taskdata.pop('geometries'))
+            app.logger.debug("geometries: %s" % (geometries,))
 
             # parse the geometries
-            for feature in geometries['features']:
+            for k,v in geometries['features'].iteritems():
+                app.logger.debug(k,v)
                 osmid = feature.properties['osmid']
                 shape = asShape(feature['geometry'])
                 t = TaskGeometry(osmid, shape)
                 task_geometries.append(t)
+
 
         # there's two possible scenarios:
         # 1.    An existing task gets an update, in that case 
