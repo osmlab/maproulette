@@ -82,9 +82,6 @@ def output_json(data, code, headers=None):
     # finish and return the response object
     resp.headers.extend(headers or {})
     return resp
-
-class ApiAllChallengeList(ProtectedResource):
-    """Endpoint for all challenge list"""
     
 class ApiChallengeList(ProtectedResource):
     """Challenges endpoint"""
