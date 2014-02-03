@@ -23,7 +23,7 @@ class PointField(Raw):
     """An encoded point"""
 
     def format(self, geometry):
-        # if we get a linestring, take the first point, 
+        # if we get a linestring, take the first point,
         # else, just get the point.
         point = geometry.coords[0]
         return '%f|%f' % point
@@ -32,6 +32,8 @@ challenge_summary = {
     'slug': fields.String,
     'title': fields.String,
     'difficulty': fields.Integer,
+    'description': fields.String,
+    'blurb': fields.String,
     'islocal': fields.Boolean
 }
 
@@ -81,7 +83,9 @@ def output_json(data, code, headers=None):
     resp.headers.extend(headers or {})
     return resp
 
-
+class ApiAllChallengeList(ProtectedResource):
+    """Endpoint for all challenge list"""
+    
 class ApiChallengeList(ProtectedResource):
     """Challenges endpoint"""
 
@@ -291,7 +295,7 @@ class AdminApiChallengeCreate(ProtectedResource):
         try:
             payload = json.loads(request.data)
         except Exception, e:
-            app.logger.debug('payload invalid, no json')            
+            app.logger.debug('payload invalid, no json')
             abort(400)
         if not 'title' in payload:
             app.logger.debug('payload invalid, no title')
@@ -300,11 +304,11 @@ class AdminApiChallengeCreate(ProtectedResource):
             slug,
             payload.get('title'),
             payload.get('geometry'),
-            payload.get('description'), 
-            payload.get('blurb'), 
-            payload.get('help'), 
-            payload.get('instruction'), 
-            payload.get('active'), 
+            payload.get('description'),
+            payload.get('blurb'),
+            payload.get('help'),
+            payload.get('instruction'),
+            payload.get('active'),
             payload.get('difficulty'))
         db.session.add(c)
         db.session.commit()
@@ -316,7 +320,7 @@ class AdminApiTaskStatuses(ProtectedResource):
         """Return task statuses for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
         return [{
-            'identifier': task.identifier, 
+            'identifier': task.identifier,
             'status': task.currentaction} for task in challenge.tasks]
 
 class AdminApiUpdateTask(ProtectedResource):
@@ -332,13 +336,13 @@ class AdminApiUpdateTask(ProtectedResource):
 
         # Get the posted data
         taskdata = json.loads(request.data)
-    
+
         exists = task_exists(slug, identifier)
 
         # abort if the taskdata does not contain geometries and it's a new task
         if not 'geometries' in taskdata:
             if not exists:
-                abort(400) 
+                abort(400)
         else:
             # extract the geometries
             geometries = geojson.loads(json.dumps(taskdata.pop('geometries')))
@@ -351,14 +355,14 @@ class AdminApiUpdateTask(ProtectedResource):
                 task_geometries.append(t)
 
         # there's two possible scenarios:
-        # 1.    An existing task gets an update, in that case 
+        # 1.    An existing task gets an update, in that case
         #       we only need the identifier
-        # 2.    A new task is inserted, in this case we need at  
+        # 2.    A new task is inserted, in this case we need at
         #       least an identifier and encoded geometries.
 
         # now we check if the task exists
         if exists:
-            # if it does, update it 
+            # if it does, update it
             app.logger.debug('existing task')
             task = get_task_or_404(slug, identifier)
             if not task.update(taskdata, task_geometries):
@@ -374,7 +378,7 @@ class AdminApiUpdateTask(ProtectedResource):
         """Delete a task"""
 
         task = get_task_or_404(slug,identifier)
-        task.append_action(Action('deleted')) 
+        task.append_action(Action('deleted'))
         db.session.add(task)
         db.session.commit()
 
