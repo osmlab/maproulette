@@ -14,8 +14,7 @@ var Q = (function () {
             query_string[pair[0]] = pair[1];
             // If second entry with this name
         } else if (typeof query_string[pair[0]] === 'string') {
-            var arr = [ query_string[pair[0]], pair[1] ];
-            query_string[pair[0]] = arr;
+            query_string[pair[0]] = [ query_string[pair[0]], pair[1] ];
             // If third or later entry with this name
         } else {
             query_string[pair[0]].push(pair[1]);
@@ -60,30 +59,29 @@ var MRNotifier = function () {
     // currently we use noty, see http://ned.im/noty/#options
     var play = function (text, options) {
         // if an array (of lines) was passed in, join them
-        if( Object.prototype.toString.call( text ) === '[object Array]' ) {
+        if (Object.prototype.toString.call(text) === '[object Array]') {
             text = text.join('<br />');
         }
         // if no options were passed in, initialize options object
-        if (!options) var options = {};
+        if (!options) options = {};
         options.text = text;
-        var n = $('.notifications').noty(options);
-        return n;
-    }
+        return $('.notifications').noty(options);
+    };
 
     // clear the notification queue
     var clear = function () {
         $.noty.clearQueue();
-    }
+    };
 
     // cancel a notification by id
-    var close = function(n) {
+    var close = function (n) {
         if (typeof n === 'noty') n.close();
-    }
+    };
 
     return {
         play            : play,
         clear           : clear,
-        close           : close,
+        close           : close
     }
 }();
 
@@ -97,7 +95,9 @@ var MRButtons = function () {
     };
 
     var makeButton = function (buttonType) {
-        if (!(buttonType in buttonTypes)) { return false };
+        if (!(buttonType in buttonTypes)) {
+            return false
+        }
         return '<div class=\'button\' onClick=MRManager.nextTask(\'' + buttontype + '\') id=\'' + buttonType + '\'>' + buttonTypes[buttonType] + '</div>';
     };
 
@@ -105,7 +105,7 @@ var MRButtons = function () {
         var buttonHTML = '';
         for (key in buttonTypes) {
             buttonHTML += '<div class=\'button\' onClick=MRManager.nextTask(\'' + key + '\') id=\'' + key + '\'>' + buttonTypes[key] + '</div>\n';
-        };
+        }
         return buttonHTML;
     };
 
@@ -120,34 +120,44 @@ var MRHelpers = (function () {
 
     var addComma = function(str) {
         return (str.match(/\,\s+$/) || str.match(/in\s+$/))?'':', ';
-    }
+    };
 
     var mqResultToString = function (addr) {
         var out, county, town;
-        if(!addr || !(addr.town || addr.county || addr.hamlet || addr.state || addr.country)) { return 'We are somewhere on earth..' };
+        if (!addr || !(addr.town || addr.county || addr.hamlet || addr.state || addr.country)) {
+            return 'We are somewhere on earth..'
+        }
         out = 'We are ';
         if(addr.city != null) { out += 'in ' + addr.city }
         else if (addr.town != null) { out += 'in ' + addr.town }
         else if (addr.hamlet != null) { out += 'in ' + addr.hamlet }
-        else { out += 'somewhere in ' };
+        else {
+            out += 'somewhere in '
+        }
         out += addComma(out);
         if(addr.county) {
             if(addr.county.toLowerCase().indexOf('county') > -1) { out += addr.county }
-            else { out += addr.county + ' County' };
-        };
+            else {
+                out += addr.county + ' County'
+            }
+        }
         out += addComma(out);
-        if(addr.state) { out += addr.state };
+        if (addr.state) {
+            out += addr.state
+        }
         out += addComma(out);
         if(addr.country) {
-            if(addr.country.indexOf('United States') > -1) { out += 'the ' };
+            if (addr.country.indexOf('United States') > -1) {
+                out += 'the '
+            }
             out += addr.country;
-        };
+        }
         out += '.';
         return out;
     };
 
     return {
-        mqResultToString    : mqResultToString,
+        mqResultToString    : mqResultToString
     }
 }());
 
@@ -188,7 +198,7 @@ var MRManager = (function () {
     var taskLayer;
 
     // create a notifier
-    notify = MRNotifier
+    notify = MRNotifier;
 
     // are we logged in?
     this.loggedIn = false;
@@ -240,11 +250,12 @@ var MRManager = (function () {
         var urlParams = '?';
         if (typeof near.lat === 'number' && typeof near.lon === 'number') { // this is not quite accurate but good enough for a casual check.
             urlParams += 'lon=' + near.lon + '&lat=' + near.lat + '&';
-        };
-        if ([1,2,3].indexOf(difficulty) > -1 && isChallenge) { // difficulty must be 1,2,3
-            urlParams += 'difficulty=' + difficulty };
+        }
+        if ([1, 2, 3].indexOf(difficulty) > -1 && isChallenge) { // difficulty must be 1,2,3
+            urlParams += 'difficulty=' + difficulty
+        }
         return urlParams;
-    }
+    };
 
     /*
      * This function initializes the leaflet map, gets the user location, and loads the first task.
@@ -288,7 +299,7 @@ var MRManager = (function () {
 
             // and request the challenge details and stats (slow)
             getChallengeDetails();
-        };
+        }
     };
 
   
@@ -321,38 +332,39 @@ var MRManager = (function () {
         if (!challenge) {
             // if we got no challenges, there is something wrong.
             console.log('no challenges returned');
-            notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.')
+            notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.');
             selectChallenge(true);
-        };
+        }
     };
 
     /*
      * get the selected challenge
      */
      var getChallengeDetails = function () {
-        // check if we have a challenge, if not get one.
-        if (typeof challenge === 'undefined') {
-            selectChallenge();
-        };
-
-        // request the challenge details
-        console.log('getting challenge details');
-        url = '/api/challenge/' + challenge.slug;
-        $.ajax({
-            url     : url,
-            success : function (data) {
-                $.each(data, function(key, value) {
-                    challenge[key] = value;
-                });
-                // update the challenge detail UI elements
-                $('#challenge_title').text(challenge.title);
-                $('#challenge_description').text(challenge.description);
-                // and move on to get the stats
-                getChallengeStats()
-            },
-            error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
-        });
-    }
+         // check if we have a challenge, if not get one.
+         if (typeof challenge === 'undefined') {
+             selectChallenge();
+         }
+         // request the challenge details
+         console.log('getting challenge details');
+         url = '/api/challenge/' + challenge.slug;
+         $.ajax({
+             url: url,
+             success: function (data) {
+                 $.each(data, function (key, value) {
+                     challenge[key] = value;
+                 });
+                 // update the challenge detail UI elements
+                 $('#challenge_title').text(challenge.title);
+                 $('#challenge_description').text(challenge.description);
+                 // and move on to get the stats
+                 getChallengeStats()
+             },
+             error: function (jqXHR, textStatus, errorThrown) {
+                 console.log('ajax error');
+             }
+         });
+     };
 
     var getChallengeStats = function () {
         // now get the challenge stats
@@ -375,24 +387,27 @@ var MRManager = (function () {
 
     var updateTask = function (action) {
         // if we don't have a task yet, return immediately
-        if (!task) { return false };
-
+        if (!task) {
+            return false
+        }
         var payload = {
             "action": action,
             "editor": editor
         };
         $.ajax({
-            url     : "/api/challenge/" + challenge.slug + "/task/" + task.identifier,
-            type    : "POST",
-            data    : payload,
-            success : function (data) {
+            url: "/api/challenge/" + challenge.slug + "/task/" + task.identifier,
+            type: "POST",
+            data: payload,
+            success: function (data) {
                 console.log('task ' + task.identifier + ' updated')
             },
-            error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log('ajax error');
+            }
         });
 
 
-    }
+    };
 
     /*
      * get a task for the current challenge
@@ -402,7 +417,7 @@ var MRManager = (function () {
         // check if we have a challenge, if not get one.
         if (typeof challenge === 'undefined') {
             selectChallenge();
-        };
+        }
         console.log('challenge got: ' + challenge);
         // get a task
         $.ajax({
@@ -432,8 +447,7 @@ var MRManager = (function () {
         if (typeof task === 'undefined') {
             console.log('we don\'t have a task');
             return false;
-        };
-
+        }
         // draw all features of this task on the task layer
         for(var i = 0; i < task.features.length; i++) {
             feature = task.features[i];
@@ -446,16 +460,21 @@ var MRManager = (function () {
         notify.play(task.instruction);
         // let the user know where we are
         displayAdminArea();
+        return true;
     };
 
-    var displayAdminArea = function() {
+    var displayAdminArea = function () {
         var mqurl = 'http://open.mapquestapi.com/nominatim/v1/reverse?format=json&lat=' + map.getCenter().lat + ' &lon=' + map.getCenter().lng;
         $.ajax({
-            url     : mqurl,
-            success : function (data) { notify.play(MRHelpers.mqResultToString(data.address)); },
-            error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
+            url: mqurl,
+            success: function (data) {
+                notify.play(MRHelpers.mqResultToString(data.address));
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log('ajax error');
+            }
         });
-    }
+    };
 
     var nextTask = function (action) {
         // make the done dialog disappear if it is there
@@ -471,11 +490,10 @@ var MRManager = (function () {
     };
 
     var openTaskInEditor = function (editor) {
-        editor = editor;
         if (map.getZoom() < MRConfig.minZoomLevelForEditing){
             notify.play(MRConfig.strings.msgZoomInForEdit);
             return false;
-        };
+        }
         console.log('opening in ' + editor);
         if (editor === 'j') { openInJOSM() }
         else { // OSM default
@@ -490,45 +508,50 @@ var MRManager = (function () {
         }
     };
 
-    var presentDoneDialog = function() {
+    var presentDoneDialog = function () {
         var d = challenge.done_dlg;
 
         // if there is no done dialog info, bail
         // FIXME we should be reverting to a default
-        if (typeof d === 'undefined') { return false };
-
+        if (typeof d === 'undefined') {
+            return false
+        }
         var dialogHTML = '<div class=\'text\'>' + d.text + '</div>';
 
         if (typeof d.buttons === 'string' && d.buttons.length > 0) {
             var buttons = d.buttons.split('|');
             for (var i = 0; i < buttons.length; i++) {
                 dialogHTML += MRButtons.makeButton(buttons[i]);
-            };
+            }
         } else {
             dialogHTML += MRButtons.makeButtons();
         }
         $('.donedialog').html(dialogHTML).fadeIn();
-    }
+    };
 
-    var presentChallengeSelectionDialog = function(){
-      var challengeSelectionHTML = "";
-      $('.donedialog').fadeOut();
-      for (c in challenges) {
-        cHTML = "<div>" + \
-                 "<div onclick='MRManager.userPickChallenge(" + c.slug ")>" + \
+    var presentChallengeSelectionDialog = function () {
+        var challengeSelectionHTML = "";
+        $('.donedialog').fadeOut();
+        for (c in challenges) {
+            cHTML = "<div>" + \
+                 "<div onclick='MRManager.userPickChallenge(" + c.slug
+            ")>" + \
                  c.title + "</div> - " + c.blurb + "<hr /></div>"
-        challengeSelectionHTML += cHTML;
-      }
-      $('.donedialog').html(challengeSelectionHTML).fadeIn();
-    }
+            challengeSelectionHTML += cHTML;
+        }
+        $('.donedialog').html(challengeSelectionHTML).fadeIn();
+    };
   
-    var presentWelcomeDialog = function() {
-      var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + \
-        "<p>Please <a href="/login">login</a> to OpenStreetMap</p>" + \
+    var presentWelcomeDialog = function () {
+        var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + \
+        "<p>Please <a href=" / login
+        ">login</a> to OpenStreetMap</p>" + \
         "<p>Challenge: " + challenge.title + "<div onclick='MRManager.presentChallengeSelectionDialog()'>change</div></p>" + \
-        "<p>Need <div onclick="MRManager.presentHelpDialog()">help?</div>"
-      $('.donedialog').html(welcomeHTML).fadeIn();
-    }
+        "<p>Need <div onclick="
+        MRManager.presentHelpDialog()
+        ">help?</div>"
+        $('.donedialog').html(welcomeHTML).fadeIn();
+    };
 
     var geolocateUser = function () {
         // Locate the user and define the event triggers
@@ -556,11 +579,11 @@ var MRManager = (function () {
         console.log('user picking challenge')
         challenge = challenge;
         getChallengeDetails();
-    }
+    };
 
     var userPreferences = function () {
         console.log('user setting preferences');
-    }
+    };
 
     return {
         init                : init,
@@ -575,4 +598,4 @@ var MRManager = (function () {
 // initialization
 function init(elemName) {
     MRManager.init(elemName);
-};
+}
