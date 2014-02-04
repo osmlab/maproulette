@@ -32,20 +32,20 @@ var MRNotifier = function () {
         layout: 'top',
         theme: 'mapRouletteTheme',
         type: 'alert',
-        text: '', 
+        text: '',
         dismissQueue: true,
         template: '<div class="noty_message"><span class="noty_text"></span><div class="noty_close"></div></div>',
         animation: {
             open: {height: 'toggle'},
             close: {height: 'toggle'},
             easing: 'swing',
-            speed: 500 
+            speed: 500
         },
-        timeout: 5000, 
+        timeout: 5000,
         force: false,
         modal: false,
-        maxVisible: 5, 
-        killer: false, 
+        maxVisible: 5,
+        killer: false,
         closeWith: ['click'],
         callback: {
             onShow: function() {},
@@ -93,7 +93,7 @@ var MRButtons = function () {
         'fixed'         : 'I fixed it!',
         'skipped'       : 'Too difficult / Couldn\'t see',
         'falsepositive' : 'It was not an error',
-        'alreadyfixed'  : 'Someone beat me to it'  
+        'alreadyfixed'  : 'Someone beat me to it'
     };
 
     var makeButton = function (buttonType) {
@@ -103,7 +103,7 @@ var MRButtons = function () {
 
     var makeButtons = function () {
         var buttonHTML = '';
-        for (key in buttonTypes) { 
+        for (key in buttonTypes) {
             buttonHTML += '<div class=\'button\' onClick=MRManager.nextTask(\'' + key + '\') id=\'' + key + '\'>' + buttonTypes[key] + '</div>\n';
         };
         return buttonHTML;
@@ -130,14 +130,14 @@ var MRHelpers = (function () {
         else if (addr.town != null) { out += 'in ' + addr.town }
         else if (addr.hamlet != null) { out += 'in ' + addr.hamlet }
         else { out += 'somewhere in ' };
-        out += addComma(out); 
+        out += addComma(out);
         if(addr.county) {
             if(addr.county.toLowerCase().indexOf('county') > -1) { out += addr.county }
             else { out += addr.county + ' County' };
         };
-        out += addComma(out); 
+        out += addComma(out);
         if(addr.state) { out += addr.state };
-        out += addComma(out); 
+        out += addComma(out);
         if(addr.country) {
             if(addr.country.indexOf('United States') > -1) { out += 'the ' };
             out += addr.country;
@@ -179,6 +179,7 @@ var MRConfig = (function () {
 
 var MRManager = (function () {
     var map;
+    var challenges;
     var challenge;
     var task;
     var editor;
@@ -222,16 +223,16 @@ var MRManager = (function () {
             success : function (t) {
                 if (t.indexOf('OK') === -1) {
                     notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
-                } else { 
+                } else {
                     console.log('the data was loaded in JOSM, now waiting for callback');
                     updateTask('editing');
-                    setTimeout(confirmRemap, 4000); 
+                    setTimeout(confirmRemap, 4000);
                 }
             }
         });
     };
 
-    /* 
+    /*
      * A helper function to construct the URL parameters for location and difficulty
      * if it is for a challenge, we need the difficulty as well as the location.
      */
@@ -258,9 +259,9 @@ var MRManager = (function () {
         var lines = ['Welcome to MapRoulette!'];
         if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('<em>Please log in to get started.</em>','(You will be logging in via OpenStreetMap.)');
         else lines.push('You are logged in as ' + this.loggedIn);
-        
+
         notify.play(lines, opts);
- 
+
         // map GeoJSON layer
         taskLayer = new L.geoJson(null, {
             onEachFeature   : function (feature, layer) {
@@ -290,6 +291,7 @@ var MRManager = (function () {
         };
     };
 
+  
     /*
      * get a random challenge with optional near and difficulty paramters
      */
@@ -307,10 +309,11 @@ var MRManager = (function () {
         {
             url     : url,
             async   : false,
-            success : function (data) { 
+            success : function (data) {
                 console.log(data.length + ' challenges returned');
+                challenges = data;
                 // select a random challenge
-                challenge = data[Math.floor(Math.random() * data.length)]; 
+                challenge = data[Math.floor(Math.random() * data.length)];
                 console.log(challenge);
             },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
@@ -387,7 +390,7 @@ var MRManager = (function () {
             },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
-        
+
 
     }
 
@@ -489,11 +492,11 @@ var MRManager = (function () {
 
     var presentDoneDialog = function() {
         var d = challenge.done_dlg;
-        
+
         // if there is no done dialog info, bail
         // FIXME we should be reverting to a default
         if (typeof d === 'undefined') { return false };
-        
+
         var dialogHTML = '<div class=\'text\'>' + d.text + '</div>';
 
         if (typeof d.buttons === 'string' && d.buttons.length > 0) {
@@ -505,6 +508,26 @@ var MRManager = (function () {
             dialogHTML += MRButtons.makeButtons();
         }
         $('.donedialog').html(dialogHTML).fadeIn();
+    }
+
+    var presentChallengeSelectionDialog = function(){
+      var challengeSelectionHTML = "";
+      $('.donedialog').fadeOut();
+      for (c in challenges) {
+        cHTML = "<div>" + \
+                 "<div onclick='MRManager.userPickChallenge(" + c.slug ")>" + \
+                 c.title + "</div> - " + c.blurb + "<hr /></div>"
+        challengeSelectionHTML += cHTML;
+      }
+      $('.donedialog').html(challengeSelectionHTML).fadeIn();
+    }
+  
+    var presentWelcomeDialog = function() {
+      var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + \
+        "<p>Please <a href="/login">login</a> to OpenStreetMap</p>" + \
+        "<p>Challenge: " + challenge.title + "<div onclick='MRManager.presentChallengeSelectionDialog()'>change</div></p>" + \
+        "<p>Need <div onclick="MRManager.presentHelpDialog()">help?</div>"
+      $('.donedialog').html(welcomeHTML).fadeIn();
     }
 
     var geolocateUser = function () {
@@ -528,8 +551,11 @@ var MRManager = (function () {
         presentDoneDialog();
     };
 
-    var userPickChallenge = function () {
-        console.log('user picking challenge');
+    var userPickChallenge = function (challenge) {
+        $('.donedialog').fadeOut();
+        console.log('user picking challenge')
+        challenge = challenge;
+        getChallengeDetails();
     }
 
     var userPreferences = function () {
@@ -540,7 +566,7 @@ var MRManager = (function () {
         init                : init,
         nextTask            : nextTask,
         openTaskInEditor    : openTaskInEditor,
-        geolocateUser       : geolocateUser, 
+        geolocateUser       : geolocateUser,
         userPreferences     : userPreferences,
         userPickChallenge   : userPickChallenge
     };
