@@ -533,23 +533,19 @@ var MRManager = (function () {
         var challengeSelectionHTML = "";
         $('.donedialog').fadeOut();
         for (c in challenges) {
-            cHTML = "<div>" + \
-                 "<div onclick='MRManager.userPickChallenge(" + c.slug
-            ")>" + \
-                 c.title + "</div> - " + c.blurb + "<hr /></div>"
+            cHTML = "<div><div onclick='MRManager.userPickChallenge(" + c.slug  + ")>" + c.title + "</div> - " + c.blurb + "<hr /></div>"
             challengeSelectionHTML += cHTML;
         }
         $('.donedialog').html(challengeSelectionHTML).fadeIn();
     };
   
     var presentWelcomeDialog = function () {
-        var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + \
-        "<p>Please <a href=" / login
-        ">login</a> to OpenStreetMap</p>" + \
-        "<p>Challenge: " + challenge.title + "<div onclick='MRManager.presentChallengeSelectionDialog()'>change</div></p>" + \
-        "<p>Need <div onclick="
-        MRManager.presentHelpDialog()
-        ">help?</div>"
+        var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + 
+        "<p>Please <a href=\"/login\">login</a> to OpenStreetMap</p>" + 
+        "<p>Challenge: " + challenge.title + "<div onclick='MRManager.presentChallengeSelectionDialog()'>change</div></p>" + 
+        "<p>Need <div onclick=" + 
+        MRManager.presentHelpDialog() + 
+        ">help?</div>";
         $('.donedialog').html(welcomeHTML).fadeIn();
     };
 
