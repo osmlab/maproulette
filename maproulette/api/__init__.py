@@ -264,20 +264,20 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return task.geometries
 
 # Add all resources to the RESTful API
-api.add_resource(ApiChallengeList, '/api/challenges')
-api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
-api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
-api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
-api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
+api.add_resource(ApiChallengeList, '/api/challenges/')
+api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>/')
+api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon/')
+api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats/')
+api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task/')
 api.add_resource(
     ApiChallengeTaskDetails,
-    '/api/challenge/<slug>/task/<identifier>')
+    '/api/challenge/<slug>/task/<identifier>/')
 api.add_resource(
     ApiChallengeTaskGeometries,
-    '/api/challenge/<slug>/task/<identifier>/geometries')
+    '/api/challenge/<slug>/task/<identifier>/geometries/')
 api.add_resource(
     ApiChallengeTaskStatus,
-    '/api/challenge/<slug>/task/<identifier>/status')
+    '/api/challenge/<slug>/task/<identifier>/status/')
 
 ################################
 # The Admin API ################
@@ -384,6 +384,6 @@ class AdminApiUpdateTask(ProtectedResource):
         db.session.add(task)
         db.session.commit()
 
-api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>')
-api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks')
-api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>')
+api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>/')
+api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks/')
+api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>/')
