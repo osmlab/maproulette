@@ -198,15 +198,15 @@ class ApiChallengeTask(ProtectedResource):
             coordWKT = 'POINT(%s %s)' % (lat, lon)
             task = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).first()
-        if not task:  # we did not get a lon/lat or there was no task close to there
+        if task is None:  # we did not get a lon/lat or there was no task close to there
             # If no location is specified, or no tasks were found, gather
             # random tasks
             task = get_random_task(challenge)
             # If no tasks are found with this method, then this challenge
             # is complete
-        if not task:
+        if task is None:
             # Is this the right error?
-            osmerror("ChallengeComplete",
+            return osmerror("ChallengeComplete",
                      "Challenge {} is complete".format(slug))
         if assign:
             task.append_action(Action("assigned", osmid))
@@ -344,13 +344,14 @@ class AdminApiUpdateTask(ProtectedResource):
                 abort(400)
         else:
             # extract the geometries
-            geometries = json.dumps(taskdata.pop('geometries'))
+            geometries = taskdata.pop('geometries')
             app.logger.debug("geometries: %s" % (geometries,))
+            app.logger.debug("features: %s" % (geometries['features'],))
 
             # parse the geometries
-            for k,v in geometries['features'].iteritems():
-                app.logger.debug(k,v)
-                osmid = feature.properties['osmid']
+            for feature in geometries['features']:
+                app.logger.debug(feature)
+                osmid = feature['properties'].get('osmid')
                 shape = asShape(feature['geometry'])
                 t = TaskGeometry(osmid, shape)
                 task_geometries.append(t)
@@ -384,6 +385,6 @@ class AdminApiUpdateTask(ProtectedResource):
         db.session.add(task)
         db.session.commit()
 
-api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>/')
-api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks/')
-api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>/')
+api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>')
+api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks')
+api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>')
