@@ -20,6 +20,8 @@ On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04 and 13.10):
 
 Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as part of their packages, see [here](http://trac.osgeo.org/postgis/wiki/UsersWikiInstall) for guidance.
 
+If you want to install the latest PostgreSQL and PostGIS from packages for a non-LTS version of Ubuntu, [this](http://askubuntu.com/a/289388/23679) may help.
+
 ### OSX
 
 [See installation with Homebrew](https://gist.github.com/mvexel/5526126)
