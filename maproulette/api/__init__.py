@@ -84,7 +84,7 @@ def output_json(data, code, headers=None):
     return resp
     
 class ApiChallengeList(ProtectedResource):
-    """Challenges endpoint"""
+    """Challenge list endpoint"""
 
     @marshal_with(challenge_summary)
     def get(self):
@@ -93,7 +93,7 @@ class ApiChallengeList(ProtectedResource):
         difficulty: the desired difficulty to filter on (1=easy, 2=medium, 3=hard)
         lon/lat: the coordinate to filter on (returns only
         challenges whose bounding polygons contain this point)
-        example: /api/c/challenges?lon=-100.22&lat=40.45&difficulty=2
+        example: /api/challenges?lon=-100.22&lat=40.45&difficulty=2
         all: if true, return all challenges regardless of OSM user home location
         """
         # initialize the parser
@@ -264,20 +264,20 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return task.geometries
 
 # Add all resources to the RESTful API
-api.add_resource(ApiChallengeList, '/api/challenges')
-api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
-api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
-api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
-api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
+api.add_resource(ApiChallengeList, '/api/challenges/')
+api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>/')
+api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon/')
+api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats/')
+api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task/')
 api.add_resource(
     ApiChallengeTaskDetails,
-    '/api/challenge/<slug>/task/<identifier>')
+    '/api/challenge/<slug>/task/<identifier>/')
 api.add_resource(
     ApiChallengeTaskGeometries,
-    '/api/challenge/<slug>/task/<identifier>/geometries')
+    '/api/challenge/<slug>/task/<identifier>/geometries/')
 api.add_resource(
     ApiChallengeTaskStatus,
-    '/api/challenge/<slug>/task/<identifier>/status')
+    '/api/challenge/<slug>/task/<identifier>/status/')
 
 ################################
 # The Admin API ################
@@ -288,7 +288,7 @@ class AdminApiChallengeCreate(ProtectedResource):
     def put(self, slug):
         if challenge_exists(slug):
             app.logger.debug('challenge exists')
-            abort(400)
+            abort(403)
         try:
             payload = json.loads(request.data)
         except Exception, e:
@@ -336,20 +336,25 @@ class AdminApiUpdateTask(ProtectedResource):
 
         exists = task_exists(slug, identifier)
 
+        app.logger.debug("taskdata: %s" % (taskdata,))
+
         # abort if the taskdata does not contain geometries and it's a new task
         if not 'geometries' in taskdata:
             if not exists:
                 abort(400)
         else:
             # extract the geometries
-            geometries = geojson.loads(json.dumps(taskdata.pop('geometries')))
+            geometries = json.dumps(taskdata.pop('geometries'))
+            app.logger.debug("geometries: %s" % (geometries,))
 
             # parse the geometries
-            for feature in geometries['features']:
+            for k,v in geometries['features'].iteritems():
+                app.logger.debug(k,v)
                 osmid = feature.properties['osmid']
                 shape = asShape(feature['geometry'])
                 t = TaskGeometry(osmid, shape)
                 task_geometries.append(t)
+
 
         # there's two possible scenarios:
         # 1.    An existing task gets an update, in that case
@@ -379,6 +384,6 @@ class AdminApiUpdateTask(ProtectedResource):
         db.session.add(task)
         db.session.commit()
 
-api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>')
-api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks')
-api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>')
+api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>/')
+api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks/')
+api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>/')
