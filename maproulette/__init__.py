@@ -19,7 +19,7 @@ from maproulette import config
 # Look at config/__init__.py for configuration classes
 
 app.config.from_object(config.DevelopmentConfig)
-# app.config.from_object(config.TestConfig)
+#app.config.from_object(config.TestConfig)
 #app.config.from_object(config.ProductionConfig)
 
 from maproulette import models, views, oauth, api
