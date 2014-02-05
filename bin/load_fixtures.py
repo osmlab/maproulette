@@ -66,8 +66,7 @@ for i in range(NUM_CHALLENGES):
     miny = 20
     maxy = 50
     challengepoly = None
-    challenge = Challenge('test%i' % (i + 1))
-    challenge.title = 'Test Challenge %i' % (i + 1)
+    challenge = Challenge('test%i' % (i + 1), 'Test Challenge %i' % (i + 1))
     challenge.difficulty = random.choice([1, 2, 3])
     challenge.active = True
     challenge.blurb = 'This is test challenge number %i' % (i + 1, )
