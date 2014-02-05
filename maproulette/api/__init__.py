@@ -43,6 +43,11 @@ task_fields = {
     'location': PointField
 }
 
+me_fields {
+    'username': fields.String(attribute='display_name'),
+    'osm_id': fields.String()
+    }
+
 action_fields = {
     'task': fields.String(attribute='task_id'),
     'timestamp': fields.DateTime,
@@ -143,6 +148,15 @@ class ApiChallengeDetail(ProtectedResource):
         challenge = get_challenge_or_404(slug, True)
         return marshal(challenge, challenge.marshal_fields)
 
+class ApiSelfInfo(ProtectedResource):
+    """Information about the currently logged in user"""
+
+    def get(self):
+        """Return information about the logged in user"""
+        if session.osm_auth:
+            return marshal(session, me_fields)
+        else:
+            return json.dumps({'username': None, 'osm_id': None})
 
 class ApiChallengePolygon(ProtectedResource):
     """Challenge geometry endpoint"""
@@ -269,6 +283,7 @@ api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>/')
 api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon/')
 api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats/')
 api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task/')
+api.add_resource(ApiSelfInfo, '/api/me')
 api.add_resource(
     ApiChallengeTaskDetails,
     '/api/challenge/<slug>/task/<identifier>/')
