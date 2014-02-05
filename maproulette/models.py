@@ -94,7 +94,7 @@ class Challenge(db.Model):
     geom = db.Column(
         Geometry('POLYGON'))
     help = db.Column(
-        db.String, 
+        db.String,
         default="")
     instruction = db.Column(
         db.String,
@@ -107,21 +107,21 @@ class Challenge(db.Model):
         nullable=False,
         default=1)
     type = db.Column(
-        db.String, 
-        default='default', 
+        db.String,
+        default='default',
         nullable=False)
 
     # note that spatial indexes seem to be created automagically
 
-    def __init__(self, 
+    def __init__(self,
                  slug,
                  title,
-                 geometry=None, 
-                 description=None, 
-                 blurb=None, 
-                 help=None, 
-                 instruction=None, 
-                 active=None, 
+                 geometry=None,
+                 description=None,
+                 blurb=None,
+                 help=None,
+                 instruction=None,
+                 active=None,
                  difficulty=None):
         if geometry is None:
             geometry = world_polygon
@@ -129,7 +129,7 @@ class Challenge(db.Model):
             active = False
         self.slug = slug
         self.title = title
-        self.geometry = from_shape(geometry) 
+        self.geometry = from_shape(geometry)
         self.description = description
         self.blurb = blurb
         self.help = help
@@ -178,7 +178,7 @@ class Challenge(db.Model):
             return False
         # otherwise get the area and compare against local threshold
         area = db.session.query(self.geom.ST_Area()).one()[0]
-        return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])        
+        return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])
 
 
 class Task(db.Model):
@@ -256,13 +256,13 @@ class Task(db.Model):
 
     @hybrid_property
     def location(self):
-        """Returns the location for this task as a Shapely geometry. 
+        """Returns the location for this task as a Shapely geometry.
         This is meant to give the client a quick hint about where the
         task is located without having to transfer and decode the entire
         task geometry. In reality what we do is transmit the first
         geometry we find for the task. This is then parsed into a single
         representative lon/lat in the API by getting the first coordinate
-        of the geometry retrieved here. See also the PointField class in 
+        of the geometry retrieved here. See also the PointField class in
         the API code."""
 
         g = self.geometries[0].geom
@@ -292,7 +292,7 @@ class Task(db.Model):
                 return False
             setattr(self, k, v)
 
-        # 
+        #
         self.geometries = []
 
         for geometry in geometries:
@@ -315,13 +315,12 @@ class TaskGeometry(db.Model):
 
     __tablename__ = 'task_geometries'
     id = db.Column(
-        db.Integer, 
-        nullable=False, 
+        db.Integer,
+        nullable=False,
         unique=True,
         primary_key=True)
     osmid = db.Column(
-        db.BigInteger,
-        nullable=False)
+        db.BigInteger)
     task_id = db.Column(
         db.Integer,
         db.ForeignKey('tasks.id'),
