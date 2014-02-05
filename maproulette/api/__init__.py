@@ -46,7 +46,7 @@ task_fields = {
 me_fields = {
     'username': fields.String(attribute='display_name'),
     'osm_id': fields.String()
-    }
+}
 
 action_fields = {
     'task': fields.String(attribute='task_id'),
