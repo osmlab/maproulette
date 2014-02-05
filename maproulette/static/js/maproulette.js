@@ -481,13 +481,14 @@ var MRManager = (function () {
         $('.donedialog').delay(1000).fadeOut();
         // update the outgoing task
         updateTask(action);
-        // get the next task
-        getTask();
-        // and draw it
-        drawTask();
-        // update challenge stats
-        getChallengeStats()
+        getAndShowTask();
     };
+
+    var getAndShowTask = function() {
+      getTask();
+      drawTask();
+      getChallengeStats();
+    }
 
     var openTaskInEditor = function (editor) {
         if (map.getZoom() < MRConfig.minZoomLevelForEditing){
@@ -539,15 +540,15 @@ var MRManager = (function () {
         $('.donedialog').html(challengeSelectionHTML).fadeIn();
     };
   
-    var presentWelcomeDialog = function () {
-        var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + 
-        "<p>Please <a href=\"/login\">login</a> to OpenStreetMap</p>" + 
-        "<p>Challenge: " + challenge.title + "<div onclick='MRManager.presentChallengeSelectionDialog()'>change</div></p>" + 
-        "<p>Need <div onclick=" + 
-        MRManager.presentHelpDialog() + 
-        ">help?</div>";
-        $('.donedialog').html(welcomeHTML).fadeIn();
-    };
+    var presentWelcomeDialog = function() {
+      var OKButton = "<div class='button' onclick='MRManager.getAndShowTask()'>Let's Start!</div>"
+      var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + \
+        "<p>Please <a href="/login">login</a> to OpenStreetMap</p>" + \
+        "<p>Challenge: " + challenge.title + "<div onclick='MRManager.presentChallengeSelectionDialog()'>change</div></p>" + \
+        "<p>Need <div onclick="MRManager.presentHelpDialog()">help?</div>" +\
+        OKButton;
+      $('.donedialog').html(welcomeHTML).fadeIn();
+    }
 
     var geolocateUser = function () {
         // Locate the user and define the event triggers
@@ -584,6 +585,7 @@ var MRManager = (function () {
     return {
         init                : init,
         nextTask            : nextTask,
+        getAndShowTask      : getAndShowTask,
         openTaskInEditor    : openTaskInEditor,
         geolocateUser       : geolocateUser,
         userPreferences     : userPreferences,
