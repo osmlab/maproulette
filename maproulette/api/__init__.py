@@ -82,7 +82,11 @@ def output_json(data, code, headers=None):
     # finish and return the response object
     resp.headers.extend(headers or {})
     return resp
-    
+
+class ApiPing(Resource):
+    """a simple ping endpoint"""
+    return "I am alive"
+
 class ApiChallengeList(ProtectedResource):
     """Challenge list endpoint"""
 
@@ -264,6 +268,7 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return task.geometries
 
 # Add all resources to the RESTful API
+api.add_resource(ApiPing, '/api/ping/')
 api.add_resource(ApiChallengeList, '/api/challenges/')
 api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>/')
 api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon/')
