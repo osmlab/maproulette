@@ -262,7 +262,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
                                    args.editor))
         db.session.add(task)
         db.session.commit()
-        return {'message': 'OK'}
+        return {}
 
 
 class ApiChallengeTaskStatus(ProtectedResource):
@@ -396,7 +396,7 @@ class AdminApiUpdateTask(ProtectedResource):
             app.logger.debug('new task')
             new_task = Task(slug, identifier)
             new_task.update(taskdata, task_geometries)
-        return {"message": "ok"}
+        return {}
 
     def delete(self, slug, identifier):
         """Delete a task"""
