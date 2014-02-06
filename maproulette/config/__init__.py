@@ -24,7 +24,6 @@ class Config(object):
     # registered at http://api06.dev.openstreetmap.org/api/0.6/
     # This cannot be used in production.
     OSM = {
-        'base_url': 'http://api06.dev.openstreetmap.org/api/0.6/',
         'request_token_url':
         'http://api06.dev.openstreetmap.org/oauth/request_token',
         'access_token_url':
@@ -39,7 +38,6 @@ class ProductionConfig(Config):
     """Production configuration class"""
     SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette"
     OSM = {
-        'base_url': 'http://www.openstreetmap.org/api/0.6/',
         'request_token_url':
         'http://www.openstreetmap.org/oauth/request_token',
         'access_token_url': 'http://www.openstreetmap.org/oauth/access_token',
