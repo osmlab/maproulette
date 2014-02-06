@@ -332,8 +332,12 @@ var MRManager = (function () {
         if (!challenge) {
             // if we got no challenges, there is something wrong.
             console.log('no challenges returned');
-            notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.');
-            selectChallenge(true);
+            if (!all) {
+                notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.');
+                selectChallenge(true);
+            } else {
+                notify.play('There are currently no active MapRoulette challenges... Come back some other time!')
+            }
         }
     };
 
