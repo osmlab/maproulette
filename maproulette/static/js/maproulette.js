@@ -232,7 +232,7 @@ var MRManager = (function () {
             url     : josmUri,
             success : function (t) {
                 if (t.indexOf('OK') === -1) {
-                    notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
+                    notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?', {type: 'error'});
                 } else {
                     console.log('the data was loaded in JOSM, now waiting for callback');
                     updateTask('editing');
@@ -265,7 +265,7 @@ var MRManager = (function () {
     var init = function (identifier) {
 
         // a friendly welcome
-        var opts = {timeout: false};
+        var opts = {timeout: 5000, type: 'information'};
         if (!this.loggedIn) opts.callback = {afterClose: function(){location.href=$('#loginlink').attr('href')}};
         var lines = ['Welcome to MapRoulette!'];
         if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('<em>Please log in to get started.</em>','(You will be logging in via OpenStreetMap.)');
@@ -333,10 +333,10 @@ var MRManager = (function () {
             // if we got no challenges, there is something wrong.
             console.log('no challenges returned');
             if (!all) {
-                notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.');
+                notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {type: 'warning'});
                 selectChallenge(true);
             } else {
-                notify.play('There are currently no active MapRoulette challenges... Come back some other time!')
+                notify.play('There are currently no active MapRoulette challenges... Come back some other time!', {type: 'error'})
             }
         }
     };
@@ -461,7 +461,7 @@ var MRManager = (function () {
         // fit the map snugly to the task features
         map.fitBounds(taskLayer.getBounds().pad(0.2));
         // show the task text as a notification
-        notify.play(task.instruction);
+        notify.play(task.instruction, {timeout: false, killer: true});
         // let the user know where we are
         displayAdminArea();
         return true;
@@ -496,7 +496,7 @@ var MRManager = (function () {
 
     var openTaskInEditor = function (editor) {
         if (map.getZoom() < MRConfig.minZoomLevelForEditing){
-            notify.play(MRConfig.strings.msgZoomInForEdit);
+            notify.play(MRConfig.strings.msgZoomInForEdit, {type: 'warning'});
             return false;
         }
         console.log('opening in ' + editor);
