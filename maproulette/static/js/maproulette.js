@@ -360,7 +360,7 @@ var MRManager = (function () {
                  });
                  // update the challenge detail UI elements
                  $('#challenge_title').text(challenge.title);
-                 $('#challenge_description').text(challenge.description);
+                 $('#challenge_blurb').text(challenge.blurb);
                  // and move on to get the stats
                  getChallengeStats()
              },

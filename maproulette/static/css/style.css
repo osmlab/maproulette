@@ -85,8 +85,8 @@ div#challenge_title {
     padding: 3px;
 }
 
-/* the description for the challenge */
-div#challenge_description {
+/* the blurb for the challenge */
+div#challenge_blurb {
     font-style: italic;
     font-size: smaller;
 }
