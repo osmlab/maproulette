@@ -162,8 +162,8 @@ var MRHelpers = (function () {
 }());
 
 var MRConfig = (function () {
-    // the UI strings
     return {
+        // the UI strings
         strings:  {
             msgNextChallenge: 'Faites vos jeux...',
             msgMovingOnToNextChallenge: 'OK, moving right along...',
@@ -190,7 +190,7 @@ var MRConfig = (function () {
 var MRManager = (function () {
     var map;
     var challenges;
-    var challenge;
+    var challenge = $.cookie('challenge')
     var task;
     var editor;
     var near = (Q.lon && Q.lat) ? { 'lon': parseFloat(Q.lon), 'lat': parseFloat(Q.lat) } : {};
@@ -306,7 +306,7 @@ var MRManager = (function () {
     /*
      * get a random challenge with optional near and difficulty paramters
      */
-    var selectChallenge = function (all) {
+    var selectRandomChallenge = function (all) {
 
         console.log('selecting a challenge');
         var url = '/api/challenges' + constructUrlParameters();
@@ -326,15 +326,16 @@ var MRManager = (function () {
                 // select a random challenge
                 challenge = data[Math.floor(Math.random() * data.length)];
                 console.log(challenge);
+                $.cookie('challenge', challenge)
             },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
-        if (!challenge) {
+        if (!challenge || typeof(challenge) === 'undefined') {
             // if we got no challenges, there is something wrong.
             console.log('no challenges returned');
             if (!all) {
                 notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {type: 'warning'});
-                selectChallenge(true);
+                selectRandomChallenge(true);
             } else {
                 notify.play('There are currently no active MapRoulette challenges... Come back some other time!', {type: 'error'})
             }
@@ -347,7 +348,7 @@ var MRManager = (function () {
      var getChallengeDetails = function () {
          // check if we have a challenge, if not get one.
          if (typeof challenge === 'undefined') {
-             selectChallenge();
+             selectRandomChallenge();
          }
          // request the challenge details
          console.log('getting challenge details');
@@ -420,7 +421,7 @@ var MRManager = (function () {
 
         // check if we have a challenge, if not get one.
         if (typeof challenge === 'undefined') {
-            selectChallenge();
+            selectRandomChallenge();
         }
         console.log('challenge got: ' + challenge);
         // get a task
