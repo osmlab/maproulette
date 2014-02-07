@@ -140,7 +140,6 @@ class ApiChallengeList(ProtectedResource):
             query = query.filter(Challenge.polygon.ST_Contains(contains))
 
         challenges = query.all()
-        app.logger.debug(get_debug_queries())
 
         return challenges
 
@@ -284,11 +283,11 @@ class ApiChallengeTaskGeometries(ProtectedResource):
 
 # Add all resources to the RESTful API
 api.add_resource(ApiPing, '/api/ping')
-api.add_resource(ApiChallengeList, '/api/challenges/')
-api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>/')
-api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon/')
-api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats/')
-api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task/')
+api.add_resource(ApiChallengeList, '/api/challenges')
+api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
+api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
+api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
+api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
 api.add_resource(ApiSelfInfo, '/api/me')
 api.add_resource(
     ApiChallengeTaskDetails,
@@ -304,7 +303,7 @@ api.add_resource(
 # The Admin API ################
 ################################
 
-class AdminApiChallengeCreate(ProtectedResource):
+class AdminApiChallenge(ProtectedResource):
     """Admin challenge creation endpoint"""
     def put(self, slug):
         if challenge_exists(slug):
@@ -330,6 +329,13 @@ class AdminApiChallengeCreate(ProtectedResource):
             payload.get('difficulty'))
         db.session.add(c)
         db.session.commit()
+
+    def delete(self, slug):
+        """delete a challenge"""
+        challenge = get_challenge_or_404(slug)
+        db.session.delete(challenge)
+        db.session.commit()
+        
 
 class AdminApiTaskStatuses(ProtectedResource):
     """Admin Task status endpoint"""
@@ -406,6 +412,6 @@ class AdminApiUpdateTask(ProtectedResource):
         db.session.add(task)
         db.session.commit()
 
-api.add_resource(AdminApiChallengeCreate, '/api/admin/challenge/<string:slug>')
+api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
 api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks')
 api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>')
