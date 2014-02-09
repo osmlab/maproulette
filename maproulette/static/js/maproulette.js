@@ -122,6 +122,7 @@ var MRHelpers = (function () {
     };
 
     var mqResultToString = function (addr) {
+        // Convert a MapQuest reverse geocoding result to a human readable string.
         var out, county, town;
         if (!addr || !(addr.town || addr.county || addr.hamlet || addr.state || addr.country)) {
             return 'We are somewhere on earth..'
@@ -259,12 +260,21 @@ var MRManager = (function () {
     /*
      * This function initializes the leaflet map, gets the user location, and loads the first task.
      * A challenge is selected based on the user location, the URL parameter, or on the server side using the stored OSM home location.
-     * identifier is the div id on the page
+     * elem is the div id on the page
      */
-    var init = function (identifier) {
+    var init = function (elem) {
+
+        // check if the map element exists. 
+        if (!document.getElementById(elem)) return false;
 
 
-        // map GeoJSON layer
+        // initialize the map
+        map = new L.Map(elem, MRConfig.mapOptions);
+
+        // and the tile layer
+        var tileLayer = new L.TileLayer(MRConfig.tileUrl, { attribution: MRConfig.tileAttrib });
+
+        // and the GeoJSON layer
         taskLayer = new L.geoJson(null, {
             onEachFeature   : function (feature, layer) {
                 if(feature.properties && feature.properties.text) {
@@ -274,30 +284,47 @@ var MRManager = (function () {
             }
         });
 
-        // initialize the map
-        map = new L.Map(identifier, MRConfig.mapOptions);
-
-        // and the tile layer
-        var tileLayer = new L.TileLayer(MRConfig.tileUrl, { attribution: MRConfig.tileAttrib });
-
         // Add both the tile layer and the task layer to the map
         map.addLayer(tileLayer);
         map.addLayer(taskLayer);
 
         if (this.loggedIn) {
+
+            // check if the user hand picked a challenge
+            if (Q.challenge && challengeExists(Q.challenge)) {
+                challenge.slug = Q.challenge;
+                $.cookie('challenge', challenge.slug)
+            }
             // now load a task (this will select a challenge first)
             nextTask();
 
             // and request the challenge details and stats (slow)
             selectChallenge();
+        } else {
+
+            // a friendly welcome
+            presentWelcomeDialog();
         }
-      else {
-        // a friendly welcome
-        presentWelcomeDialog();
-      }
     };
 
-  
+    /* 
+     * check if a challenge exists
+     */
+    var challengeExists = function(slug) {
+        var status;
+        var url = '/api/challenge/' + slug
+        $.ajax(
+        {
+            url     : url,
+            async   : false,
+            complete: function(xhr, textStatus) {
+                status = xhr.status;
+            }
+        });
+        return status === 200;
+    }
+
+
     /*
      * get a random challenge with optional near and difficulty paramters
      */
@@ -323,7 +350,7 @@ var MRManager = (function () {
                 console.log('picking ' + ran_challenge);
                 challenge = data[ran_challenge];
                 console.log("selecting challenge " + challenge.slug);
-                $.cookie('challenge_slug', challenge.slug);
+                $.cookie('challenge', challenge.slug);
             },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
@@ -344,7 +371,7 @@ var MRManager = (function () {
      */
      var selectChallenge = function () {
          // check if the user has worked on a challenge previously
-         slug = $.cookie('challenge_slug');
+         slug = $.cookie('challenge');
          // if not, get a random challenge.
          if (!slug) selectRandomChallenge();
          else {
@@ -357,7 +384,7 @@ var MRManager = (function () {
                  success: function (data) {
                     console.log('setting cookie to ' + slug);
                     // set the challenge cookie
-                    $.cookie('challenge_slug', slug);
+                    $.cookie('challenge', slug);
                     challenge.slug = slug;
                     $.each(data, function (key, value) {
                         challenge[key] = value;
@@ -581,7 +608,7 @@ var MRManager = (function () {
         $('.donedialog').fadeOut();
         console.log('user picking challenge')
         challenge = challenge;
-        if (!typeof(challenge) === 'undefined') $.cookie('challenge_slug', challenge.slug);
+        if (!typeof(challenge) === 'undefined') $.cookie('challenge', challenge.slug);
         selectChallenge();
     };
 
