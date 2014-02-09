@@ -303,6 +303,7 @@ var MRManager = (function () {
         } else {
 
             // a friendly welcome
+            $('.controlpanrl').fadeOut();
             presentWelcomeDialog();
         }
     };
@@ -576,8 +577,9 @@ var MRManager = (function () {
     var presentWelcomeDialog = function() {
       var OKButton = "<div class='button' onclick='location.reload();location.href='/login'>Log in</div>"
       var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" 
-        + "<p>You need to be logged into OpenStreetMap to play MapRoulette<p>"
+        + "<p>Log into OpenStreetMap to play MapRoulette<p>"
         + OKButton;
+
       $('.donedialog').html(welcomeHTML).fadeIn();
     }
 
