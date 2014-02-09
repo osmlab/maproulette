@@ -289,13 +289,13 @@ var MRManager = (function () {
         map.addLayer(taskLayer);
 
         if (this.loggedIn) {
-
+            $('.controlpanel').fadeOut();
             // check if the user hand picked a challenge
             if (Q.challenge && challengeExists(Q.challenge)) {
                 challenge.slug = Q.challenge;
                 $.cookie('challenge', challenge.slug)
             }
-            // now load a task (this will select a challenge first)
+            // now loaad a task (this will select a challenge first)
             nextTask();
 
             // and request the challenge details and stats (slow)
@@ -583,6 +583,25 @@ var MRManager = (function () {
       $('.donedialog').html(welcomeHTML).fadeIn();
     }
 
+    var presentChallengeDialog = function(){
+      var OKButton = "<div class='button' onclick='readyToEdit()'>Let's go!<div>";
+      var helpButton = "<div class='button' onclick='challengeHelp()'>More help</div>";
+      var changeChallengeButton = "<div class='button' onclick='presentChallengeSelectionDialog()'>Change Challenge</div>";
+      var dialogHTML = "<h1>MapRoulette</h1>" +
+        "<h2>" + challenge.title "</h2>" + 
+        "<p>" + challenge.description + "</p>" + 
+        OKButton + 
+        helpButton + 
+        changeChallengeButton;
+      $('.donedialog').html(dialogHTML).fadeIn();
+    }
+
+  var readyToEdit = function() {
+   $('.donedialog').fadeOut();
+   $('.controlpanel').fadeIn();
+   getTask();
+  }
+
     var geolocateUser = function () {
         // Locate the user and define the event triggers
         map.locate({ setView: false, timeout: 10000, maximumAge: 0 });
@@ -623,7 +642,8 @@ var MRManager = (function () {
         openTaskInEditor    : openTaskInEditor,
         geolocateUser       : geolocateUser,
         userPreferences     : userPreferences,
-        userPickChallenge   : userPickChallenge
+        userPickChallenge   : userPickChallenge,
+        readyToEdit         : readyToEdit
     };
 }());
 
