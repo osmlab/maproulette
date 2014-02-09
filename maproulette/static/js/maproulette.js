@@ -568,20 +568,20 @@ var MRManager = (function () {
         var challengeSelectionHTML = "";
         $('.donedialog').fadeOut();
         for (c in challenges) {
-            cHTML = "<div><div onclick='MRManager.userPickChallenge(" + c.slug  + ")>" + c.title + "</div> - " + c.blurb + "<hr /></div>"
+            cHTML = "<div><div onclick='MRManager.userPickChallenge(" + c.slug  + ")>" + c.title + "</div> - " + c.blurb + "<hr /></div>";
             challengeSelectionHTML += cHTML;
-        }
+        };
         $('.donedialog').html(challengeSelectionHTML).fadeIn();
     };
   
     var presentWelcomeDialog = function() {
-      var OKButton = "<div class='button' onclick='location.reload();location.href='/login'>Log in</div>"
-      var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" 
-        + "<p>Log into OpenStreetMap to play MapRoulette<p>"
-        + OKButton;
+        var OKButton = '<div class=\'button\' onclick="location.reload();location.href=\'/login\'">Log in</div>';
+        var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" 
+                          + "<p>Log into OpenStreetMap to play MapRoulette<p>"
+                          + OKButton;
 
       $('.donedialog').html(welcomeHTML).fadeIn();
-    }
+    };
 
     var geolocateUser = function () {
         // Locate the user and define the event triggers
