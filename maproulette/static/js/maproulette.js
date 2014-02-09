@@ -574,11 +574,10 @@ var MRManager = (function () {
     };
   
     var presentWelcomeDialog = function() {
-      var OKButton = "<div class='button' onclick='MRManager.getAndShowTask()'>Let's Start!</div>"
+      var OKButton = "<div class='button' onclick='location.reload();location.href='/login'>Log in</div>"
       var welcomeHTML = "<h1>Welcome to MapRoulette</h1>"
-        + "<p>Please <a href=\"/login\">login</a> to OpenStreetMap</p>"
-        + "<p>Challenge: " + challenge.title + "<div onclick='MRManager.presentChallengeSelectionDialog()'>change</div></p>"
-        + "<p>Need <div onclick=\"MRManager.presentHelpDialog()\">help?</div>" 
+        + "<p>You need to be logged into OpenStreetMap to play MapRoulette<p>\"
+Please <a href=\"/login\">login</a> to OpenStreetMap</p>" \
         + OKButton;
       $('.donedialog').html(welcomeHTML).fadeIn();
     }
