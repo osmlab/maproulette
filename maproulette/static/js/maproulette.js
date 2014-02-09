@@ -189,8 +189,8 @@ var MRConfig = (function () {
 
 var MRManager = (function () {
     var map;
-    var challenges;
-    var challenge = $.cookie('challenge')
+    var challenges = [];
+    var challenge = {};
     var task;
     var editor;
     var near = (Q.lon && Q.lat) ? { 'lon': parseFloat(Q.lon), 'lat': parseFloat(Q.lat) } : {};
@@ -298,7 +298,7 @@ var MRManager = (function () {
             nextTask();
 
             // and request the challenge details and stats (slow)
-            getChallengeDetails();
+            selectChallenge();
         }
     };
 
@@ -308,7 +308,7 @@ var MRManager = (function () {
      */
     var selectRandomChallenge = function (all) {
 
-        console.log('selecting a challenge');
+        console.log('selecting a random challenge');
         var url = '/api/challenges' + constructUrlParameters();
 
         if (all) url += 'all=true';
@@ -324,9 +324,11 @@ var MRManager = (function () {
                 console.log(data.length + ' challenges returned');
                 challenges = data;
                 // select a random challenge
-                challenge = data[Math.floor(Math.random() * data.length)];
-                console.log(challenge);
-                $.cookie('challenge', challenge)
+                ran_challenge = Math.floor(Math.random() * data.length);
+                console.log('picking ' + ran_challenge);
+                challenge = data[ran_challenge];
+                console.log("selecting challenge " + challenge.slug);
+                $.cookie('challenge_slug', challenge.slug);
             },
             error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
@@ -343,32 +345,39 @@ var MRManager = (function () {
     };
 
     /*
-     * get the selected challenge
+     * get a named, or random challenge 
      */
-     var getChallengeDetails = function () {
-         // check if we have a challenge, if not get one.
-         if (typeof challenge === 'undefined') {
-             selectRandomChallenge();
-         }
-         // request the challenge details
-         console.log('getting challenge details');
-         url = '/api/challenge/' + challenge.slug;
-         $.ajax({
-             url: url,
-             success: function (data) {
-                 $.each(data, function (key, value) {
-                     challenge[key] = value;
-                 });
-                 // update the challenge detail UI elements
-                 $('#challenge_title').text(challenge.title);
-                 $('#challenge_blurb').text(challenge.blurb);
-                 // and move on to get the stats
-                 getChallengeStats()
-             },
-             error: function (jqXHR, textStatus, errorThrown) {
-                 console.log('ajax error');
-             }
-         });
+     var selectChallenge = function () {
+         // check if the user has worked on a challenge previously
+         slug = $.cookie('challenge_slug');
+         // if not, get a random challenge.
+         if (!slug) selectRandomChallenge();
+         else {
+             // otherwise get the one passed in
+             console.log('getting challenge details for ' + slug);
+             url = '/api/challenge/' + slug;
+             $.ajax({
+                 url: url,
+                 async: false, 
+                 success: function (data) {
+                    console.log('setting cookie to ' + slug);
+                    // set the challenge cookie
+                    $.cookie('challenge_slug', slug);
+                    challenge.slug = slug;
+                    $.each(data, function (key, value) {
+                        challenge[key] = value;
+                    });
+                    // update the challenge detail UI elements
+                    $('#challenge_title').text(challenge.title);
+                    $('#challenge_blurb').text(challenge.blurb);
+                    // and move on to get the stats
+                    getChallengeStats()
+                 },
+                 error: function (jqXHR, textStatus, errorThrown) {
+                     console.log('ajax error');
+                 }
+             });
+         };
      };
 
     var getChallengeStats = function () {
@@ -420,10 +429,7 @@ var MRManager = (function () {
     var getTask = function () {
 
         // check if we have a challenge, if not get one.
-        if (typeof challenge === 'undefined') {
-            selectRandomChallenge();
-        }
-        console.log('challenge got: ' + challenge);
+        selectChallenge();
         // get a task
         $.ajax({
             url     : '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(),
@@ -580,7 +586,8 @@ var MRManager = (function () {
         $('.donedialog').fadeOut();
         console.log('user picking challenge')
         challenge = challenge;
-        getChallengeDetails();
+        if (!typeof(challenge) === 'undefined') $.cookie('challenge_slug', challenge.slug);
+        selectChallenge();
     };
 
     var userPreferences = function () {
