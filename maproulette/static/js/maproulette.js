@@ -262,8 +262,7 @@ var MRManager = (function () {
      * identifier is the div id on the page
      */
     var init = function (identifier) {
-        // a friendly welcome
-        presentWelcomeDialog();
+
 
         // map GeoJSON layer
         taskLayer = new L.geoJson(null, {
@@ -292,6 +291,10 @@ var MRManager = (function () {
             // and request the challenge details and stats (slow)
             getChallengeDetails();
         }
+      else {
+        // a friendly welcome
+        presentWelcomeDialog();
+      }
     };
 
   
