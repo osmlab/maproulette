@@ -598,7 +598,7 @@ var MRManager = (function () {
   var readyToEdit = function() {
    $('.donedialog').fadeOut();
    $('.controlpanel').fadeIn();
-   getTask();
+   getAndShowTask();
   }
 
     var geolocateUser = function () {
