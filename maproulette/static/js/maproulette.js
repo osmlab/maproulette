@@ -579,7 +579,6 @@ var MRManager = (function () {
         var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" 
                           + "<p>Log into OpenStreetMap to play MapRoulette<p>"
                           + OKButton;
-
       $('.donedialog').html(welcomeHTML).fadeIn();
     };
 
