@@ -303,7 +303,7 @@ var MRManager = (function () {
         } else {
 
             // a friendly welcome
-            $('.controlpanrl').fadeOut();
+            $('.controlpanel').fadeOut();
             presentWelcomeDialog();
         }
     };
