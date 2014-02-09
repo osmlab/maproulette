@@ -25,7 +25,6 @@ var Q = (function () {
 }());
 
 var MRNotifier = function () {
-
     // defaults for noty engine
     $.noty.defaults = {
         layout: 'top',
@@ -264,14 +263,6 @@ var MRManager = (function () {
      */
     var init = function (identifier) {
 
-        // a friendly welcome
-        var opts = {timeout: 5000, type: 'information'};
-        if (!this.loggedIn) opts.callback = {afterClose: function(){location.href=$('#loginlink').attr('href')}};
-        var lines = ['Welcome to MapRoulette!'];
-        if (typeof this.loggedIn === 'undefined' || this.loggedIn === false) lines.push('<em>Please log in to get started.</em>','(You will be logging in via OpenStreetMap.)');
-        else lines.push('You are logged in as ' + this.loggedIn);
-
-        notify.play(lines, opts);
 
         // map GeoJSON layer
         taskLayer = new L.geoJson(null, {
@@ -300,6 +291,10 @@ var MRManager = (function () {
             // and request the challenge details and stats (slow)
             selectChallenge();
         }
+      else {
+        // a friendly welcome
+        presentWelcomeDialog();
+      }
     };
 
   
