@@ -575,7 +575,7 @@ var MRManager = (function () {
     };
   
     var presentWelcomeDialog = function() {
-      var OKButton = "<div class='button' onclick='location.reload();location.href='/login'>Log in</div>"
+      var OKButton = "<div class='button' onclick='location.reload();location.href=\'/login\'>Log in</div>"
       var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" 
         + "<p>Log into OpenStreetMap to play MapRoulette<p>"
         + OKButton;
