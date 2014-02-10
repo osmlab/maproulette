@@ -34,6 +34,7 @@ class Config(object):
         'consumer_secret': 'BhXKPNGDJHBVhkPfwyP5VPIHSDpSQXe63vwaTJ5l'
     }
 
+    DEFAULT_CHALLENGE = 'test1'
 
 class ProductionConfig(Config):
     """Production configuration class"""
