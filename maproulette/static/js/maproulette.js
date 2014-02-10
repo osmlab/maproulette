@@ -541,7 +541,7 @@ var MRManager = (function () {
         $('.donedialog').fadeOut();
         var OKButton = "<div class='button' onclick='readyToEdit()'>OK</div>";
         var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
-            "<div>" + Markdown.makeHtml(challenge.help) + "</div>" + 
+            "<div>" + markdownConvert.makeHtml(challenge.help) + "</div>" + 
             OKButton;
         $('.donedialog').html(helpHTML).fadeIn();
     }
@@ -622,7 +622,6 @@ var MRManager = (function () {
 
 // initialization
 function init(elemName) {
-    var Showdown = require('showdown');
-    var Markdown = new Showdown.converter();
+    markdownConvert = new Markdown.getSanitizingConverter().makeHtml;
     MRManager.init(elemName);
 }
