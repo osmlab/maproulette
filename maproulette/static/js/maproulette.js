@@ -329,60 +329,42 @@ var MRManager = (function () {
     /*
      * get a named, or random challenge 
      */
-     var selectChallenge = function () {
-         // check if the user has worked on a challenge previously
-         slug = $.cookie('challenge');
-         // if not, let the server choose for us
-         if (!slug) {
-           console.log("Letting server select a challenge")
-           url = '/api/challenge';
-           $.ajax({
-             url: url,
-             async: false,
-             success: function(data) {
-               slug = data.slug;
-               console.log('setting cookie to ' + slug);
-               $.cookie('challenge', slug);
-               challenge.slug = slug
-               $.each(data, function(key, value) {
-                 challenge[key] = value;
-               });
-               $('#challenge_title').text(challenge.tile);
-               $('#challenge_blurb').text(challenge.blurb);
-               getChallengeStats()
-             },
-             error function(jqXHR, textStatus, errorThrown) {
-               console.log('ajax error');
-             }
-           })}
-       else {
-             // otherwise get the one passed in
-             console.log('getting challenge details for ' + slug);
-             url = '/api/challenge/' + slug;
-             $.ajax({
-                 url: url,
-                 async: false, 
-                 success: function (data) {
-                    console.log('setting cookie to ' + slug);
-                    // set the challenge cookie
-                    $.cookie('challenge', slug);
-                    challenge.slug = slug;
-                    $.each(data, function (key, value) {
-                        challenge[key] = value;
-                    });
-                    // update the challenge detail UI elements
-                    $('#challenge_title').text(challenge.title);
-                    $('#challenge_blurb').text(challenge.blurb);
-                    // and move on to get the stats
-                    getChallengeStats()
-                 },
-                 error: function (jqXHR, textStatus, errorThrown) {
-                     console.log('ajax error');
-                 }
-             });
-         };
-     };
-
+    var selectChallenge = function () {
+        // check if the user has worked on a challenge previously
+        slug = $.cookie('challenge');
+        
+        if (!slug) {
+            console.log("Letting server select a challenge");
+            url = '/api/challenge';
+        }
+        else {
+            console.log("Getting challenge details for " + slug);
+            url = "/api/challenge/" + slug;
+        };
+        $.ajax({
+            url: url,
+            async: false, 
+            success: function (data) {
+                console.log('setting cookie to ' + slug);
+                // set the challenge cookie
+                $.cookie('challenge', slug);
+                challenge.slug = slug;
+                $.each(data, function (key, value) {
+                    challenge[key] = value;
+                });
+                // update the challenge detail UI elements
+                $('#challenge_title').text(challenge.title);
+                $('#challenge_blurb').text(challenge.blurb);
+                // and move on to get the stats
+                getChallengeStats()
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log('ajax error');
+            }
+        });
+    };
+         
+  
     var getChallengeStats = function () {
         // now get the challenge stats
         console.log('getting challenge stats');
