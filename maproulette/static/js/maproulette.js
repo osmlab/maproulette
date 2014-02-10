@@ -622,6 +622,7 @@ var MRManager = (function () {
 
 // initialization
 function init(elemName) {
+    var Showdown = require('showdown');
     var Markdown = new Showdown.converter();
     MRManager.init(elemName);
 }
