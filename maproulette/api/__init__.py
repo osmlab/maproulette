@@ -12,7 +12,7 @@ from shapely.geometry import asShape
 from shapely import wkb
 import geojson
 import json
-
+import markdown
 
 class ProtectedResource(Resource):
     """A Resource that requires the caller to be authenticated against OSM"""
@@ -28,11 +28,18 @@ class PointField(Raw):
         point = geometry.coords[0]
         return '%f|%f' % point
 
+class MarkdownField(Raw):
+    """Markdown text"""
+
+    def format(self, text):
+        return markdown.markdown(text)
+
 challenge_summary = {
     'slug': fields.String,
     'title': fields.String,
     'difficulty': fields.Integer,
     'description': fields.String,
+    'help': MarkdownField
     'blurb': fields.String,
     'islocal': fields.Boolean
 }
