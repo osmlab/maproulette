@@ -39,7 +39,7 @@ challenge_summary = {
     'title': fields.String,
     'difficulty': fields.Integer,
     'description': fields.String,
-    'help': MarkdownField
+    'help': MarkdownField,
     'blurb': fields.String,
     'islocal': fields.Boolean
 }
