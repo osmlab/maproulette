@@ -536,31 +536,42 @@ var MRManager = (function () {
         $('.donedialog').html(challengeSelectionHTML).fadeIn();
     };
   
+    var presentHelpDialog = function() {
+        $('.donedialog').fadeOut();
+        var OKButton = "<div class='button' onclick='readyToEdit()'>OK</div>";
+        var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
+            "<div>" + Markdown.makeHtml(challenge.help) + "</div>" + 
+            OKButton;
+        $('.donedialog').html(helpHTML).fadeIn();
+    }
+
     var presentWelcomeDialog = function() {
         var OKButton = '<div class=\'button\' onclick="location.reload();location.href=\'/login\'">Log in</div>';
         var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" 
                           + "<p>Log into OpenStreetMap to play MapRoulette<p>"
                           + OKButton;
-      $('.donedialog').html(welcomeHTML).fadeIn();
+        $('.donedialog').html(welcomeHTML).fadeIn();
     };
-
+    
     var presentChallengeDialog = function(){
-      var OKButton = "<div class='button' onclick='readyToEdit()'>Let's go!</div>";
-      var helpButton = "<div class='button' onclick='challengeHelp()'>More help</div>";
-      var changeChallengeButton = "<div class='button' onclick='presentChallengeSelectionDialog()'>Change Challenge</div>";
-      var dialogHTML = "<h1>MapRoulette</h1>" +
-        "<h2>" + challenge.title + "</h2>" + 
-        "<p>" + challenge.description + "</p>" + 
-        OKButton + 
-        helpButton + 
-        changeChallengeButton;
-      $('.donedialog').html(dialogHTML).fadeIn();
+        var OKButton = "<div class='button' onclick='readyToEdit()'>Let's go!</div>";
+        var helpButton = "<div class='button' onclick='challengeHelp()'>More help</div>";
+        var changeChallengeButton = "<div class='button' onclick='presentChallengeSelectionDialog()'>Change Challenge</div>";
+        var dialogHTML = "<h1>MapRoulette</h1>" +
+            "<h2>" + challenge.title + "</h2>" + 
+            "<p>" + challenge.description + "</p>" + 
+            OKButton + 
+            helpButton + 
+            changeChallengeButton;
+        $('.donedialog').html(dialogHTML).fadeIn();
     };
-
+    
     var readyToEdit = function() {
         $('.donedialog').fadeOut();
         $('.controlpanel').fadeIn();
-        getAndShowTask();
+        if (!task) {
+            getAndShowTask();
+        }
     };
 
     var geolocateUser = function () {
@@ -595,7 +606,7 @@ var MRManager = (function () {
     var userPreferences = function () {
         console.log('user setting preferences');
     };
-
+    
     return {
         init                : init,
         nextTask            : nextTask,
@@ -610,5 +621,6 @@ var MRManager = (function () {
 
 // initialization
 function init(elemName) {
+    var Markdown = new Showdown.converter();
     MRManager.init(elemName);
 }
