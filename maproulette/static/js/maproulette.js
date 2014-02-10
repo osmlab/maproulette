@@ -348,7 +348,6 @@ var MRManager = (function () {
                 console.log('setting cookie to ' + slug);
                 // set the challenge cookie
                 $.cookie('challenge', slug);
-                challenge.slug = slug;
                 $.each(data, function (key, value) {
                     challenge[key] = value;
                 });
