@@ -27,6 +27,8 @@ div.controlpanel {
     background-color:#fff;
     -webkit-border-radius: 5px;
     border-radius: 5px;
+    /* By default, hide it until we need it. */
+    visibility: hidden;
 }
 
 /* the notifications container */
