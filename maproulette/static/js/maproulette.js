@@ -295,11 +295,12 @@ var MRManager = (function () {
                 challenge.slug = Q.challenge;
                 $.cookie('challenge', challenge.slug)
             }
-            // now loaad a task (this will select a challenge first)
-            nextTask();
 
-            // and request the challenge details and stats (slow)
+            // Request a challenge
             selectChallenge();
+            
+            presentChallengeDialog();
+
         } else {
 
             // a friendly welcome
@@ -325,57 +326,36 @@ var MRManager = (function () {
         return status === 200;
     }
 
-
-    /*
-     * get a random challenge with optional near and difficulty paramters
-     */
-    var selectRandomChallenge = function (all) {
-
-        console.log('selecting a random challenge');
-        var url = '/api/challenges' + constructUrlParameters();
-
-        if (all) url += 'all=true';
-
-        console.log(url);
-
-        // fire the request for a new challenge with the contructed URL
-        $.ajax(
-        {
-            url     : url,
-            async   : false,
-            success : function (data) {
-                console.log(data.length + ' challenges returned');
-                challenges = data;
-                // select a random challenge
-                ran_challenge = Math.floor(Math.random() * data.length);
-                console.log('picking ' + ran_challenge);
-                challenge = data[ran_challenge];
-                console.log("selecting challenge " + challenge.slug);
-                $.cookie('challenge', challenge.slug);
-            },
-            error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
-        });
-        if (!challenge || typeof(challenge) === 'undefined') {
-            // if we got no challenges, there is something wrong.
-            console.log('no challenges returned');
-            if (!all) {
-                notify.play('There are no local challenges available. MapRoulette will find you a random challenge to start you off with.', {type: 'warning'});
-                selectRandomChallenge(true);
-            } else {
-                notify.play('There are currently no active MapRoulette challenges... Come back some other time!', {type: 'error'})
-            }
-        }
-    };
-
     /*
      * get a named, or random challenge 
      */
      var selectChallenge = function () {
          // check if the user has worked on a challenge previously
          slug = $.cookie('challenge');
-         // if not, get a random challenge.
-         if (!slug) selectRandomChallenge();
-         else {
+         // if not, let the server choose for us
+         if (!slug) {
+           console.log("Letting server select a challenge")
+           url = '/api/challenge';
+           $.ajax({
+             url: url,
+             async: false,
+             success: function(data) {
+               slug = data.slug;
+               console.log('setting cookie to ' + slug);
+               $.cookie('challenge', slug);
+               challenge.slug = slug
+               $.each(data, function(key, value) {
+                 challenge[key] = value;
+               });
+               $('#challenge_title').text(challenge.tile);
+               $('#challenge_blurb').text(challenge.blurb);
+               getChallengeStats()
+             },
+             error function(jqXHR, textStatus, errorThrown) {
+               console.log('ajax error');
+             }
+           })}
+       else {
              // otherwise get the one passed in
              console.log('getting challenge details for ' + slug);
              url = '/api/challenge/' + slug;
