@@ -555,16 +555,16 @@ var MRManager = (function () {
     };
     
     var presentChallengeDialog = function(){
-        var OKButton = "<div class='button' onclick='readyToEdit()'>Let's go!</div>";
-        var helpButton = "<div class='button' onclick='challengeHelp()'>More help</div>";
-        var changeChallengeButton = "<div class='button' onclick='presentChallengeSelectionDialog()'>Change Challenge</div>";
-        var dialogHTML = "<h1>MapRoulette</h1>" +
-            "<h2>" + challenge.title + "</h2>" + 
-            "<p>" + challenge.description + "</p>" + 
-            OKButton + 
-            helpButton + 
-            changeChallengeButton;
-        $('.donedialog').html(dialogHTML).fadeIn();
+      var OKButton = "<div class='button' onclick='readyToEdit()'>Let's go!</div>";
+      var helpButton = "<div class='button' onclick='challengeHelp()'>More help</div>";
+      var changeChallengeButton = "<div class='button' onclick='presentChallengeSelectionDialog()'>Change Challenge</div>";
+      var dialogHTML = "<h1>MapRoulette</h1>" +
+        "<h2>" + challenge.title + "</h2>" + 
+        "<p>" + (challenge.description?challenge.description:"<em>No description available</em>") + "</p>" + 
+        OKButton + 
+        helpButton + 
+        changeChallengeButton;
+      $('.donedialog').html(dialogHTML).fadeIn();
     };
     
     var readyToEdit = function() {

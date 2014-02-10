@@ -1,8 +1,10 @@
-<html><head>
+<html>
+<head>
 <script type='text/javascript' src='{{ url_for('static', filename='js/jquery-2.0.3.min.js') }}'></script>
 <script type='text/javascript' src='{{ url_for('static', filename='js/jquery.cookie.js') }}'></script>
 <script type='text/javascript' src='{{ url_for('static', filename='js/jquery.noty.packaged.min.js') }}'></script>
 <script type='text/javascript' src='{{ url_for('static', filename='js/leaflet.js') }}'></script>
+<script type='text/javascript  src='{{ url_for('static', filename='js/showdown.js') }}'></script>
 <script type='text/javascript' src='{{ url_for('static', filename='js/maproulette.js') }}'></script>
 <link rel='stylesheet' type='text/css' href='{{ url_for('static', filename='css/style.css') }}' />
 <link rel='stylesheet' type='text/css' href='{{ url_for('static', filename='css/leaflet.css') }}' />
@@ -26,10 +28,12 @@
         <div class='button' id='preferences' onClick=MRManager.userPreferences()>your preferences</div>
     </div>
     <div id='stats'>This challenge has <span id='total'></span> tasks, and we still need to complete <span id='available'></span> of them.</div>
-    <div class="button" onClick=MRManager.nextTask('falsepositive')>THIS IS NOT AN ERROR <span class=key>q</span></div>
-    <div class="button" onClick=MRManager.nextTask('skipped')>I'M NOT SURE / SKIP <span class=key>w</span></div>
-    <div class=button onClick=MRManager.openTaskInEditor()>EDIT<span class=key>e</span></div>
-    <div class=button onClick=MRManager.openTaskInEditor('j')>EDIT IN JOSM <span class=key>r</span></div>
+    <div class="button" onClick="MRManager.nextTask('falsepositive')">THIS IS NOT AN ERROR <span class=key>q</span></div>
+    <div class="button" onClick="MRManager.nextTask('skipped')">I'M NOT SURE / SKIP <span class=key>w</span></div>
+    <div class="button" onClick="MRManager.openTaskInEditor()">EDIT<span class=key>e</span></div>
+    <div class="button" onClick="MRManager.openTaskInEditor('j')">EDIT IN JOSM <span class=key>r</span></div>
+    <div class="button" onClick="MRManager.presentHelpDialog()">HELP</div>
+    <div class="button" onClick="MRManager.presentChallengeSelectionDialog()">CHANGE CHALLENGE</div>
 </div>
 <div class='notifications'></div>
 <div class='donedialog'></div>
