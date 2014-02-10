@@ -10,8 +10,8 @@ body, #map {
 
 /* emphasized text */
 em {
-    font-style:normal;
-    color:#44cc33;
+    font-style:italic;
+    /*color:#44cc33;*/
 }
 
 /* the main MapRoulette control panel */
