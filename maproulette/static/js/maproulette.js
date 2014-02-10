@@ -550,7 +550,7 @@ var MRManager = (function () {
       var changeChallengeButton = "<div class='button' onclick='presentChallengeSelectionDialog()'>Change Challenge</div>";
       var dialogHTML = "<h1>MapRoulette</h1>" +
         "<h2>" + challenge.title + "</h2>" + 
-        "<p>" + challenge.description + "</p>" + 
+        "<p>" + (challenge.description?challenge.description:"<em>No description available</em>") + "</p>" + 
         OKButton + 
         helpButton + 
         changeChallengeButton;
