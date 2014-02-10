@@ -93,6 +93,13 @@ class ApiPing(Resource):
     def get(self):
         return "I am alive"
 
+class ApiGetAChallenge(ProtectedResource):
+    @marshal_with(challenge_summary)
+    def get(self):
+        """Return a single challenge"""
+        challenge = get_challenge_or_404(app.config["DEFAULT_CHALLENGE"], True)
+        return marshal(challenge, challenge.marshal_fields)
+
 class ApiChallengeList(ProtectedResource):
     """Challenge list endpoint"""
 
@@ -289,6 +296,7 @@ api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
 api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
 api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
 api.add_resource(ApiSelfInfo, '/api/me')
+api.add_resource(ApiGetAChallenge, '/api/challenge')
 api.add_resource(
     ApiChallengeTaskDetails,
     '/api/challenge/<slug>/task/<identifier>/')
