@@ -555,13 +555,13 @@ var MRManager = (function () {
         helpButton + 
         changeChallengeButton;
       $('.donedialog').html(dialogHTML).fadeIn();
-    }
+    };
 
-  var readyToEdit = function() {
-   $('.donedialog').fadeOut();
-   $('.controlpanel').fadeIn();
-   getAndShowTask();
-  }
+    var readyToEdit = function() {
+        $('.donedialog').fadeOut();
+        $('.controlpanel').fadeIn();
+        getAndShowTask();
+    };
 
     var geolocateUser = function () {
         // Locate the user and define the event triggers
