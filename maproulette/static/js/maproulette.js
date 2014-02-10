@@ -527,13 +527,14 @@ var MRManager = (function () {
     };
 
     var presentChallengeSelectionDialog = function () {
-        var challengeSelectionHTML = "";
         $('.donedialog').fadeOut();
+        cancelButton = "<div class='button' onclick='readyToEdit()'>Nevermind</div>";
+        dialogHTML = "<h2>Change Challenge</h2>" + cancelButton;
         for (c in challenges) {
             cHTML = "<div><div onclick='MRManager.userPickChallenge(" + c.slug  + ")>" + c.title + "</div> - " + c.blurb + "<hr /></div>";
-            challengeSelectionHTML += cHTML;
+            dialogHTML += cHTML;
         };
-        $('.donedialog').html(challengeSelectionHTML).fadeIn();
+        $('.donedialog').html(dialogHTML).fadeIn();
     };
   
     var presentHelpDialog = function() {
