@@ -182,7 +182,7 @@ class ApiChallengePolygon(ProtectedResource):
     def get(self, slug):
         """Return the geometry (spatial extent) for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
-        return challenge.polygon
+        return geojson.dumps(challenge.polygon)
 
 
 class ApiChallengeStats(ProtectedResource):
@@ -195,7 +195,7 @@ class ApiChallengeStats(ProtectedResource):
         # for task in Task.query.filter(Task.challenge_slug == slug):
         #    app.logger.debug(task.available)
         available = challenge.tasks_available
-        return {'total': total, 'available': available}
+        return json.dumps({'total': total, 'available': available})
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -275,7 +275,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
                                    args.editor))
         db.session.add(task)
         db.session.commit()
-        return {}
+        return json.dumps({})
 
 
 class ApiChallengeTaskStatus(ProtectedResource):
