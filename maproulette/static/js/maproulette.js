@@ -289,7 +289,6 @@ var MRManager = (function () {
         map.addLayer(taskLayer);
 
         if (this.loggedIn) {
-            $('.controlpanel').fadeOut();
             // check if the user hand picked a challenge
             if (Q.challenge && challengeExists(Q.challenge)) {
                 challenge.slug = Q.challenge;
@@ -304,7 +303,6 @@ var MRManager = (function () {
         } else {
 
             // a friendly welcome
-            $('.controlpanel').fadeOut();
             presentWelcomeDialog();
         }
     };
@@ -621,5 +619,6 @@ var MRManager = (function () {
 
 // initialization
 function init(elemName) {
+    $('.controlpanel').fadeOut();
     MRManager.init(elemName);
 }
