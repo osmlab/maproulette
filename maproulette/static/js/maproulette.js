@@ -621,6 +621,5 @@ var MRManager = (function () {
 
 // initialization
 function init(elemName) {
-//    markdownConvert = new Markdown.getSanitizingConverter().makeHtml;
     MRManager.init(elemName);
 }
