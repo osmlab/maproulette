@@ -105,7 +105,7 @@ class ApiGetAChallenge(ProtectedResource):
     def get(self):
         """Return a single challenge"""
         challenge = get_challenge_or_404(app.config["DEFAULT_CHALLENGE"], True)
-        return marshal(challenge, challenge.marshal_fields)
+        return challenge
 
 class ApiChallengeList(ProtectedResource):
     """Challenge list endpoint"""
