@@ -528,7 +528,7 @@ var MRManager = (function () {
         if (challenges.length == 0) {
           $.ajax({
             url: "/api/challenges",
-            async: false;
+            async: false,
             success: function(data) { challenges = data},
             error: function(jqXHR, textStatus, errorThrown) { console.log('ajax error')}
           });
