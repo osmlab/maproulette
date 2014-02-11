@@ -613,7 +613,8 @@ var MRManager = (function () {
         geolocateUser       : geolocateUser,
         userPreferences     : userPreferences,
         userPickChallenge   : userPickChallenge,
-        readyToEdit         : readyToEdit
+        readyToEdit         : readyToEdit,
+        presentChallengeSelectionDialog: presentChallengeSelectionDialog
     };
 }());
 
