@@ -171,10 +171,7 @@ class ApiSelfInfo(ProtectedResource):
 
     def get(self):
         """Return information about the logged in user"""
-        if session.osm_auth:
-            return marshal(session, me_fields)
-        else:
-            return {'username': None, 'osm_id': None}
+        return marshal(session, me_fields)
 
 class ApiChallengePolygon(ProtectedResource):
     """Challenge geometry endpoint"""
