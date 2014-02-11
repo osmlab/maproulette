@@ -535,10 +535,11 @@ var MRManager = (function () {
         };
         cancelButton = "<div class='button' onclick='MRManager.readyToEdit()'>Nevermind</div>";
         dialogHTML = "<h2>Change Challenge</h2>" + cancelButton;
-        for (c in challenges) {
-            cHTML = "<div><div onclick='MRManager.userPickChallenge(" + c.slug  + ")>" + c.title + "</div> - " + c.blurb + "<hr /></div>";
-            dialogHTML += cHTML;
-        };
+        $.each(challenges, function(index, c){
+          cHTML = "<div><div class='button' onclick='MRManager.userPickChallenge(" + c.slug  + ")>"
+            + c.title + "</div> - " + c.blurb + "<hr /></div>";
+          dialogHTML += cHTML;
+        });
         $('.donedialog').html(dialogHTML).fadeIn();
     };
   
