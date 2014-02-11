@@ -202,9 +202,6 @@ class Task(db.Model):
     #geom = db.Column(
     #    Geometry('POINT'),
     #    nullable=False)
-    version = db.Column(
-        db.String(72),
-        nullable=False)
     random = db.Column(
         db.Float,
         default=getrandom,
@@ -237,7 +234,6 @@ class Task(db.Model):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.instruction = instruction
-        self.version = 1
         self.append_action(Action('created'))
 
     def __repr__(self):
@@ -300,15 +296,6 @@ class Task(db.Model):
         db.session.merge(self)
         db.session.commit()
         return True
-
-# add a listener to update the version
-@event.listens_for(Task, 'before_update')
-def receive_before_update(mapper, connection, target):
-    """listen for the 'before_update' event"""
-    app.logger.debug('going to update task')
-    app.logger.debug(target)
-    # ... (event handling logic) ...
-
 
 class TaskGeometry(db.Model):
     """The collection of geometries (1+) belonging to a task"""
