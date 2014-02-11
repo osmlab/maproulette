@@ -525,6 +525,14 @@ var MRManager = (function () {
 
     var presentChallengeSelectionDialog = function () {
         $('.donedialog').fadeOut();
+        if (challenges.length == 0) {
+          $.ajax({
+            url: "/api/challenges",
+            async: false;
+            success: function(data) { challenges = data},
+            error: function(jqXHR, textStatus, errorThrown) { console.log('ajax error')}
+          });
+        };
         cancelButton = "<div class='button' onclick='MRManager.readyToEdit()'>Nevermind</div>";
         dialogHTML = "<h2>Change Challenge</h2>" + cancelButton;
         for (c in challenges) {
