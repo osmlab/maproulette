@@ -533,12 +533,13 @@ var MRManager = (function () {
             error: function(jqXHR, textStatus, errorThrown) { console.log('ajax error')}
           });
         };
-        cancelButton = "<div class='button' onclick='MRManager.readyToEdit()'>Nevermind</div>";
+        cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
         dialogHTML = "<h2>Change Challenge</h2>" + cancelButton;
-        challenges.forEach(function(c) {
-          cHTML = "<div><div class='button' onclick='MRManager.userPickChallenge(" + c.slug  + ")>"
+        for (challenge in challenges) {
+            cHTML = "<div><div class='button' onclick='MRManager.userPickChallenge(" + c.slug  + ")>"
             + c.title + "</div> - " + c.blurb + "<hr /></div>";
-          dialogHTML += cHTML;});
+            dialogHTML += cHTML;
+        };
         $('.donedialog').html(dialogHTML).fadeIn();
     };
   
