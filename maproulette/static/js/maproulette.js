@@ -525,6 +525,7 @@ var MRManager = (function () {
 
     var presentChallengeSelectionDialog = function () {
         $('.donedialog').fadeOut();
+        $('controlpanel).fadeOut();
         if (challenges.length == 0) {
           $.ajax({
             url: "/api/challenges",
@@ -622,7 +623,8 @@ var MRManager = (function () {
         userPreferences     : userPreferences,
         userPickChallenge   : userPickChallenge,
         readyToEdit         : readyToEdit,
-        presentChallengeSelectionDialog: presentChallengeSelectionDialog
+        presentChallengeSelectionDialog: presentChallengeSelectionDialog,
+        presentHelpDialog   : presentHelpDialog
     };
 }());
 
