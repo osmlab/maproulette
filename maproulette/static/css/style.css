@@ -66,6 +66,13 @@ div#fixed.button {
     font-weight: bold;
 }
 
+/* cancel style buttons */
+div.button.cancel {
+    background-color: rgb(240,240,240);
+    font-weight: normal;
+}
+
+
 /* the button hover */
 div.button:hover {
     background-color: #666666 !important;
