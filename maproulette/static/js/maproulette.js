@@ -543,7 +543,7 @@ var MRManager = (function () {
         $('.donedialog').html(dialogHTML).fadeIn();
     };
   
-    var presentHelpDialog = function() {
+    var presentChallengeHelp = function() {
         $('.donedialog').fadeOut();
         var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
         var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
@@ -624,7 +624,7 @@ var MRManager = (function () {
         userPickChallenge   : userPickChallenge,
         readyToEdit         : readyToEdit,
         presentChallengeSelectionDialog: presentChallengeSelectionDialog,
-        presentHelpDialog   : presentHelpDialog
+        presentChallengeHelp : presentChallengeHelp
     };
 }());
 
