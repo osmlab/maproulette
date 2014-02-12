@@ -547,7 +547,7 @@ var MRManager = (function () {
         $('.donedialog').fadeOut();
         var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
         var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
-            "<div>" + markdownConvert.makeHtml(challenge.help) + "</div>" + 
+            "<div>" + challenge.help + "</div>" + 
             OKButton;
         $('.donedialog').html(helpHTML).fadeIn();
     }
@@ -562,7 +562,7 @@ var MRManager = (function () {
     
     var presentChallengeDialog = function(){
         var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
-        var helpButton = "<div class='button' onclick='MRManager.challengeHelp()'>More help</div>";
+        var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
         var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Change Challenge</div>";
         var dialogHTML = "<h1>MapRoulette</h1>" +
             "<h2>" + challenge.title + "</h2>" + 
