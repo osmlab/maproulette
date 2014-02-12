@@ -525,7 +525,7 @@ var MRManager = (function () {
 
     var presentChallengeSelectionDialog = function () {
         $('.donedialog').fadeOut();
-        $('controlpanel).fadeOut();
+        $('controlpanel').fadeOut();
         if (challenges.length == 0) {
           $.ajax({
             url: "/api/challenges",
