@@ -126,6 +126,8 @@ div.donedialog {
     background-color:#fff;
     -webkit-border-radius: 5px;
     border-radius: 5px;
+    max-height: 65%;
+    overflow-y:auto;
 }
 
 /* the key 'icons' */
