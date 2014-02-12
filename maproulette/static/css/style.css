@@ -72,11 +72,19 @@ div.button.cancel {
     font-weight: normal;
 }
 
+/* tiny style buttons */
+div.button.tiny {
+    font-weight: normal;
+    font-size: 11px;
+    padding: 0px;
+    border: 1px solid rgb(100,100,100);
+    background-color: rgb(200,200,200);
+}
 
 /* the button hover */
 div.button:hover {
-    background-color: #666666 !important;
-    color: #FFFFFF !important;
+    opacity: 0.8 !important;
+    filter: alpha(opacity=50) !important;
     cursor: pointer;
 }
 
@@ -138,10 +146,5 @@ span.key {
 
 /* hide the challenge menu for now while the backend is not implemented. */
 #challengemenu {
-    display: none;
-}
-
-#challengemenu div.button {
-    font-size: small;
-    background-color: #cfc;
+    display: block;
 }
