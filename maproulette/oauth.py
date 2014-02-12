@@ -18,8 +18,9 @@ oauth.init_app(app)
 def get_osm_token(token=None):
   # session.regenerate() this should be done elsewhere.
     if 'osm_oauth' in session:
-        resp = session['osm_oauth']
-        return resp['oauth_token'], resp['oauth_token_secret']
+        app.logger.debug('found osm_oauth in session')
+        tokens = session['osm_oauth']
+    return (tokens['oauth_token'], tokens['oauth_token_secret'])
 
 
 @app.route('/login')
@@ -38,6 +39,7 @@ def oauthorized(resp):
     next_url = request.args.get('next') or url_for('index')
     if resp is None:
         return redirect(next_url)
+    app.logger.debug(resp)
     session['osm_oauth'] = resp
     retrieve_osm_data()
     app.logger.debug('redirecting to %s' % next_url)

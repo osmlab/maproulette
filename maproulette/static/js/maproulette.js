@@ -525,6 +525,7 @@ var MRManager = (function () {
 
     var presentChallengeSelectionDialog = function () {
         $('.donedialog').fadeOut();
+        $('controlpanel').fadeOut();
         if (challenges.length == 0) {
           $.ajax({
             url: "/api/challenges",
@@ -543,11 +544,11 @@ var MRManager = (function () {
         $('.donedialog').html(dialogHTML).fadeIn();
     };
   
-    var presentHelpDialog = function() {
+    var presentChallengeHelp = function() {
         $('.donedialog').fadeOut();
         var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
         var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
-            "<div>" + markdownConvert.makeHtml(challenge.help) + "</div>" + 
+            "<div>" + challenge.help + "</div>" + 
             OKButton;
         $('.donedialog').html(helpHTML).fadeIn();
     }
@@ -562,7 +563,7 @@ var MRManager = (function () {
     
     var presentChallengeDialog = function(){
         var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
-        var helpButton = "<div class='button' onclick='MRManager.challengeHelp()'>More help</div>";
+        var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
         var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Change Challenge</div>";
         var dialogHTML = "<h1>MapRoulette</h1>" +
             "<h2>" + challenge.title + "</h2>" + 
@@ -623,7 +624,8 @@ var MRManager = (function () {
         userPreferences     : userPreferences,
         userPickChallenge   : userPickChallenge,
         readyToEdit         : readyToEdit,
-        presentChallengeSelectionDialog: presentChallengeSelectionDialog
+        presentChallengeSelectionDialog: presentChallengeSelectionDialog,
+        presentChallengeHelp : presentChallengeHelp
     };
 }());
 
