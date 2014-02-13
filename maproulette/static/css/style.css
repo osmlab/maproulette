@@ -46,6 +46,18 @@ div.title {
     font-weight: bold;
 }
 
+/* challenge container in list */
+.challengeBox {
+    background-color: rgb(220,220,220);
+    border: 1px solid #000000;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    color: #000000;
+    margin: 4px;
+    padding: 4px;
+}
+
+
 /* all buttons */
 div.button {
     background-color: #66CCFF;

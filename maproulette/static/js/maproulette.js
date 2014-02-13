@@ -528,20 +528,27 @@ var MRManager = (function () {
         $('controlpanel').fadeOut();
         if (challenges.length == 0) {
           $.ajax({
-            url: "/api/challenges",
-            async: false,
-            success: function(data) { challenges = data},
+            url: "/api/challenges?all=true",
+            success: function(data) { 
+                challenges = data;
+                cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
+                dialogHTML = "<h2>Pick a different challenge</h2>";
+                for (c in challenges) {
+                    cHTML = "<div class=\'challengeBox\'><h3>" 
+                        + challenges[c].title 
+                        + "</h3><p>" 
+                        + challenges[c].blurb 
+                        + "<div class='button' onclick=MRManager.userPickChallenge('" 
+                        + challenges[c].slug  
+                        + "')>Work on this challenge!</div></div>";
+                    dialogHTML += cHTML;
+                };
+                console.log(dialogHTML);
+                $('.donedialog').html(dialogHTML).fadeIn();
+            },
             error: function(jqXHR, textStatus, errorThrown) { console.log('ajax error')}
           });
         };
-        cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
-        dialogHTML = "<h2>Change Challenge</h2>" + cancelButton;
-        for (challenge in challenges) {
-            cHTML = "<div><div class='button' onclick='MRManager.userPickChallenge(" + c.slug  + ")>"
-            + c.title + "</div> - " + c.blurb + "<hr /></div>";
-            dialogHTML += cHTML;
-        };
-        $('.donedialog').html(dialogHTML).fadeIn();
     };
   
     var presentChallengeHelp = function() {
