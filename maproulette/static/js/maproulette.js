@@ -525,9 +525,8 @@ var MRManager = (function () {
 
     var presentChallengeSelectionDialog = function () {
         $('controlpanel').fadeOut();
-                cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
-                        + challenges[c].title 
         $('.donedialog').fadeOut({
+            complete: function () {
                 if (challenges.length == 0) {
                   $.ajax({
                     url: "/api/challenges?all=true",
@@ -544,9 +543,11 @@ var MRManager = (function () {
                                 + challenges[c].slug  
                                 + "')>Work on this challenge!</div></div>";
                             dialogHTML += cHTML;
+                        };
                         console.log(dialogHTML);
                         $('.donedialog').html(dialogHTML).fadeIn();
                     },
+                    error: function(jqXHR, textStatus, errorThrown) { console.log('ajax error')}
                   });
                 };
             }
