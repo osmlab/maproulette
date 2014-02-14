@@ -266,7 +266,7 @@ var MRManager = (function () {
       return uri;
     };
 
-  var openInId() {
+  var openInId = function() {
     var idUri = constructIdUri();
     $.ajax({
       url:  idUri,
