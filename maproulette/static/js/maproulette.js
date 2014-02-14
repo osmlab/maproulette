@@ -272,8 +272,7 @@ var MRManager = (function () {
       url:  idUri,
       success: function() {
         updateTask('editing');
-        setTimeout(confirmRemap, 4000)
-      }
+        setTimeout(confirmRemap, 4000)},
       error: function(jqXHR, textStatus, errorThrown) {
         notify.play("ID editor did not spawn. I'm sorry.");
       }
