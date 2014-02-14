@@ -619,12 +619,10 @@ var MRManager = (function () {
         presentDoneDialog();
     };
 
-    var userPickChallenge = function (challenge) {
-        $('.donedialog').fadeOut();
+    var userPickChallenge = function (slug) {
+        $('.donedialog').fadeOut({complete: function(){$('.controlpanel').fadeIn()}});
         console.log('user picking challenge')
-        challenge = challenge;
-        if (!typeof(challenge) === 'undefined') $.cookie('challenge', challenge.slug);
-        selectChallenge();
+        selectChallenge(slug);
     };
 
     var userPreferences = function () {
