@@ -524,31 +524,33 @@ var MRManager = (function () {
     };
 
     var presentChallengeSelectionDialog = function () {
-        $('.donedialog').fadeOut();
         $('controlpanel').fadeOut();
-        if (challenges.length == 0) {
-          $.ajax({
-            url: "/api/challenges?all=true",
-            success: function(data) { 
-                challenges = data;
                 cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
-                dialogHTML = "<h2>Pick a different challenge</h2>";
-                for (c in challenges) {
-                    cHTML = "<div class=\'challengeBox\'><h3>" 
                         + challenges[c].title 
-                        + "</h3><p>" 
-                        + challenges[c].blurb 
-                        + "<div class='button' onclick=MRManager.userPickChallenge('" 
-                        + challenges[c].slug  
-                        + "')>Work on this challenge!</div></div>";
-                    dialogHTML += cHTML;
+        $('.donedialog').fadeOut({
+                if (challenges.length == 0) {
+                  $.ajax({
+                    url: "/api/challenges?all=true",
+                    success: function(data) { 
+                        challenges = data;
+                        cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
+                        dialogHTML = "<h2>Pick a different challenge</h2>";
+                        for (c in challenges) {
+                            cHTML = "<div class=\'challengeBox\'><h3>" 
+                                + challenges[c].title 
+                                + "</h3><p>" 
+                                + challenges[c].blurb 
+                                + "<div class='button' onclick=MRManager.userPickChallenge('" 
+                                + challenges[c].slug  
+                                + "')>Work on this challenge!</div></div>";
+                            dialogHTML += cHTML;
+                        console.log(dialogHTML);
+                        $('.donedialog').html(dialogHTML).fadeIn();
+                    },
+                  });
                 };
-                console.log(dialogHTML);
-                $('.donedialog').html(dialogHTML).fadeIn();
-            },
-            error: function(jqXHR, textStatus, errorThrown) { console.log('ajax error')}
-          });
-        };
+            }
+        });
     };
   
     var presentChallengeHelp = function() {
@@ -569,16 +571,21 @@ var MRManager = (function () {
     };
     
     var presentChallengeDialog = function(){
-        var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
-        var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
-        var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Change Challenge</div>";
-        var dialogHTML = "<h1>MapRoulette</h1>" +
-            "<h2>" + challenge.title + "</h2>" + 
-            "<p>" + challenge.description + "</p>" + 
-            OKButton + 
-            helpButton + 
-            changeChallengeButton;
-        $('.donedialog').html(dialogHTML).fadeIn();
+        $('.donedialog').fadeOut({
+            complete: function () {
+                var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
+                var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
+                var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
+                var dialogHTML = "<h1>Welcome to MapRoulette!</h1>" +
+                    "<p>You will be working on this challenge:</p>" + 
+                    "<h2>" + challenge.title + "</h2>" + 
+                    "<p>" + challenge.description + "</p>" + 
+                    OKButton + 
+                    helpButton + 
+                    changeChallengeButton;
+                $('.donedialog').html(dialogHTML).fadeIn();                
+            }
+        });
     };
     
     var readyToEdit = function() {
