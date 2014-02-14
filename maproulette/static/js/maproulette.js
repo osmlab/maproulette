@@ -343,12 +343,11 @@ var MRManager = (function () {
             url: url,
             async: false, 
             success: function (data) {
-                console.log('setting cookie to ' + slug);
+                console.log('got challenge ' + slug);
                 // set the challenge cookie
                 $.cookie('challenge', slug);
-                $.each(data, function (key, value) {
-                    challenge[key] = value;
-                });
+                challenge = data;
+                challenge.slug = slug;
                 // update the challenge detail UI elements
                 $('#challenge_title').text(challenge.title);
                 $('#challenge_blurb').text(challenge.blurb);
