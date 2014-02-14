@@ -327,9 +327,10 @@ var MRManager = (function () {
     /*
      * get a named, or random challenge 
      */
-    var selectChallenge = function () {
-        // check if the user has worked on a challenge previously
-        slug = $.cookie('challenge');
+    var selectChallenge = function (slug) {
+        // if no specific challenge is passed in,
+        // check what the cookie monster has for us
+        if (!slug) slug = $.cookie('challenge');
         
         if (!slug) {
             console.log("Letting server select a challenge");
