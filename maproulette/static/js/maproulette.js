@@ -213,6 +213,8 @@ var MRManager = (function () {
 
         for (f in task.features) {
             var feature = task.features[f];
+            if (!feature.properties.osmid) {
+              continue;}
             switch (feature.geometry.type) {
                 case 'Point':
                     url += 'node' + feature.properties.osmid;
@@ -241,6 +243,42 @@ var MRManager = (function () {
             }
         });
     };
+
+    var constructIdUri = function() {
+      var zoom = map.getZoom();
+      var center = map.getCenter();
+      var lat = center.lat;
+      var lon = center.lon;
+      var uri;
+      for (i in task.features) {
+        var feature = task.feature[i];
+        if (!feature.properties.osmid) {
+          continue;}
+        switch (feature.geometry.type) {
+        case 'Point':
+          uri + "&id=n" + features.properties.osmid;
+          break;
+        case 'LineString':
+          uri = "&id=w" + features.properties.osmid;
+          break;
+        }
+      }
+      return uri;
+    };
+
+  var openInId() {
+    var idUri = constructIdUri();
+    $.ajax({
+      url:  idUri,
+      success: function() {
+        updateTask('editing');
+        setTimeout(confirmRemap, 4000)
+      }
+      error: function(jqXHR, textStatus, errorThrown) {
+        notify.play("ID editor did not spawn. I'm sorry.");
+      }
+    });
+  };
 
     /*
      * A helper function to construct the URL parameters for location and difficulty
