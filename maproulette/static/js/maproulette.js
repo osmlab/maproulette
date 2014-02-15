@@ -592,13 +592,15 @@ var MRManager = (function () {
     };
   
     var presentChallengeHelp = function() {
-        $('.donedialog').fadeOut();
-        var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
-        var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
-            "<div>" + challenge.help + "</div>" + 
-            OKButton;
-        $('.donedialog').html(helpHTML).fadeIn();
-    }
+      $('.donedialog').fadeOut({
+        complete: function(){
+          var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
+          var helpHTML =  "<h1>" + challenge.title + " Help</h1>" +
+              "<div>" + challenge.help + "</div>" + 
+              OKButton;
+            $('.donedialog').html(helpHTML).fadeIn();
+        }});
+    };
 
     var presentWelcomeDialog = function() {
         $('.donedialog').fadeOut();
@@ -677,8 +679,8 @@ var MRManager = (function () {
         readyToEdit         : readyToEdit,
         presentChallengeSelectionDialog: presentChallengeSelectionDialog,
         presentChallengeHelp : presentChallengeHelp
-    };
-}());
+    };}
+    ());
 
 // initialization
 function init(elemName) {
