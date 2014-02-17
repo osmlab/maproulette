@@ -8,6 +8,8 @@ That said, read on if you want to contribute to MapRoulette development and are 
 
 Please fork the project and submit pull requests on the `develop` branch.
 
+See the code style conventions at https://github.com/osmlab/maproulette/wiki/Code-style-conventions
+
 ## Dependencies
 
 First we need to set up system level dependencies. This is different for Linux and OSX.
