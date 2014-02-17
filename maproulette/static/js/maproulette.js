@@ -367,11 +367,12 @@ var MRManager = (function () {
     var selectChallenge = function (slug) {
         // if no specific challenge is passed in,
         // check what the cookie monster has for us
-      if (!slug && $.cookie('challenge')) {
-        console.log("Setting challenge from cookie");
+      if (!slug) {
+        console.log("Setting challenge from cookie to: " + $.cookie('challenge');
         slug = $.cookie('challenge');
-      }
-      else if (!slug) {
+      };
+
+      if (!slug) {
         console.log("Letting server select a challenge");
         url = '/api/challenge';
       }
