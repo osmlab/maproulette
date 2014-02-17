@@ -384,11 +384,10 @@ var MRManager = (function () {
         url: url,
         async: false, 
         success: function (data) {
-          console.log('got challenge ' + slug);
-          // set the challenge cookie
-          $.cookie('challenge', slug);
           challenge = data;
-          challenge.slug = slug;
+          console.log('got challenge ' + challenge.slug);
+          // set the challenge cookie
+          $.cookie('challenge', challenge.slug);
           // update the challenge detail UI elements
           $('#challenge_title').text(challenge.title);
           $('#challenge_blurb').text(challenge.blurb);
