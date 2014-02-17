@@ -1,7 +1,6 @@
 """This module contains the various challenge types"""
 
 from maproulette.models import Challenge
-import maproulette.buttons as buttons
 from flask.ext.restful import fields
 
 challenge_types = {}
@@ -9,11 +8,27 @@ challenge_types = {}
 # The default challenge type. Other challenge types should
 # inherit from this.
 
+
 class Default(Challenge):
     """The default challenge class"""
 
-    done_dialog_text = "This area is being loaded in your editor. Did you fix it?"
-    done_dialog_buttons = ""  # an empty string will trigger the default buttons.
+    # the allowed actions for this challenge type, and whether they
+    # represent the task being available or not
+    def actions():
+        return {
+            'created': True,
+            'available': True,
+            'skipped': True,
+            'assigned': False,
+            'falsepositive': False,
+            'fixed': False,
+            'deleted': False
+        }
+
+    done_dialog_text = "This area is being loaded in your editor. \
+        Did you fix it?"
+    # an empty string will trigger the default buttons.
+    done_dialog_buttons = ""
 
     marshal_fields = {
         'slug': fields.String,
