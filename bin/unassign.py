@@ -28,4 +28,3 @@ if __name__ == "__main__":
 		db.session.add(task)
 		print "setting task %s to available" % (task.identifier)
 	db.session.commit()
-	
