@@ -368,7 +368,7 @@ var MRManager = (function () {
         // if no specific challenge is passed in,
         // check what the cookie monster has for us
       if (!slug) {
-        console.log("Setting challenge from cookie to: " + $.cookie('challenge'));
+        console.log("Setting challenge from cookie to: " + $.cookie('challenge');
         slug = $.cookie('challenge');
       };
 
@@ -668,6 +668,7 @@ var MRManager = (function () {
         $('.donedialog').fadeOut({complete: function(){$('.controlpanel').fadeIn()}});
         console.log('user picking challenge')
         selectChallenge(slug);
+        getAndShowTask();
     };
 
     var userPreferences = function () {
