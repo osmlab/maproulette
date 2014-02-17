@@ -1,13 +1,12 @@
   # """This file contains the SQLAlchemy ORM models"""
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import scoped_session, sessionmaker, synonym
+from sqlalchemy import create_engine
+from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
-from geoalchemy2.functions import ST_Area
 import random
 from datetime import datetime
 from maproulette import app
@@ -21,7 +20,13 @@ db = SQLAlchemy(app)
 
 random.seed()
 
-world_polygon = Polygon([(-180, -90), (-180, 90), (180, 90), (180, -90), (-180, -90)])
+world_polygon = Polygon([
+    (-180, -90),
+    (-180, 90),
+    (180, 90),
+    (180, -90),
+    (-180, -90)])
+
 
 def getrandom():
     return random.random()
@@ -61,7 +66,6 @@ class User(db.Model):
         db.DateTime)
     difficulty = db.Column(
         db.SmallInteger)
-
 
     def __unicode__(self):
         return self.display_name
@@ -142,7 +146,8 @@ class Challenge(db.Model):
 
     @hybrid_property
     def polygon(self):
-        """Retrieve the polygon for this challenge, or return the World if there is none"""
+        """Retrieve the polygon for this challenge,
+        or return the World if there is none"""
 
         if self.geom is not None:
             return to_shape(self.geom)
@@ -167,7 +172,7 @@ class Challenge(db.Model):
 
         return Task.query.filter(
             Task.challenge_slug == self.slug).filter(
-            Task.isavailable == True).count()
+            Task.isavailable is True).count()
 
     @hybrid_property
     def islocal(self):
@@ -249,7 +254,6 @@ class Task(db.Model):
 
         return cls.currentaction.in_(('created', 'skipped', 'available'))
 
-
     @hybrid_property
     def location(self):
         """Returns the location for this task as a Shapely geometry.
@@ -278,8 +282,8 @@ class Task(db.Model):
     def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
         app.logger.debug(new_values)
-        for k,v in new_values.iteritems():
-            app.logger.debug('updating %s to %s' % (k,v))
+        for k, v in new_values.iteritems():
+            app.logger.debug('updating %s to %s' % (k, v))
             # if a status is set, append an action
             if k == 'status':
                 self.append_action(Action(v))
@@ -296,6 +300,7 @@ class Task(db.Model):
         db.session.merge(self)
         db.session.commit()
         return True
+
 
 class TaskGeometry(db.Model):
     """The collection of geometries (1+) belonging to a task"""
@@ -333,6 +338,7 @@ class TaskGeometry(db.Model):
         self.geom = from_shape(shape)
 
     geometry = synonym('geom', descriptor=geometry)
+
 
 class Action(db.Model):
     """An action on a task"""
