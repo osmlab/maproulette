@@ -209,7 +209,7 @@ var MRManager = (function () {
         var ways = [];
         var sw = bounds.getSouthWest();
         var ne = bounds.getNorthEast();
-        var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
+        var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0';
 
         for (f in task.features) {
             var feature = task.features[f];
@@ -217,10 +217,10 @@ var MRManager = (function () {
               continue;}
             switch (feature.geometry.type) {
                 case 'Point':
-                    url += 'node' + feature.properties.osmid;
+                    url += '&select=node' + feature.properties.osmid;
                     break;
                 case 'LineString':
-                    url += 'way' + feature.properties.osmid;
+                    url += '&select=way' + feature.properties.osmid;
                     break;
             }
         }
@@ -249,7 +249,7 @@ var MRManager = (function () {
       var center = map.getCenter();
       var lat = center.lat;
       var lon = center.lon;
-      var uri;
+      var uri = "http://openstreetmap.us/iD/release/"
       for (i in task.features) {
         var feature = task.feature[i];
         if (!feature.properties.osmid) {
