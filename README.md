@@ -42,7 +42,7 @@ Now create the three databases for the production, test and dev environments:
 
     createdb -O osm maproulette
     createdb -O osm maproulette_test
-    createdb -O osm maproulett_dev
+    createdb -O osm maproulette_dev
 
 Now you can switch back to a non-postgres user.
 
@@ -71,15 +71,13 @@ Install the python requirements:
     cd maproulette/
     pip install -r requirements.txt
 
+Wait for things to be downloaded, compiled and moved into place. There will be warnings, but the process should end with a confirmation that a bunch of python modules were installed.
+
 Ensure that maproulette will be accessible to python:
 
     add2virtualenv .
 
-Generate a Flask application secret:
-
-    python bin/make_secret.py
-    
-Have a look at the configuration defaults at `maproulette/config/__init__.py` and adapt as needed.
+Have a look at the configuration defaults at `maproulette/config/__init__.py` and adapt as needed. (If you followed the previous to the letter you should not need to change a thing.)
 
 Generate the database tables:
 
@@ -95,14 +93,14 @@ Finally, run the server:
 
 At this point you should see:
 
-* Running on http://0.0.0.0:3000/
+* Running on http://0.0.0.0:5000/
 * Restarting with reloader
 
-And you should have a MapRoulette instance at [http://localhost:3000/](http://localhost:3000/)
+And you should have a MapRoulette instance at [http://localhost:5000/](http://localhost:5000/)
 
 ## Frameworks used
 
-MapRoulette relies heavily on the lightweight Flask web application framework, and some of its extensions, notably Flask-OAuth, Flask-RESTful, Flask-Script and Flask-SQLAlchemy. For working with geospatial data, MapRoulette relies on GeoAlchemy2 and Shapely.
+MapRoulette relies heavily on the lightweight Flask web application framework, and some of its extensions, notably Flask-OAuth, Flask-RESTful, Flask-Script, Flask-Runner and Flask-SQLAlchemy. For working with geospatial data, MapRoulette relies on GeoAlchemy2 and Shapely.
 
 ## See also
 
