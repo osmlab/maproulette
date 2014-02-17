@@ -367,35 +367,37 @@ var MRManager = (function () {
     var selectChallenge = function (slug) {
         // if no specific challenge is passed in,
         // check what the cookie monster has for us
-        if (!slug) slug = $.cookie('challenge');
-        
-        if (!slug) {
-            console.log("Letting server select a challenge");
-            url = '/api/challenge';
+      if (!slug && $.cookie('challenge')) {
+        console.log("Setting challenge from cookie");
+        slug = $.cookie('challenge');
+      }
+      else if (!slug) {
+        console.log("Letting server select a challenge");
+        url = '/api/challenge';
+      }
+      else {
+        console.log("Getting challenge details for " + slug);
+        url = "/api/challenge/" + slug;
+      };
+      $.ajax({
+        url: url,
+        async: false, 
+        success: function (data) {
+          console.log('got challenge ' + slug);
+          // set the challenge cookie
+          $.cookie('challenge', slug);
+          challenge = data;
+          challenge.slug = slug;
+          // update the challenge detail UI elements
+          $('#challenge_title').text(challenge.title);
+          $('#challenge_blurb').text(challenge.blurb);
+          // and move on to get the stats
+          getChallengeStats()
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.log('ajax error');
         }
-        else {
-            console.log("Getting challenge details for " + slug);
-            url = "/api/challenge/" + slug;
-        };
-        $.ajax({
-            url: url,
-            async: false, 
-            success: function (data) {
-                console.log('got challenge ' + slug);
-                // set the challenge cookie
-                $.cookie('challenge', slug);
-                challenge = data;
-                challenge.slug = slug;
-                // update the challenge detail UI elements
-                $('#challenge_title').text(challenge.title);
-                $('#challenge_blurb').text(challenge.blurb);
-                // and move on to get the stats
-                getChallengeStats()
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log('ajax error');
-            }
-        });
+      });
     };
          
   
@@ -446,23 +448,24 @@ var MRManager = (function () {
      * get a task for the current challenge
      */
     var getTask = function () {
-
-        // check if we have a challenge, if not get one.
-        selectChallenge();
+        if (!challenge) {
+          selectChallenge();
+        }
         // get a task
         $.ajax({
             url     : '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(),
             async   : false,
-            success: function (data) { task = data },
-            error: function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
-        });
-
-        //...and its geometries
-        $.ajax({
-            url     : '/api/challenge/' + challenge.slug + '/task/' + task.identifier + '/geometries',
-            async   : false,
-            success : function (data) { task.features = data.features; },
-            error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
+            success: function (data) {
+              task = data;
+              //...and its geometries
+              $.ajax({
+                url     : '/api/challenge/' + challenge.slug + '/task/' + task.identifier + '/geometries',
+                async   : false,
+                success : function (data) { task.features = data.features; },
+                error   : function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
+              });
+            },
+          error: function (jqXHR, textStatus, errorThrown) { console.log('ajax error'); }
         });
     };
 
@@ -596,9 +599,9 @@ var MRManager = (function () {
         complete: function(){
           var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
           var helpHTML =  "<h1>" + challenge.title + " Help</h1>" +
-              "<div>" + challenge.help + "</div>" + 
-              OKButton;
-            $('.donedialog').html(helpHTML).fadeIn();
+            "<div>" + challenge.help + "</div>" + 
+            OKButton;
+          $('.donedialog').html(helpHTML).fadeIn();
         }});
     };
 
@@ -630,9 +633,11 @@ var MRManager = (function () {
     };
     
     var readyToEdit = function() {
+        console.log("Clearing the screen to edit")
         $('.donedialog').fadeOut();
         $('.controlpanel').fadeIn();
         if (!task) {
+            console.log("No task. Loading one")
             getAndShowTask();
         }
     };
