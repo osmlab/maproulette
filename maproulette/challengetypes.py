@@ -16,6 +16,7 @@ class Default(Challenge):
     done_dialog_buttons = ""  # an empty string will trigger the default buttons.
 
     marshal_fields = {
+        'slug': fields.String,
         'title': fields.String,
         'description': fields.String,
         'blurb': fields.String,
