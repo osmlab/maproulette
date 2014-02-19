@@ -1,18 +1,17 @@
 from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
-from flask.ext.restful.fields import get_value, Raw
-from flask.ext.sqlalchemy import get_debug_queries
+from flask.ext.restful.fields import Raw
 from flask import session, make_response, request
 from maproulette.helpers import *
 from maproulette.models import Challenge, Task, TaskGeometry, Action, db
 from geoalchemy2.functions import ST_Buffer
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import asShape
-from shapely import wkb
 import geojson
 import json
 import markdown
+
 
 class ProtectedResource(Resource):
     """A Resource that requires the caller to be authenticated against OSM"""
@@ -27,6 +26,7 @@ class PointField(Raw):
         # else, just get the point.
         point = geometry.coords[0]
         return '%f|%f' % point
+
 
 class MarkdownField(Raw):
     """Markdown text"""
@@ -67,6 +67,7 @@ api = Api(app)
 
 # override the default JSON representation to support the geo objects
 
+
 @api.representation('application/json')
 def output_json(data, code, headers=None):
     """Automatic JSON / GeoJSON output"""
@@ -95,10 +96,12 @@ def output_json(data, code, headers=None):
     resp.headers.extend(headers or {})
     return resp
 
+
 class ApiPing(Resource):
     """a simple ping endpoint"""
     def get(self):
         return "I am alive"
+
 
 class ApiGetAChallenge(ProtectedResource):
     @marshal_with(challenge_summary)
@@ -107,6 +110,7 @@ class ApiGetAChallenge(ProtectedResource):
         challenge = get_challenge_or_404(app.config["DEFAULT_CHALLENGE"], True)
         return challenge
 
+
 class ApiChallengeList(ProtectedResource):
     """Challenge list endpoint"""
 
@@ -114,11 +118,13 @@ class ApiChallengeList(ProtectedResource):
     def get(self):
         """returns a list of challenges.
         Optional URL parameters are:
-        difficulty: the desired difficulty to filter on (1=easy, 2=medium, 3=hard)
+        difficulty: the desired difficulty to filter on
+        (1=easy, 2=medium, 3=hard)
         lon/lat: the coordinate to filter on (returns only
         challenges whose bounding polygons contain this point)
         example: /api/challenges?lon=-100.22&lat=40.45&difficulty=2
-        all: if true, return all challenges regardless of OSM user home location
+        all: if true, return all challenges regardless of
+        OSM user home location
         """
         # initialize the parser
         parser = reqparse.RequestParser()
@@ -146,7 +152,7 @@ class ApiChallengeList(ProtectedResource):
             contains = 'POINT(%s %s)' % tuple(session['home_location'])
 
         # get the list of challenges meeting the criteria
-        query = db.session.query(Challenge).filter(Challenge.active == True)
+        query = db.session.query(Challenge).filter(Challenge.active is True)
 
         if difficulty:
             query = query.filter(Challenge.difficulty == difficulty)
@@ -166,6 +172,7 @@ class ApiChallengeDetail(ProtectedResource):
         challenge = get_challenge_or_404(slug, True)
         return marshal(challenge, challenge.marshal_fields)
 
+
 class ApiSelfInfo(ProtectedResource):
     """Information about the currently logged in user"""
 
@@ -173,11 +180,13 @@ class ApiSelfInfo(ProtectedResource):
         """Return information about the logged in user"""
         return marshal(session, me_fields)
 
+
 class ApiChallengePolygon(ProtectedResource):
     """Challenge geometry endpoint"""
 
     def get(self, slug):
-        """Return the geometry (spatial extent) for the challenge identified by 'slug'"""
+        """Return the geometry (spatial extent)
+        for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
         return challenge.polygon
 
@@ -215,19 +224,20 @@ class ApiChallengeTask(ProtectedResource):
         lat = args['lat']
 
         app.logger.info(
-            "{user} requesting task from {challenge} near ({lon}, {lat}) assiging: {assign}".format(
-                user=osmid,
-                challenge=slug,
-                lon=lon,
-                lat=lat,
-                assign=assign))
+            "{user} requesting task from {challenge} near\
+             ({lon}, {lat}) assiging: {assign}".format(
+            user=osmid,
+            challenge=slug,
+            lon=lon,
+            lat=lat,
+            assign=assign))
 
         task = None
         if lon and lat:
             coordWKT = 'POINT(%s %s)' % (lat, lon)
             task = Task.query.filter(Task.location.ST_Intersects(
                 ST_Buffer(coordWKT, app.config["NEARBUFFER"]))).first()
-        if task is None:  # we did not get a lon/lat or there was no task close to there
+        if task is None:  # we did not get a lon/lat or there was no task close
             # If no location is specified, or no tasks were found, gather
             # random tasks
             task = get_random_task(challenge)
@@ -236,7 +246,7 @@ class ApiChallengeTask(ProtectedResource):
         if task is None:
             # Is this the right error?
             return osmerror("ChallengeComplete",
-                     "Challenge {} is complete".format(slug))
+                            "Challenge {} is complete".format(slug))
         if assign:
             task.append_action(Action("assigned", osmid))
             db.session.add(task)
@@ -249,12 +259,14 @@ class ApiChallengeTaskDetails(ProtectedResource):
     """Task details endpoint"""
 
     def get(self, slug, identifier):
-        """Returns non-geo details for the task identified by 'identifier' from the challenge identified by 'slug'"""
+        """Returns non-geo details for the task identified by
+        'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
         return marshal(task, task_fields)
 
     def post(self, slug, identifier):
-        """Update the task identified by 'identifier' from the challenge identified by 'slug'"""
+        """Update the task identified by 'identifier' from
+        the challenge identified by 'slug'"""
         app.logger.debug('updating task %s' % (identifier, ))
         # initialize the parser
         parser = reqparse.RequestParser()
@@ -268,26 +280,30 @@ class ApiChallengeTaskDetails(ProtectedResource):
         task = get_task_or_404(slug, identifier)
         # append the latest action to it.
         task.append_action(Action(args.action,
-                                   session.get('osm_id'),
-                                   args.editor))
+                                  session.get('osm_id'),
+                                  args.editor))
         db.session.add(task)
         db.session.commit()
         return {}
+
 
 class ApiChallengeTaskStatus(ProtectedResource):
     """Task status endpoint"""
 
     def get(self, slug, identifier):
-        """Returns current status for the task identified by 'identifier' from the challenge identified by 'slug'"""
+        """Returns current status for the task identified by
+        'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
         app.logger.debug(task.currentaction)
         return {'status': task.currentaction}
+
 
 class ApiChallengeTaskGeometries(ProtectedResource):
     """Task geometry endpoint"""
 
     def get(self, slug, identifier):
-        """Returns the geometries for the task identified by 'identifier' from the challenge identified by 'slug'"""
+        """Returns the geometries for the task identified by
+        'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
         return task.geometries
 
@@ -314,6 +330,7 @@ api.add_resource(
 # The Admin API ################
 ################################
 
+
 class AdminApiChallenge(ProtectedResource):
     """Admin challenge creation endpoint"""
     def put(self, slug):
@@ -322,7 +339,7 @@ class AdminApiChallenge(ProtectedResource):
             abort(403)
         try:
             payload = json.loads(request.data)
-        except Exception, e:
+        except Exception:
             app.logger.debug('payload invalid, no json')
             abort(400)
         if not 'title' in payload:
@@ -346,7 +363,7 @@ class AdminApiChallenge(ProtectedResource):
         challenge = get_challenge_or_404(slug)
         db.session.delete(challenge)
         db.session.commit()
-        
+
 
 class AdminApiTaskStatuses(ProtectedResource):
     """Admin Task status endpoint"""
@@ -357,6 +374,7 @@ class AdminApiTaskStatuses(ProtectedResource):
         return [{
             'identifier': task.identifier,
             'status': task.currentaction} for task in challenge.tasks]
+
 
 class AdminApiUpdateTask(ProtectedResource):
     """Challenge Task Statuses endpoint"""
@@ -394,7 +412,6 @@ class AdminApiUpdateTask(ProtectedResource):
                 t = TaskGeometry(osmid, shape)
                 task_geometries.append(t)
 
-
         # there's two possible scenarios:
         # 1.    An existing task gets an update, in that case
         #       we only need the identifier
@@ -407,7 +424,7 @@ class AdminApiUpdateTask(ProtectedResource):
             app.logger.debug('existing task')
             task = get_task_or_404(slug, identifier)
             if not task.update(taskdata, task_geometries):
-               abort(400)
+                abort(400)
         else:
             # if it does not, create it
             app.logger.debug('new task')
@@ -418,11 +435,13 @@ class AdminApiUpdateTask(ProtectedResource):
     def delete(self, slug, identifier):
         """Delete a task"""
 
-        task = get_task_or_404(slug,identifier)
+        task = get_task_or_404(slug, identifier)
         task.append_action(Action('deleted'))
         db.session.add(task)
         db.session.commit()
 
 api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
-api.add_resource(AdminApiTaskStatuses, '/api/admin/challenge/<string:slug>/tasks')
-api.add_resource(AdminApiUpdateTask, '/api/admin/challenge/<string:slug>/task/<string:identifier>')
+api.add_resource(AdminApiTaskStatuses,
+                 '/api/admin/challenge/<string:slug>/tasks')
+api.add_resource(AdminApiUpdateTask,
+                 '/api/admin/challenge/<string:slug>/task/<string:identifier>')
