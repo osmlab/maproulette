@@ -70,7 +70,9 @@ def retrieve_osm_data():
         homexml = userxml.find('home')
         if homexml is not None:
             lon = float(homexml.attrib['lon'])
-            # this is to work around a bug in OSM where the set user longitude can be outside of the -180 ... 180 range if the user panned the map across the 180 / -180 meridian
+            # this is to work around a bug in OSM where the set user longitude
+            # can be outside of the -180 ... 180 range if the user panned the
+            # map across the 180 / -180 meridian
             lon = abs(lon) % 180 * (lon / abs(lon))
             lat = homexml.attrib['lat']
             user.home_location = WKTElement(
@@ -79,7 +81,7 @@ def retrieve_osm_data():
             app.logger.debug('setting user home location')
         else:
             app.logger.debug('no home for this user')
-        languages = userxml.find('languages')
+        # languages = userxml.find('languages')
         # FIXME parse languages and add to user.languages string field
         user.changeset_count = userxml.find('changesets').attrib['count']
         # get last changeset info
@@ -112,5 +114,7 @@ def retrieve_osm_data():
         point = to_shape(user.home_location)
         session['home_location'] = [point.x, point.y] or None
     session['display_name'] = user.display_name
+    app.logger.debug('session now has display name: %s' %
+                     (session['display_name']))
     session['osm_id'] = user.id
     session['difficulty'] = user.difficulty

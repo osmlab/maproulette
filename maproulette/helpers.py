@@ -1,12 +1,12 @@
 """Some helper functions"""
-from flask import abort, session, make_response
+from flask import abort, session, request, make_response
 from maproulette.models import Challenge, Task
 from maproulette.challengetypes import challenge_types
 from functools import wraps
 import random
 import json
 from maproulette import app
-from sqlalchemy.sql.expression import select, exists
+
 
 def osmerror(error, description):
     """Return an OSMError to the client"""
@@ -16,7 +16,8 @@ def osmerror(error, description):
 
 
 def get_or_abort(model, object_id, code=404):
-    """Get an object with his given id or an abort error (404 is the default)"""
+    """Get an object with his given id
+    or an abort error (404 is the default)"""
     result = model.query.get(object_id)
     return result or abort(code)
 
@@ -41,7 +42,7 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
 def challenge_exists(challenge_slug):
     q = Challenge.query.filter(
         Challenge.slug == challenge_slug).first()
-    if q is None:  
+    if q is None:
         return False
     return True
 
@@ -56,13 +57,15 @@ def get_task_or_404(challenge_slug, task_identifier):
         abort(404)
     return t
 
+
 def task_exists(challenge_slug, task_identifier):
     q = Task.query.filter(
         Task.challenge_slug == challenge_slug).filter(
         Task.identifier == task_identifier).first()
-    if q is None:  
+    if q is None:
         return False
     return True
+
 
 def get_or_create_task(challenge, task_identifier):
     """Return a task, either pull a new one or create a new one"""
@@ -107,11 +110,11 @@ def get_random_task(challenge):
     rn = random.random()
     t = Task.query.filter(Task.challenge_slug == challenge.slug,
                           Task.random <= rn).order_by(
-                          Task.random.desc()).first()
+        Task.random.desc()).first()
     if not t:
         t = Task.query.filter(Task.challenge_slug == challenge.slug,
                               Task.random > rn).order_by(
-                              Task.random).first()
+            Task.random).first()
     return t
 
 
@@ -149,6 +152,8 @@ class JsonTasks(object):
         assert isinstance(data, list)
         for task in data:
             assert 'id' in task, "Task must contain an 'id' property"
-            assert 'manifest' in task, "Task must contain a 'manifest' property"
-            assert 'location' in task, "Task must contain a 'location' property"
+            assert 'manifest' in task, \
+                "Task must contain a 'manifest' property"
+            assert 'location' in task, \
+                "Task must contain a 'location' property"
         self.data = data
