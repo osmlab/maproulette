@@ -14,10 +14,10 @@
     <div id="user">
         {%- if session.osm_oauth -%}
         <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
-        signed in as {{ session.display_name }}. <a id="loginlink" href="{{ url_for("logout") }}">sign out</a>
+        signed in as {{ session.display_name }}. <a href="{{ url_for("logout") }}">sign out</a>
         {%- else -%}
         <script type="text/javascript">MRManager.loggedIn = false;</script>
-        not signed in. <a id="loginlink" href="{{ url_for("oauth_authorize") }}">sign in on OSM</a>
+        not signed in. <a href="{{ url_for("oauth_authorize") }}">sign in on OSM</a>
         {%- endif -%}
     </div>
     <div id="challenge_title"></div>

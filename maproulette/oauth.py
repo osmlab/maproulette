@@ -23,7 +23,7 @@ def get_osm_token(token=None):
     return (tokens['oauth_token'], tokens['oauth_token_secret'])
 
 
-@app.route('/login')
+@app.route('/signin')
 def oauth_authorize():
     """Redirect to the authorize URL"""
 
