@@ -16,7 +16,7 @@ import markdown
 
 class ProtectedResource(Resource):
     """A Resource that requires the caller to be authenticated against OSM"""
-    method_decorators = [osmlogin_required]
+    method_decorators = [require_signedin]
 
 
 class PointField(Raw):

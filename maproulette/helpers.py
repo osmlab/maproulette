@@ -77,7 +77,7 @@ def get_or_create_task(challenge, task_identifier):
     return task
 
 
-def osmlogin_required(f):
+def require_signedin(f):
     """Require the caller to be authenticated against OSM"""
 
     @wraps(f)
