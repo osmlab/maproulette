@@ -239,43 +239,28 @@ var MRManager = (function () {
             return uri;
         };
 
-        var openInJOSM = function () {};
-
         var constructIdUri = function () {
             var zoom = map.getZoom();
             var center = map.getCenter();
             var lat = center.lat;
             var lon = center.lon;
-            var uri = "http://openstreetmap.us/iD/release/"
+            var uri = "http://openstreetmap.us/iD/release/#id=";
             for (i in task.features) {
-                var feature = task.feature[i];
+                var feature = task.features[i];
                 if (!feature.properties.osmid) {
                     continue;
                 }
                 switch (feature.geometry.type) {
                 case 'Point':
-                    uri + "&id=n" + features.properties.osmid;
+                    uri += "n" + feature.properties.osmid + ",";
                     break;
                 case 'LineString':
-                    uri = "&id=w" + features.properties.osmid;
+                    uri += "w" + feature.properties.osmid + ",";
                     break;
                 }
             }
+            console.log('constructed ' + uri);
             return uri;
-        };
-
-        var openInId = function () {
-            var idUri = constructIdUri();
-            $.ajax({
-                url: idUri,
-                success: function () {
-                    updateTask('editing');
-                    setTimeout(confirmRemap, 4000)
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    notify.play("ID editor did not spawn. I'm sorry.");
-                }
-            });
         };
 
         /*
@@ -562,14 +547,14 @@ var MRManager = (function () {
         };
 
         var openTaskInId = function () {
-            //edit#map=16/31.8289/-112.5948
-            var editURL = 'http://osm.org/edit#map=' + map.getZoom() + '/' + map.getCenter().lat + '/' + map.getCenter().lng;
-            // open a new window with the edit URL
-            window.open(editURL);
-            // update the task
+            // this opens a new tab and focuses the browser on it. 
+            // We may want to consider http://stackoverflow.com/a/11389138 to 
+            // open a tab in the background - seems like that trick does not
+            // work in all browsers.
+            window.open(constructIdUri(), '_blank');
             updateTask('editing');
-            // display the confirmation dialog
-            setTimeout(confirmRemap, 4000);
+            notify.play('Your task is being loaded in iD in a separate tab. Please return here after you completed your fixes!');
+            setTimeout(confirmRemap, 4000)
         };
 
         var presentDoneDialog = function () {
@@ -704,16 +689,16 @@ var MRManager = (function () {
         };
 
         var registerHotkeys = function () {
-            $(document).bind('keydown', 'q', function () {
+            $(document).bind('keypress', 'q', function () {
                 MRManager.nextTask("falsepositive")
             });
-            $(document).bind('keydown', 'w', function () {
+            $(document).bind('keypress', 'w', function () {
                 MRManager.nextTask("skipped")
             });
-            $(document).bind('keydown', 'e', function () {
+            $(document).bind('keypress', 'e', function () {
                 MRManager.openTaskInId()
             });
-            $(document).bind('keydown', 'r', function () {
+            $(document).bind('keypress', 'r', function () {
                 MRManager.openTaskInJosm()
             });
         }
