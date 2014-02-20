@@ -2,8 +2,11 @@ from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import Raw
-from flask import session, make_response, request
-from maproulette.helpers import *
+from flask import session, make_response, request, abort
+from maproulette.helpers import get_random_task,\
+    get_challenge_or_404, get_task_or_404,\
+    require_signedin, osmerror, challenge_exists,\
+    task_exists
 from maproulette.models import Challenge, Task, TaskGeometry, Action, db
 from geoalchemy2.functions import ST_Buffer
 from shapely.geometry.base import BaseGeometry
@@ -318,13 +321,13 @@ api.add_resource(ApiSelfInfo, '/api/me')
 api.add_resource(ApiGetAChallenge, '/api/challenge')
 api.add_resource(
     ApiChallengeTaskDetails,
-    '/api/challenge/<slug>/task/<identifier>/')
+    '/api/challenge/<slug>/task/<identifier>')
 api.add_resource(
     ApiChallengeTaskGeometries,
-    '/api/challenge/<slug>/task/<identifier>/geometries/')
+    '/api/challenge/<slug>/task/<identifier>/geometries')
 api.add_resource(
     ApiChallengeTaskStatus,
-    '/api/challenge/<slug>/task/<identifier>/status/')
+    '/api/challenge/<slug>/task/<identifier>/status')
 
 ################################
 # The Admin API ################
