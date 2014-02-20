@@ -8,6 +8,10 @@ import json
 from maproulette import app
 
 
+def signed_in():
+    return "osm_token" in session
+
+
 def osmerror(error, description):
     """Return an OSMError to the client"""
 

@@ -1,4 +1,5 @@
 from maproulette import app, models
+from maproulette.helpers import signed_in
 from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
 from maproulette.models import db
@@ -16,11 +17,11 @@ oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
-  # session.regenerate() this should be done elsewhere.
-    if 'osm_oauth' in session:
-        app.logger.debug('found osm_oauth in session')
-        tokens = session['osm_oauth']
-    return (tokens['oauth_token'], tokens['oauth_token_secret'])
+    app.logger.debug("polling tokengetter")
+    if signed_in():
+        app.logger.debug('found tokens in session')
+        return session.get('osm_token')
+    return None
 
 
 @app.route('/signin')
@@ -40,7 +41,10 @@ def oauthorized(resp):
     if resp is None:
         return redirect(next_url)
     app.logger.debug(resp)
-    session['osm_oauth'] = resp
+    session['osm_token'] = (
+        resp['oauth_token'],
+        resp['oauth_token_secret']
+    )
     retrieve_osm_data()
     app.logger.debug('redirecting to %s' % next_url)
     return redirect(next_url)

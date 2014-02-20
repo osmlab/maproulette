@@ -12,7 +12,7 @@
 <div class="controlpanel">
     <div class="title">OpenStreetMap <em>MapRoulette</em></div>
     <div id="user">
-        {%- if session.osm_oauth -%}
+        {%- if session.get('osm_token') -%}
         <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
         signed in as {{ session.display_name }}. <a href="{{ url_for("logout") }}">sign out</a>
         {%- else -%}
