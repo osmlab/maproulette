@@ -12,12 +12,12 @@
 <div class="controlpanel">
     <div class="title">OpenStreetMap <em>MapRoulette</em></div>
     <div id="user">
-        {%- if session.osm_oauth -%}
+        {%- if session.get('osm_token') -%}
         <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
-        connected as {{ session.display_name }}. <a id="loginlink" href="{{ url_for("logout") }}">disconnect</a>
+        signed in as {{ session.display_name }}. <a href="{{ url_for("logout") }}">sign out</a>
         {%- else -%}
         <script type="text/javascript">MRManager.loggedIn = false;</script>
-        not connected as an OSM user. <a id="loginlink" href="{{ url_for("oauth_authorize") }}">Connect</a>
+        not signed in. <a href="{{ url_for("oauth_authorize") }}">sign in on OSM</a>
         {%- endif -%}
     </div>
     <div id="challenge_title"></div>
