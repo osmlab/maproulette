@@ -3,6 +3,7 @@
 <script type="text/javascript" src="{{ url_for("static", filename="js/jquery-2.1.0.min.js") }}"></script>
 <script type="text/javascript" src="{{ url_for("static", filename="js/jquery.cookie.js") }}"></script>
 <script type="text/javascript" src="{{ url_for("static", filename="js/jquery.noty.packaged.min.js") }}"></script>
+<script type="text/javascript" src="{{ url_for("static", filename="js/jquery.hotkeys    .js") }}"></script>
 <script type="text/javascript" src="{{ url_for("static", filename="js/leaflet.js") }}"></script>
 <script type="text/javascript" src="{{ url_for("static", filename="js/maproulette.js") }}"></script>
 <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="css/style.css") }}" />
@@ -29,11 +30,10 @@
     </div>
     <div id="stats">This challenge has <span id="total"></span> tasks, and we still need to complete <span id="available"></span> of them.</div>
     <hr />
-    <div class="button" onClick='MRManager.nextTask("falsepositive")' accesskey'f'>THIS IS NOT AN ERROR <span class=key>f</span></div>
-    <div class="button" onClick='MRManager.nextTask("skipped")' accesskey='s'>I'M NOT SURE / SKIP <span class=key>s</span></div>
-    <div class="button" onClick='MRManager.openTaskInId()'
-    accesskey='e'>EDIT IN iD<span class=key>i</span></div>
-    <div class="button" onClick='MRManager.openTaskInEditor("j")' accesskey='j'>EDIT IN JOSM <span class=key>j</span></div>
+    <div class="button" onClick='MRManager.nextTask("falsepositive")'>THIS IS NOT AN ERROR <span class=key>q</span></div>
+    <div class="button" onClick='MRManager.nextTask("skipped")'>I'M NOT SURE / SKIP <span class=key>w</span></div>
+    <div class="button" onClick='MRManager.openTaskInId()'>EDIT IN iD<span class=key>e</span></div>
+    <div class="button" onClick='MRManager.openTaskInEditor("j")'>EDIT IN JOSM <span class=key>r</span></div>
 </div>
 <div class="notifications"></div>
 <div class="donedialog"></div>
