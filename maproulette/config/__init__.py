@@ -1,6 +1,6 @@
-import os
 
 # Configuration classes
+
 
 class Config(object):
     """Base configuration class"""
@@ -9,15 +9,16 @@ class Config(object):
     TESTING = False
 
     # The application secret key
-    # fixme this should be the same key every time, probably
-    SECRET_KEY = os.urandom(24)
+    # http://www.thedutchtable.com/2013/03/een-ei-is-geen-eivrolijk-pasen.html
+    SECRET_KEY = 'een ei is geen ei twee ei is een half ei'
 
     # This is the buffer for looking for tasks / challenges near the given
     # lon/lat
     NEARBUFFER = 0.01
 
-    # this is the threshold in square degrees for considering a challenge 'local'
-    MAX_SQ_DEGREES_FOR_LOCAL = 25
+    # this is the threshold in square degrees
+    # for considering a challenge 'local'
+    MAX_SQ_DEGREES_FOR_LOCAL = 10
 
     # The OAuth configuration paramters for OSM.
     # The example key and secret point to the MapRoulette application
@@ -35,6 +36,7 @@ class Config(object):
     }
 
     DEFAULT_CHALLENGE = 'test1'
+
 
 class ProductionConfig(Config):
     """Production configuration class"""
