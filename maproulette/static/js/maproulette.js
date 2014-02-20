@@ -239,24 +239,7 @@ var MRManager = (function () {
             return uri;
         };
 
-        var openInJOSM = function () {
-            var josmUri = constructJosmUri();
-            // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
-            $.ajax({
-                url: josmUri,
-                success: function (t) {
-                    if (t.indexOf('OK') === -1) {
-                        notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?', {
-                            type: 'error'
-                        });
-                    } else {
-                        console.log('the data was loaded in JOSM, now waiting for callback');
-                        updateTask('editing');
-                        setTimeout(confirmRemap, 4000);
-                    }
-                }
-            });
-        };
+        var openInJOSM = function () {};
 
         var constructIdUri = function () {
             var zoom = map.getZoom();
@@ -342,6 +325,9 @@ var MRManager = (function () {
             // Add both the tile layer and the task layer to the map
             map.addLayer(tileLayer);
             map.addLayer(taskLayer);
+
+            // Register the keyboard shortcuts
+            MRManager.registerHotkeys();
 
             if (this.loggedIn) {
                 // check if the user hand picked a challenge
@@ -550,26 +536,40 @@ var MRManager = (function () {
             getChallengeStats();
         }
 
-        var openTaskInEditor = function (editor) {
+        var openTaskInJosm = function () {
             if (map.getZoom() < MRConfig.minZoomLevelForEditing) {
                 notify.play(MRConfig.strings.msgZoomInForEdit, {
                     type: 'warning'
                 });
                 return false;
             }
-            console.log('opening in ' + editor);
-            if (editor === 'j') {
-                openInJOSM()
-            } else { // OSM default
-                //edit#map=16/31.8289/-112.5948
-                var editURL = 'http://osm.org/edit#map=' + map.getZoom() + '/' + map.getCenter().lat + '/' + map.getCenter().lng;
-                // open a new window with the edit URL
-                window.open(editURL);
-                // update the task
-                updateTask('editing');
-                // display the confirmation dialog
-                setTimeout(confirmRemap, 4000);
-            }
+            var josmUri = constructJosmUri();
+            // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
+            $.ajax({
+                url: josmUri,
+                success: function (t) {
+                    if (t.indexOf('OK') === -1) {
+                        notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?', {
+                            type: 'error'
+                        });
+                    } else {
+                        console.log('the data was loaded in JOSM, now waiting for callback');
+                        updateTask('editing');
+                        setTimeout(confirmRemap, 4000);
+                    }
+                }
+            });
+        };
+
+        var openTaskInId = function () {
+            //edit#map=16/31.8289/-112.5948
+            var editURL = 'http://osm.org/edit#map=' + map.getZoom() + '/' + map.getCenter().lat + '/' + map.getCenter().lng;
+            // open a new window with the edit URL
+            window.open(editURL);
+            // update the task
+            updateTask('editing');
+            // display the confirmation dialog
+            setTimeout(confirmRemap, 4000);
         };
 
         var presentDoneDialog = function () {
@@ -703,18 +703,34 @@ var MRManager = (function () {
             console.log('user setting preferences');
         };
 
+        var registerHotkeys = function () {
+            $(document).bind('keydown', 'q', function () {
+                MRManager.nextTask("falsepositive")
+            });
+            $(document).bind('keydown', 'w', function () {
+                MRManager.nextTask("skipped")
+            });
+            $(document).bind('keydown', 'e', function () {
+                MRManager.openTaskInId()
+            });
+            $(document).bind('keydown', 'r', function () {
+                MRManager.openTaskInJosm()
+            });
+        }
+
         return {
             init: init,
             nextTask: nextTask,
             getAndShowTask: getAndShowTask,
-            openInJOSM: openInJOSM,
-            openInId: openInId,
+            openTaskInId: openTaskInId,
+            openTaskInJosm: openTaskInJosm,
             geolocateUser: geolocateUser,
             userPreferences: userPreferences,
             userPickChallenge: userPickChallenge,
             readyToEdit: readyToEdit,
             presentChallengeSelectionDialog: presentChallengeSelectionDialog,
-            presentChallengeHelp: presentChallengeHelp
+            presentChallengeHelp: presentChallengeHelp,
+            registerHotkeys: registerHotkeys
         };
     }
     ());
