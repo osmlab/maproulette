@@ -584,7 +584,7 @@ var MRManager = (function () {
                 complete: function () {
                     if (challenges.length == 0) {
                         $.ajax({
-                            url: "/api/challenges?all=true",
+                            url: "/api/challenges",
                             success: function (data) {
                                 challenges = data;
                                 cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
