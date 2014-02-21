@@ -246,8 +246,6 @@ var MRManager = (function () {
             var lon = center.lng;
             var baseUriComponent = "http://openstreetmap.us/iD/release/#";
             var idUriComponent = "id=";
-            console.log(lon);
-            console.log(lat);
             var mapUriComponent = "map=" + [zoom, lon, lat].join('/');
             // http://openstreetmap.us/iD/release/#background=Bing&id=w238383695,w238383626,&desmap=20.00/-77.02271/38.90085
             for (i in task.features) {
@@ -257,10 +255,10 @@ var MRManager = (function () {
                 }
                 switch (feature.geometry.type) {
                 case 'Point':
-                    uri += "n" + feature.properties.osmid + ",";
+                    idUriComponent += "n" + feature.properties.osmid + ",";
                     break;
                 case 'LineString':
-                    uri += "w" + feature.properties.osmid + ",";
+                    idUriComponent += "w" + feature.properties.osmid + ",";
                     break;
                 }
             }
