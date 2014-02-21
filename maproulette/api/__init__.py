@@ -126,8 +126,6 @@ class ApiChallengeList(ProtectedResource):
         lon/lat: the coordinate to filter on (returns only
         challenges whose bounding polygons contain this point)
         example: /api/challenges?lon=-100.22&lat=40.45&difficulty=2
-        all: if true, return all challenges regardless of
-        OSM user home location
         """
         # initialize the parser
         parser = reqparse.RequestParser()
@@ -137,29 +135,29 @@ class ApiChallengeList(ProtectedResource):
                             help="lon cannot be parsed")
         parser.add_argument('lat', type=float,
                             help="lat cannot be parsed")
-        parser.add_argument('all', type=bool,
-                            help="all cannot be parsed")
         args = parser.parse_args()
 
         difficulty = None
         contains = None
 
         # Try to get difficulty from argument, or users preference
-        difficulty = args['difficulty'] or session.get('difficulty')
+        difficulty = args['difficulty']
 
         # for local challenges, first look at lon / lat passed in
-        if args.lon and args.lat:
+        if args.lon is not None and args.lat is not None:
+            app.logger.debug('got lon and lat')
             contains = 'POINT(%s %s)' % (args.lon, args.lat)
         # if there is none, look at the user's home location from OSM
-        elif 'home_location' in session:
-            contains = 'POINT(%s %s)' % tuple(session['home_location'])
+        #elif 'home_location' in session:
+        #    contains = 'POINT(%s %s)' % tuple(session.get('home_location'))
 
         # get the list of challenges meeting the criteria
-        query = db.session.query(Challenge).filter(Challenge.active is True)
+        query = db.session.query(Challenge).filter_by(active=True)
 
-        if difficulty:
-            query = query.filter(Challenge.difficulty == difficulty)
-        if contains and not args.all:
+        if difficulty is not None:
+            app.logger.debug('difficulty not none')
+            query = query.filter_by(difficulty=difficulty)
+        if contains is not None:
             query = query.filter(Challenge.polygon.ST_Contains(contains))
 
         challenges = query.all()
