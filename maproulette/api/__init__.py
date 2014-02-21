@@ -141,21 +141,23 @@ class ApiChallengeList(ProtectedResource):
         contains = None
 
         # Try to get difficulty from argument, or users preference
-        difficulty = args['difficulty'] or session.get('difficulty')
+        difficulty = args['difficulty']
 
         # for local challenges, first look at lon / lat passed in
-        if args.lon and args.lat:
+        if args.lon is not None and args.lat is not None:
+            app.logger.debug('got lon and lat')
             contains = 'POINT(%s %s)' % (args.lon, args.lat)
         # if there is none, look at the user's home location from OSM
-        elif 'home_location' in session:
-            contains = 'POINT(%s %s)' % tuple(session.get('home_location'))
+        #elif 'home_location' in session:
+        #    contains = 'POINT(%s %s)' % tuple(session.get('home_location'))
 
         # get the list of challenges meeting the criteria
         query = db.session.query(Challenge).filter_by(active=True)
 
-        if difficulty:
+        if difficulty is not None:
+            app.logger.debug('difficulty not none')
             query = query.filter_by(difficulty=difficulty)
-        if contains:
+        if contains is not None:
             query = query.filter(Challenge.polygon.ST_Contains(contains))
 
         challenges = query.all()
