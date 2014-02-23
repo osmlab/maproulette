@@ -229,13 +229,14 @@ var MRManager = (function () {
                 }
                 switch (feature.geometry.type) {
                 case 'Point':
-                    url += '&select=node' + feature.properties.osmid;
+                    uri += '&select=node' + feature.properties.osmid;
                     break;
                 case 'LineString':
-                    url += '&select=way' + feature.properties.osmid;
+                    uri += '&select=way' + feature.properties.osmid;
                     break;
                 }
             }
+            console.log('constructed ' + uri)
             return uri;
         };
 
