@@ -1,8 +1,8 @@
-from maproulette import app, models
+from maproulette import app
 from maproulette.helpers import signed_in
 from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
-from maproulette.models import db
+from maproulette.models import db, User
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 
@@ -62,12 +62,12 @@ def retrieve_osm_data():
     userxml = data.find('user')
     osmid = userxml.attrib['id']
     # query for existing user
-    if bool(models.User.query.filter(models.User.id == osmid).count()):
+    if bool(User.query.filter(User.id == osmid).count()):
         app.logger.debug('user exists, getting from database')
-        user = models.User.query.filter(models.User.id == osmid).first()
+        user = User.query.filter(User.id == osmid).first()
     else:
         app.logger.debug('user is new, create local account')
-        user = models.User()
+        user = User()
         user.id = osmid
         user.display_name = userxml.attrib['display_name']
         user.osm_account_created = userxml.attrib['account_created']
