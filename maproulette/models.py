@@ -170,9 +170,9 @@ class Challenge(db.Model):
     def tasks_available(self):
         """Return the number of tasks available for this challenge."""
 
-        return Task.query.filter(
-            Task.challenge_slug == self.slug).filter(
-            Task.isavailable is True).count()
+        return len(
+            [t for t in self.tasks
+                if t.currentaction in ['created', 'available', 'skipped']])
 
     @hybrid_property
     def islocal(self):
@@ -202,11 +202,6 @@ class Task(db.Model):
     challenge_slug = db.Column(
         db.String,
         db.ForeignKey('challenges.slug'))
-    # this is now deprecated by the location function
-    # below.
-    #geom = db.Column(
-    #    Geometry('POINT'),
-    #    nullable=False)
     random = db.Column(
         db.Float,
         default=getrandom,
@@ -243,16 +238,6 @@ class Task(db.Model):
 
     def __repr__(self):
         return '<Task %s>' % (self.identifier)
-
-    @hybrid_property
-    def isavailable(self):
-
-        return (self.currentaction in ['created', 'skipped', 'available'])
-
-    @isavailable.expression
-    def isavailable(cls):
-
-        return cls.currentaction.in_(('created', 'skipped', 'available'))
 
     @hybrid_property
     def location(self):

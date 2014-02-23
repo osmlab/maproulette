@@ -229,13 +229,14 @@ var MRManager = (function () {
                 }
                 switch (feature.geometry.type) {
                 case 'Point':
-                    url += '&select=node' + feature.properties.osmid;
+                    uri += '&select=node' + feature.properties.osmid;
                     break;
                 case 'LineString':
-                    url += '&select=way' + feature.properties.osmid;
+                    uri += '&select=way' + feature.properties.osmid;
                     break;
                 }
             }
+            console.log('constructed ' + uri)
             return uri;
         };
 
@@ -243,8 +244,11 @@ var MRManager = (function () {
             var zoom = map.getZoom();
             var center = map.getCenter();
             var lat = center.lat;
-            var lon = center.lon;
-            var uri = "http://openstreetmap.us/iD/release/#id=";
+            var lon = center.lng;
+            var baseUriComponent = "http://openstreetmap.us/iD/release/#";
+            var idUriComponent = "id=";
+            var mapUriComponent = "map=" + [zoom, lon, lat].join('/');
+            // http://openstreetmap.us/iD/release/#background=Bing&id=w238383695,w238383626,&desmap=20.00/-77.02271/38.90085
             for (i in task.features) {
                 var feature = task.features[i];
                 if (!feature.properties.osmid) {
@@ -252,13 +256,14 @@ var MRManager = (function () {
                 }
                 switch (feature.geometry.type) {
                 case 'Point':
-                    uri += "n" + feature.properties.osmid + ",";
+                    idUriComponent += "n" + feature.properties.osmid + ",";
                     break;
                 case 'LineString':
-                    uri += "w" + feature.properties.osmid + ",";
+                    idUriComponent += "w" + feature.properties.osmid + ",";
                     break;
                 }
             }
+            var uri = baseUriComponent + [idUriComponent, mapUriComponent].join('&');
             console.log('constructed ' + uri);
             return uri;
         };
@@ -600,6 +605,8 @@ var MRManager = (function () {
                                 console.log('ajax error')
                             }
                         });
+                    } else {
+                        $('.donedialog').html(dialogHTML).fadeIn();
                     };
                 }
             });
