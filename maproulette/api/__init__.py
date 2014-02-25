@@ -7,7 +7,8 @@ from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
     task_exists
-from maproulette.models import Challenge, Task, TaskGeometry, Action, db
+from maproulette.models import User, Challenge, Task, TaskGeometry, Action, db
+from sqlalchemy.sql import func
 from geoalchemy2.functions import ST_Buffer
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import asShape
@@ -106,6 +107,48 @@ class ApiPing(Resource):
         return "I am alive"
 
 
+class ApiMe(ProtectedResource):
+    def get(self):
+        me = {}
+        challenges = {}
+        # select min(a.timestamp) firsttime, count(1), a.status, c.slug from
+        # actions a, tasks t, challenges c where a.task_id = t.id and
+        # t.challenge_slug = c.slug and a.user_id = 437
+        # group by a.status, c.slug;
+        for firstaction, lastaction, status,\
+            status_count, challenge_slug, challenge_title\
+            in db.session.query(
+                func.min(Action.timestamp),
+                func.max(Action.timestamp),
+                Action.status,
+                func.count(Action.id),
+                Challenge.slug,
+                Challenge.title).select_from(Action).filter(
+                Action.user_id == session.get('osm_id')).join(
+                Task, Challenge).group_by(
+                Action.status,
+                Challenge.slug,
+                Challenge.title).order_by(
+                Challenge.title,
+                Action.status):
+            if challenge_slug in challenges.keys():
+                challenges[challenge_slug]['statuses'].update({
+                    status: {'first': str(firstaction),
+                             'last': str(lastaction),
+                             'count': status_count}
+                })
+            else:
+                challenges[challenge_slug] = {
+                    'title': challenge_title,
+                    'statuses': {
+                        status: {'first': str(firstaction),
+                                 'last': str(lastaction),
+                                 'count': status_count}}
+                }
+        me['challenges'] = challenges
+        return me
+
+
 class ApiGetAChallenge(ProtectedResource):
     @marshal_with(challenge_summary)
     def get(self):
@@ -199,10 +242,94 @@ class ApiChallengeStats(ProtectedResource):
         """Return statistics for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
         total = len(challenge.tasks)
-        # for task in Task.query.filter(Task.challenge_slug == slug):
-        #    app.logger.debug(task.available)
         available = challenge.tasks_available
         return {'total': total, 'available': available}
+
+
+class ApiChallengeStatsPerUser(ProtectedResource):
+    """Challenge User Statistics endpoint"""
+    def get(self, slug):
+        # what we want is
+        # * number of unique users participating
+        # * number of things fixed per user
+        statuses = {}
+
+        # select count(1), u.display_name, a.status from
+        # challenges c, users u, tasks t, actions a where
+        # c.slug = t.challenge_slug and a.user_id = u.id and
+        # a.task_id = t.id and c.slug = 'test10' group by a.status,
+        # u.display_name;
+        for cnt, display_name, status in db.session.query(
+            func.count(User.id),
+            User.display_name,
+            Action.status).select_from(Action).filter(
+            Challenge.slug == slug).join(
+            Task, Challenge).group_by(
+            Action.status,
+            User.display_name).order_by(
+                User.display_name,
+                Action.status):
+            if status in statuses:
+                statuses[status].update({
+                    display_name: cnt
+                })
+            else:
+                statuses[status] = {
+                    display_name: cnt
+                }
+        return statuses
+
+
+class ApiStatsUserTotals(ProtectedResource):
+    """summary statistics for all users"""
+    def get(self):
+        pass
+
+
+class ApiStatsChallengeTotals(ProtectedResource):
+    """summary statistics for all challenges"""
+    def get(self):
+        challenges = {}
+        # select count(1), c.slug, min(a.timestamp), max(a.timestamp), a.status
+        # from
+        # challenges c, tasks t, actions a where
+        # c.slug = t.challenge_slug and
+        # a.task_id = t.id and c.slug = t.challenge_slug group by a.status,
+        # c.slug;
+        for status_count,\
+            challenge_slug,\
+            challenge_title,\
+            firstaction,\
+            lastaction,\
+            status in\
+            db.session.query(
+                func.count(Action.id),
+                Challenge.slug,
+                Challenge.title,
+                func.min(Action.timestamp),
+                func.max(Action.timestamp),
+                Action.status).select_from(Action).join(
+                Task, Challenge).group_by(
+                Action.status,
+                Challenge.slug,
+                Challenge.title).order_by(
+                Challenge.title,
+                Action.status):
+                if challenge_slug in challenges.keys():
+                    challenges[challenge_slug]['statuses'].update({
+                        status: {'first': str(firstaction),
+                                 'last': str(lastaction),
+                                 'count': status_count}
+                    })
+                else:
+                    challenges[challenge_slug] = {
+                        'title': challenge_title,
+                        'statuses': {
+                            status: {'first': str(firstaction),
+                                     'last': str(lastaction),
+                                     'count': status_count}}
+                    }
+                return challenges
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -309,23 +436,39 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return task.geometries
 
 # Add all resources to the RESTful API
-api.add_resource(ApiPing, '/api/ping')
-api.add_resource(ApiChallengeList, '/api/challenges')
-api.add_resource(ApiChallengeDetail, '/api/challenge/<string:slug>')
-api.add_resource(ApiChallengePolygon, '/api/challenge/<string:slug>/polygon')
-api.add_resource(ApiChallengeStats, '/api/challenge/<string:slug>/stats')
-api.add_resource(ApiChallengeTask, '/api/challenge/<slug>/task')
-api.add_resource(ApiSelfInfo, '/api/me')
-api.add_resource(ApiGetAChallenge, '/api/challenge')
-api.add_resource(
-    ApiChallengeTaskDetails,
-    '/api/challenge/<slug>/task/<identifier>')
-api.add_resource(
-    ApiChallengeTaskGeometries,
-    '/api/challenge/<slug>/task/<identifier>/geometries')
-api.add_resource(
-    ApiChallengeTaskStatus,
-    '/api/challenge/<slug>/task/<identifier>/status')
+api.add_resource(ApiPing,
+                 '/api/ping')
+api.add_resource(ApiSelfInfo,
+                 '/api/me')
+# statistics endpoints
+api.add_resource(ApiChallengeStats,
+                 '/api/stats/challenge/<string:slug>')
+api.add_resource(ApiChallengeStatsPerUser,
+                 '/api/stats/challenge/<string:slug>/users')
+api.add_resource(ApiStatsUserTotals,
+                 '/api/stats/users')
+api.add_resource(ApiStatsChallengeTotals,
+                 '/api/stats/challenges')
+api.add_resource(ApiMe,
+                 '/api/stats/me')
+# task endpoints
+api.add_resource(ApiChallengeTask,
+                 '/api/challenge/<slug>/task')
+api.add_resource(ApiChallengeTaskDetails,
+                 '/api/challenge/<slug>/task/<identifier>')
+api.add_resource(ApiChallengeTaskGeometries,
+                 '/api/challenge/<slug>/task/<identifier>/geometries')
+api.add_resource(ApiChallengeTaskStatus,
+                 '/api/challenge/<slug>/task/<identifier>/status')
+# challenge endpoints
+api.add_resource(ApiChallengeList,
+                 '/api/challenges')
+api.add_resource(ApiGetAChallenge,
+                 '/api/challenge')
+api.add_resource(ApiChallengeDetail,
+                 '/api/challenge/<string:slug>')
+api.add_resource(ApiChallengePolygon,
+                 '/api/challenge/<string:slug>/polygon')
 
 ################################
 # The Admin API ################

@@ -1,21 +1,12 @@
-<html>
-<head>
-<script type="text/javascript" src="{{ url_for("static", filename="js/jquery-2.1.0.min.js") }}"></script>
-<script type="text/javascript" src="{{ url_for("static", filename="js/jquery.cookie.js") }}"></script>
-<script type="text/javascript" src="{{ url_for("static", filename="js/jquery.noty.packaged.min.js") }}"></script>
-<script type="text/javascript" src="{{ url_for("static", filename="js/jquery.hotkeys.js") }}"></script>
-<script type="text/javascript" src="{{ url_for("static", filename="js/leaflet.js") }}"></script>
-<script type="text/javascript" src="{{ url_for("static", filename="js/maproulette.js") }}"></script>
-<link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="css/style.css") }}" />
-<link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="css/leaflet.css") }}" />
+{% extends "base.html" %}
+{% block body %}
 <body onload="init('map')">
-</body>
 <div class="controlpanel">
     <div class="title">OpenStreetMap <em>MapRoulette</em></div>
     <div id="user">
         {%- if session.get('osm_token') -%}
         <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
-        signed in as {{ session.display_name }}. <a href="{{ url_for("logout") }}">sign out</a>
+        signed in as <a href="{{ url_for("me") }}">{{ session.display_name }}</a>. <a href="{{ url_for("logout") }}">sign out</a>
         {%- else -%}
         <script type="text/javascript">MRManager.loggedIn = false;</script>
         not signed in. <a href="{{ url_for("oauth_authorize") }}">sign in on OSM</a>
@@ -38,4 +29,5 @@
 <div class="notifications"></div>
 <div class="donedialog"></div>
 <div id="map"></div>
-</html>
+</body>
+{% endblock %}
