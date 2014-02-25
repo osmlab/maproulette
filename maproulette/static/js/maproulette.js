@@ -165,7 +165,7 @@ var MRHelpers = (function () {
     };
 
     return {
-        mqResultToString: mqResultToString
+        mqResultToString: mqResultToString,
     }
 }());
 
@@ -290,7 +290,7 @@ var MRManager = (function () {
          */
         var init = function (elem) {
 
-            // check if the map element exists. 
+            // check if the map element exists.
             if (!document.getElementById(elem)) return false;
 
 
@@ -338,7 +338,7 @@ var MRManager = (function () {
             }
         };
 
-        /* 
+        /*
          * check if a challenge exists
          */
         var challengeExists = function (slug) {
@@ -396,7 +396,7 @@ var MRManager = (function () {
         var getChallengeStats = function () {
             // now get the challenge stats
             console.log('getting challenge stats');
-            url = '/api/challenge/' + challenge.slug + '/stats';
+            url = '/api/stats/challenge/' + challenge.slug;
             challenge.stats = {};
             $.ajax({
                 url: url,
@@ -552,8 +552,8 @@ var MRManager = (function () {
         };
 
         var openTaskInId = function () {
-            // this opens a new tab and focuses the browser on it. 
-            // We may want to consider http://stackoverflow.com/a/11389138 to 
+            // this opens a new tab and focuses the browser on it.
+            // We may want to consider http://stackoverflow.com/a/11389138 to
             // open a tab in the background - seems like that trick does not
             // work in all browsers.
             window.open(constructIdUri(), '_blank');
@@ -710,6 +710,60 @@ var MRManager = (function () {
             });
         }
 
+        var displayUserStats = function (elem) {
+            // Display the user stats table
+            var endpoint = '/api/stats/me';
+            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
+            var first = moment();
+            var last = moment().year(1900);
+            $.getJSON(endpoint, function (data) {
+                for (c in data.challenges) {
+                    var challenge = data.challenges[c];
+                    var fixed = 0;
+                    var othercount = 0;
+                    var rowHTML = "";
+                    tableHTML += "<tr><td class='challengetitle'><a href='/stats/" + c + "'>" + challenge.title + "</a><td>";
+                    for (s in challenge.statuses) {
+                        var status = challenge.statuses[s];
+                        var cnt = status['count'];
+                        if (s === "fixed") {
+                            rowHTML += "hurrah, you fixed " + cnt + " thing" + (cnt == 1 ? "" : "s") + " out of the ";
+                            fixed = cnt;
+                        } else {
+                            othercount += cnt;
+                        };
+                        if (status['first'] != undefined) {
+                            var thisFirst = moment(status['first']);
+                            first = (thisFirst.isBefore(first) ? thisFirst : first);
+                        }
+                        if (status['last'] != undefined) {
+                            var thisLast = moment(status['last']);
+                            last = (thisLast.isAfter(last) ? thisLast : last);
+                        }
+                    }
+                    var fixrate = fixed / (othercount + fixed);
+                    if (fixed) rowHTML += othercount + " you looked at!";
+                    else rowHTML += "meh, you looked at " + othercount + " thing" + (cnt == 1 ? "" : "s") + " but didn't fix anything..";
+
+                    rowHTML += "<br />you started with this challenge " + first.fromNow() + " and worked on it last " + last.fromNow() + ".";
+                    rowHTML += "<td class=hidden>" + fixrate;
+                    tableHTML += rowHTML;
+                }
+                tableHTML += "</tbody></table>";
+            }).complete(function () {
+                $("#" + elem).html(tableHTML);
+            });
+        }
+
+        var displayChallengeStats = function (elem, slug) {
+            var endpoint = '/api/stats/challenge/' + slug;
+            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
+            var first = moment();
+            var last = moment().year(1900);
+            $.getJSON(endpoint, function (data) {})
+        }
+
+
         return {
             init: init,
             nextTask: nextTask,
@@ -722,7 +776,9 @@ var MRManager = (function () {
             readyToEdit: readyToEdit,
             presentChallengeSelectionDialog: presentChallengeSelectionDialog,
             presentChallengeHelp: presentChallengeHelp,
-            registerHotkeys: registerHotkeys
+            registerHotkeys: registerHotkeys,
+            displayUserStats: displayUserStats,
+            displayChallengeStats: displayChallengeStats
         };
     }
     ());
