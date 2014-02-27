@@ -235,7 +235,7 @@ class ApiChallengePolygon(ProtectedResource):
         return challenge.polygon
 
 
-class ApiChallengeStats(ProtectedResource):
+class ApiStatsChallenge(ProtectedResource):
     """Challenge Statistics endpoint"""
 
     def get(self, slug):
@@ -246,7 +246,7 @@ class ApiChallengeStats(ProtectedResource):
         return {'total': total, 'available': available}
 
 
-class ApiChallengeStatsPerUser(ProtectedResource):
+class ApiStatsChallengeUsers(ProtectedResource):
     """Challenge User Statistics endpoint"""
     def get(self, slug):
         # what we want is
@@ -280,56 +280,43 @@ class ApiChallengeStatsPerUser(ProtectedResource):
         return statuses
 
 
-class ApiStatsUserTotals(ProtectedResource):
+class ApiStatsUser(ProtectedResource):
     """summary statistics for all users"""
     def get(self):
         pass
 
 
-class ApiStatsChallengeTotals(ProtectedResource):
+class ApiStatsChallenges(ProtectedResource):
     """summary statistics for all challenges"""
     def get(self):
         challenges = {}
-        # select count(1), c.slug, min(a.timestamp), max(a.timestamp), a.status
-        # from
-        # challenges c, tasks t, actions a where
-        # c.slug = t.challenge_slug and
-        # a.task_id = t.id and c.slug = t.challenge_slug group by a.status,
-        # c.slug;
+        # select count(t.id), t.currentaction, c.slug, c.title from
+        # actions a, tasks t, challenges c where a.task_id = t.id and
+        #t.challenge_slug = c.slug group by t.currentaction, c.slug, c.title;
+        q = db.session.query(
+            func.count(Task.id),
+            Challenge.slug,
+            Challenge.title,
+            Task.currentaction).select_from(Task).join(
+            Challenge).group_by(
+            Task.currentaction,
+            Challenge.slug,
+            Challenge.title).order_by(
+            Challenge.title,
+            Task.currentaction)
         for status_count,\
             challenge_slug,\
             challenge_title,\
-            firstaction,\
-            lastaction,\
-            status in\
-            db.session.query(
-                func.count(Action.id),
-                Challenge.slug,
-                Challenge.title,
-                func.min(Action.timestamp),
-                func.max(Action.timestamp),
-                Action.status).select_from(Action).join(
-                Task, Challenge).group_by(
-                Action.status,
-                Challenge.slug,
-                Challenge.title).order_by(
-                Challenge.title,
-                Action.status):
+                status in q:
                 if challenge_slug in challenges.keys():
                     challenges[challenge_slug]['statuses'].update({
-                        status: {'first': str(firstaction),
-                                 'last': str(lastaction),
-                                 'count': status_count}
-                    })
+                        status: status_count})
                 else:
                     challenges[challenge_slug] = {
                         'title': challenge_title,
-                        'statuses': {
-                            status: {'first': str(firstaction),
-                                     'last': str(lastaction),
-                                     'count': status_count}}
+                        'statuses': {status: status_count}
                     }
-                return challenges
+        return challenges
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -441,14 +428,19 @@ api.add_resource(ApiPing,
 api.add_resource(ApiSelfInfo,
                  '/api/me')
 # statistics endpoints
-api.add_resource(ApiChallengeStats,
+# basic stats for one challenge
+api.add_resource(ApiStatsChallenge,
                  '/api/stats/challenge/<string:slug>')
-api.add_resource(ApiChallengeStatsPerUser,
+# detailed user breakdown for one challenge
+api.add_resource(ApiStatsChallengeUsers,
                  '/api/stats/challenge/<string:slug>/users')
-api.add_resource(ApiStatsUserTotals,
-                 '/api/stats/users')
-api.add_resource(ApiStatsChallengeTotals,
+# summary stats for all challenges
+api.add_resource(ApiStatsChallenges,
                  '/api/stats/challenges')
+# summary stats for all users
+api.add_resource(ApiStatsUser,
+                 '/api/stats/users')
+# stats about the signed in user
 api.add_resource(ApiMe,
                  '/api/stats/me')
 # task endpoints
