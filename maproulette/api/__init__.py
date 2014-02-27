@@ -456,7 +456,7 @@ api.add_resource(ApiChallengeTaskStatus,
 api.add_resource(ApiChallengeList,
                  '/api/challenges')
 api.add_resource(ApiGetAChallenge,
-                 '/api/challenge')
+                 '/api/challenge/random')
 api.add_resource(ApiChallengeDetail,
                  '/api/challenge/<string:slug>')
 api.add_resource(ApiChallengePolygon,

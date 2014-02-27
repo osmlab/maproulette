@@ -329,7 +329,8 @@ var MRManager = (function () {
                 // Request a challenge
                 selectChallenge();
 
-                presentChallengeDialog();
+                if (!Q.skipPresentChallenge) presentChallengeDialog();
+                else readyToEdit();
 
             } else {
 
@@ -367,7 +368,7 @@ var MRManager = (function () {
             // if we still don't have anything, let the server select a challenge for us.
             if (!slug) {
                 console.log("Letting server select a challenge");
-                url = '/api/challenge';
+                url = '/api/challenge/random';
             } else {
                 console.log("Getting challenge details for " + slug);
                 url = "/api/challenge/" + slug;
@@ -595,9 +596,9 @@ var MRManager = (function () {
                                 cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
                                 dialogHTML = "<h2>Pick a different challenge</h2>";
                                 for (c in challenges) {
-                                    cHTML = "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick=MRManager.userPickChallenge('" + challenges[c].slug + "')>Work on this challenge!</div></div>";
-                                    dialogHTML += cHTML;
+                                    dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick=MRManager.userPickChallenge('" + challenges[c].slug + "')>Work on this challenge!</div></div>";
                                 };
+                                dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
                                 console.log(dialogHTML);
                                 $('.donedialog').html(dialogHTML).fadeIn();
                             },
@@ -708,6 +709,10 @@ var MRManager = (function () {
             $(document).bind('keypress', 'r', function () {
                 MRManager.openTaskInJosm()
             });
+            $(document).bind('keypress', 'esc', function () {
+                $('.donedialog').fadeOut()
+            });
+
         }
 
         var displayUserStats = function (elem) {
