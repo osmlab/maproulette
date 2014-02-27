@@ -153,8 +153,7 @@ class ApiGetAChallenge(ProtectedResource):
     @marshal_with(challenge_summary)
     def get(self):
         """Return a single challenge"""
-        challenge = get_challenge_or_404(app.config["DEFAULT_CHALLENGE"], True)
-        return challenge
+        return get_challenge_or_404(app.config["DEFAULT_CHALLENGE"])
 
 
 class ApiChallengeList(ProtectedResource):
@@ -456,7 +455,7 @@ api.add_resource(ApiChallengeTaskStatus,
 api.add_resource(ApiChallengeList,
                  '/api/challenges')
 api.add_resource(ApiGetAChallenge,
-                 '/api/challenge/random')
+                 '/api/challenge')
 api.add_resource(ApiChallengeDetail,
                  '/api/challenge/<string:slug>')
 api.add_resource(ApiChallengePolygon,
