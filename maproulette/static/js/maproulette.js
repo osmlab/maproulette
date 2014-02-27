@@ -329,7 +329,7 @@ var MRManager = (function () {
                 // Request a challenge
                 selectChallenge();
 
-                presentChallengeDialog();
+                if (!Q.skipPresentChallenge) presentChallengeDialog();
 
             } else {
 
