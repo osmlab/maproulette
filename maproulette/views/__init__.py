@@ -25,8 +25,14 @@ def me():
     return render_template('me.html')
 
 
-@app.route('/stats/<challenge_slug>')
-def challenge_stats(challenge_slug):
+@app.route('/challenge/<challenge_slug>')
+def challenge_page(challenge_slug):
     """Display a page about me with some stats
     and user settings."""
-    return render_template('stats.html', challenge_slug=challenge_slug)
+    return render_template('challenge.html', challenge_slug=challenge_slug)
+
+
+@app.route('/challenge_stats')
+def challenge_stats():
+    """Display the summary stats for all challenge_stats"""
+    return render_template('challenges.html')
