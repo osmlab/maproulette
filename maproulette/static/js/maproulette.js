@@ -330,6 +330,7 @@ var MRManager = (function () {
                 selectChallenge();
 
                 if (!Q.skipPresentChallenge) presentChallengeDialog();
+                else readyToEdit();
 
             } else {
 
@@ -708,6 +709,10 @@ var MRManager = (function () {
             $(document).bind('keypress', 'r', function () {
                 MRManager.openTaskInJosm()
             });
+            $(document).bind('keypress', 'esc', function () {
+                $('.donedialog').fadeOut()
+            });
+
         }
 
         var displayUserStats = function (elem) {
