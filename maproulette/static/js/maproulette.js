@@ -722,7 +722,7 @@ var MRManager = (function () {
                     var fixed = 0;
                     var othercount = 0;
                     var rowHTML = "";
-                    tableHTML += "<tr><td class='challengetitle'><a href='/stats/" + c + "'>" + challenge.title + "</a><td>";
+                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + c + "'>" + challenge.title + "</a><td>";
                     for (s in challenge.statuses) {
                         var status = challenge.statuses[s];
                         var cnt = status['count'];
@@ -755,7 +755,34 @@ var MRManager = (function () {
             });
         }
 
+        var displayAllChallengesStats = function (elem) {
+            // Display the challenge summary stats as a table.
+            var endpoint = '/api/stats/challenges';
+            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
+            $.getJSON(endpoint, function (data) {
+                for (slug in data) {
+                    var challenge = data[slug]
+                    var first = moment();
+                    var last = moment().year(1900);
+                    var title = challenge['title'];
+                    var total = 0;
+                    var fixed = 0;
+                    var statuses = challenge['statuses'];
+                    for (status in statuses) {
+                        var n = statuses[status];
+                        total += n
+                        fixed += status === "fixed" ? n : 0;
+                    }
+                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + slug + "'>" + title + "</a><td>" + fixed + " out of " + total + " tasks fixed (" + Math.round(100 * (fixed / total)) + "%)";
+                }
+                tableHTML += "</tbody></table>";
+            }).complete(function () {
+                $("#" + elem).html(tableHTML);
+            });
+        }
+
         var displayChallengeStats = function (elem, slug) {
+            // Display the challenge statistics in the table container identified by id selector 'elem'
             var endpoint = '/api/stats/challenge/' + slug;
             var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
             var first = moment();
@@ -763,6 +790,22 @@ var MRManager = (function () {
             $.getJSON(endpoint, function (data) {})
         }
 
+        var displayChallengeDetails = function (slug) {
+            // displays various challenge details on the challenge page
+            var endpoint = '/api/challenge/' + slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    $('#challenge_' + key).html(data[key]).fadeIn();
+                };
+            });
+            // now get basic stats
+            endpoint = '/api/stats/challenge/' + slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    $('#challenge_' + key).html(data[key]).fadeIn();
+                };
+            });
+        }
 
         return {
             init: init,
@@ -778,7 +821,9 @@ var MRManager = (function () {
             presentChallengeHelp: presentChallengeHelp,
             registerHotkeys: registerHotkeys,
             displayUserStats: displayUserStats,
-            displayChallengeStats: displayChallengeStats
+            displayAllChallengesStats: displayAllChallengesStats,
+            displayChallengeStats: displayChallengeStats,
+            displayChallengeDetails: displayChallengeDetails
         };
     }
     ());
