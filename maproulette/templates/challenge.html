@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 {% block body %}
 <h1><span id='challenge_title'></span></h1>
-<p><a href="{{ url_for("index") }}">Back to MapRoulette</a></p>
+<p><a href="{{ url_for("index") }}?skipPresentChallenge=1">Back to MapRoulette</a></p>
 <p>Active: <span id='challenge_active'></span>
 <p>Total tasks: <span id='challenge_total'></span>, still to be fixed: <span id='challenge_available'></span></p>
 <p id='challenge_blurb'></p>
 <p id='challenge_description'></p>
 <div id="challengestats"></div>
 <script type="text/javascript">MRManager.displayChallengeDetails('{{ challenge_slug }}')</script>
-<script type="text/javascript">MRManager.displayChallengeStats('challengestats', '{{ challenge_slug }}')</script>
 {% endblock %}
