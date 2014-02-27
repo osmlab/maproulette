@@ -25,12 +25,12 @@ Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as 
 [See installation with Homebrew](https://gist.github.com/mvexel/5526126)
 
 Note that on Mac OSX you may need to add a symlink to the `coffee` executable:
-	
+
 	ln -s ~/node_modules/coffee-script/bin/coffee /usr/local/bin/
-	
+
 ### Setting up the database
 
-Next we need to make sure we have our MapRoulette database instance set up. MapRoulette uses PostgreSQL through the  [http://www.sqlalchemy.org](SQLAlchemy) ORM and the [https://geoalchemy-2.readthedocs.org/en/latest/](GeoAlchemy2) spatial ORM. Unfortunately, GeoAlchemy2 only supports PostgreSQL / PostGIS, so we need to rely on that. 
+Next we need to make sure we have our MapRoulette database instance set up. MapRoulette uses PostgreSQL through the  [http://www.sqlalchemy.org](SQLAlchemy) ORM and the [https://geoalchemy-2.readthedocs.org/en/latest/](GeoAlchemy2) spatial ORM. Unfortunately, GeoAlchemy2 only supports PostgreSQL / PostGIS, so we need to rely on that.
 
 As the `postgres` user:
 
@@ -38,7 +38,7 @@ As the `postgres` user:
 
 Enter the password `osm` twice.
 
-Now create the three databases for the production, test and dev environments: 
+Now create the three databases for the production, test and dev environments:
 
     createdb -O osm maproulette
     createdb -O osm maproulette_test
@@ -77,12 +77,15 @@ Ensure that maproulette will be accessible to python:
 
     add2virtualenv .
 
-Have a look at the configuration defaults at `maproulette/config/__init__.py` and adapt as needed. (If you followed the previous to the letter you should not need to change a thing.)
+Have a look at the configuration defaults at `maproulette/config/__init__.py` and adapt as needed. In particular:
+
+* Set an application secret unique to your instance
+* Ensure that the DEFAULT_CHALLENGE exists.
 
 Generate the database tables:
 
     python manage.py create_db
-    
+
 If you're developing, you may want to load some test challenges and tasks:
 
     bin/load_fixtures.py
@@ -110,7 +113,7 @@ There is also [API documentation](https://github.com/osmlab/maproulette/wiki/API
 
 ### MapRoulette on Amazon EC2
 
-Note that there is also an Amazon EC2 AMI that has all the requirements for MapRoulette already installed and configured. To use, just fire up an instance of `ami-8985f0e0` and 
+Note that there is also an Amazon EC2 AMI that has all the requirements for MapRoulette already installed and configured. To use, just fire up an instance of `ami-8985f0e0` and
 
     cd maproulette
     git pull
