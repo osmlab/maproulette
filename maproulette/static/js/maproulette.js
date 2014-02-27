@@ -359,6 +359,7 @@ var MRManager = (function () {
          * get a named, or random challenge
          */
         var selectChallenge = function (slug) {
+            var url = "";
             // if no specific challenge is passed in,
             // check what the cookie monster has for us
             if (!slug) {
@@ -368,7 +369,7 @@ var MRManager = (function () {
             // if we still don't have anything, let the server select a challenge for us.
             if (!slug) {
                 console.log("Letting server select a challenge");
-                url = '/api/challenge/random';
+                url = "/api/challenge";
             } else {
                 console.log("Getting challenge details for " + slug);
                 url = "/api/challenge/" + slug;
