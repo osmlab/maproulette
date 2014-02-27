@@ -596,9 +596,9 @@ var MRManager = (function () {
                                 cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
                                 dialogHTML = "<h2>Pick a different challenge</h2>";
                                 for (c in challenges) {
-                                    cHTML = "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick=MRManager.userPickChallenge('" + challenges[c].slug + "')>Work on this challenge!</div></div>";
-                                    dialogHTML += cHTML;
+                                    dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick=MRManager.userPickChallenge('" + challenges[c].slug + "')>Work on this challenge!</div></div>";
                                 };
+                                dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
                                 console.log(dialogHTML);
                                 $('.donedialog').html(dialogHTML).fadeIn();
                             },
