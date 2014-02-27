@@ -153,7 +153,7 @@ class ApiGetAChallenge(ProtectedResource):
     @marshal_with(challenge_summary)
     def get(self):
         """Return a single challenge"""
-        return get_challenge_or_404(app.config["DEFAULT_CHALLENGE"], True)
+        return get_challenge_or_404(app.config["DEFAULT_CHALLENGE"])
 
 
 class ApiChallengeList(ProtectedResource):
