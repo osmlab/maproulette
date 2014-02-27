@@ -1,13 +1,12 @@
   # """This file contains the SQLAlchemy ORM models"""
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import scoped_session, sessionmaker, synonym
+from sqlalchemy import create_engine
+from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
-from geoalchemy2.functions import ST_Area
 import random
 from datetime import datetime
 from maproulette import app
@@ -21,7 +20,13 @@ db = SQLAlchemy(app)
 
 random.seed()
 
-world_polygon = Polygon([(-180, -90), (-180, 90), (180, 90), (180, -90), (-180, -90)])
+world_polygon = Polygon([
+    (-180, -90),
+    (-180, 90),
+    (180, 90),
+    (180, -90),
+    (-180, -90)])
+
 
 def getrandom():
     return random.random()
@@ -62,7 +67,6 @@ class User(db.Model):
     difficulty = db.Column(
         db.SmallInteger)
 
-
     def __unicode__(self):
         return self.display_name
 
@@ -94,7 +98,7 @@ class Challenge(db.Model):
     geom = db.Column(
         Geometry('POLYGON'))
     help = db.Column(
-        db.String, 
+        db.String,
         default="")
     instruction = db.Column(
         db.String,
@@ -107,21 +111,21 @@ class Challenge(db.Model):
         nullable=False,
         default=1)
     type = db.Column(
-        db.String, 
-        default='default', 
+        db.String,
+        default='default',
         nullable=False)
 
     # note that spatial indexes seem to be created automagically
 
-    def __init__(self, 
+    def __init__(self,
                  slug,
                  title,
-                 geometry=None, 
-                 description=None, 
-                 blurb=None, 
-                 help=None, 
-                 instruction=None, 
-                 active=None, 
+                 geometry=None,
+                 description=None,
+                 blurb=None,
+                 help=None,
+                 instruction=None,
+                 active=None,
                  difficulty=None):
         if geometry is None:
             geometry = world_polygon
@@ -129,7 +133,7 @@ class Challenge(db.Model):
             active = False
         self.slug = slug
         self.title = title
-        self.geometry = from_shape(geometry) 
+        self.geometry = from_shape(geometry)
         self.description = description
         self.blurb = blurb
         self.help = help
@@ -142,7 +146,8 @@ class Challenge(db.Model):
 
     @hybrid_property
     def polygon(self):
-        """Retrieve the polygon for this challenge, or return the World if there is none"""
+        """Retrieve the polygon for this challenge,
+        or return the World if there is none"""
 
         if self.geom is not None:
             return to_shape(self.geom)
@@ -165,9 +170,9 @@ class Challenge(db.Model):
     def tasks_available(self):
         """Return the number of tasks available for this challenge."""
 
-        return Task.query.filter(
-            Task.challenge_slug == self.slug).filter(
-            Task.isavailable == True).count()
+        return len(
+            [t for t in self.tasks
+                if t.currentaction in ['created', 'available', 'skipped']])
 
     @hybrid_property
     def islocal(self):
@@ -178,7 +183,7 @@ class Challenge(db.Model):
             return False
         # otherwise get the area and compare against local threshold
         area = db.session.query(self.geom.ST_Area()).one()[0]
-        return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])        
+        return (area <= app.config['MAX_SQ_DEGREES_FOR_LOCAL'])
 
 
 class Task(db.Model):
@@ -197,14 +202,6 @@ class Task(db.Model):
     challenge_slug = db.Column(
         db.String,
         db.ForeignKey('challenges.slug'))
-    # this is now deprecated by the location function
-    # below.
-    #geom = db.Column(
-    #    Geometry('POINT'),
-    #    nullable=False)
-    version = db.Column(
-        db.String(72),
-        nullable=False)
     random = db.Column(
         db.Float,
         default=getrandom,
@@ -237,32 +234,20 @@ class Task(db.Model):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.instruction = instruction
-        self.version = 1
         self.append_action(Action('created'))
 
     def __repr__(self):
         return '<Task %s>' % (self.identifier)
 
     @hybrid_property
-    def isavailable(self):
-
-        return (self.currentaction in ['created', 'skipped', 'available'])
-
-    @isavailable.expression
-    def isavailable(cls):
-
-        return cls.currentaction.in_(('created', 'skipped', 'available'))
-
-
-    @hybrid_property
     def location(self):
-        """Returns the location for this task as a Shapely geometry. 
+        """Returns the location for this task as a Shapely geometry.
         This is meant to give the client a quick hint about where the
         task is located without having to transfer and decode the entire
         task geometry. In reality what we do is transmit the first
         geometry we find for the task. This is then parsed into a single
         representative lon/lat in the API by getting the first coordinate
-        of the geometry retrieved here. See also the PointField class in 
+        of the geometry retrieved here. See also the PointField class in
         the API code."""
 
         g = self.geometries[0].geom
@@ -282,8 +267,8 @@ class Task(db.Model):
     def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
         app.logger.debug(new_values)
-        for k,v in new_values.iteritems():
-            app.logger.debug('updating %s to %s' % (k,v))
+        for k, v in new_values.iteritems():
+            app.logger.debug('updating %s to %s' % (k, v))
             # if a status is set, append an action
             if k == 'status':
                 self.append_action(Action(v))
@@ -292,7 +277,7 @@ class Task(db.Model):
                 return False
             setattr(self, k, v)
 
-        # 
+        #
         self.geometries = []
 
         for geometry in geometries:
@@ -301,27 +286,18 @@ class Task(db.Model):
         db.session.commit()
         return True
 
-# add a listener to update the version
-@event.listens_for(Task, 'before_update')
-def receive_before_update(mapper, connection, target):
-    """listen for the 'before_update' event"""
-    app.logger.debug('going to update task')
-    app.logger.debug(target)
-    # ... (event handling logic) ...
-
 
 class TaskGeometry(db.Model):
     """The collection of geometries (1+) belonging to a task"""
 
     __tablename__ = 'task_geometries'
     id = db.Column(
-        db.Integer, 
-        nullable=False, 
+        db.Integer,
+        nullable=False,
         unique=True,
         primary_key=True)
     osmid = db.Column(
-        db.BigInteger,
-        nullable=False)
+        db.BigInteger)
     task_id = db.Column(
         db.Integer,
         db.ForeignKey('tasks.id'),
@@ -347,6 +323,7 @@ class TaskGeometry(db.Model):
         self.geom = from_shape(shape)
 
     geometry = synonym('geom', descriptor=geometry)
+
 
 class Action(db.Model):
     """An action on a task"""

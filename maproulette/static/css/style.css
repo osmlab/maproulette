@@ -10,8 +10,8 @@ body, #map {
 
 /* emphasized text */
 em {
-    font-style:normal;
-    color:#44cc33;
+    font-style:italic;
+    /*color:#44cc33;*/
 }
 
 /* the main MapRoulette control panel */
@@ -46,6 +46,18 @@ div.title {
     font-weight: bold;
 }
 
+/* challenge container in list */
+.challengeBox {
+    background-color: rgb(220,220,220);
+    border: 1px solid #000000;
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    color: #000000;
+    margin: 4px;
+    padding: 4px;
+}
+
+
 /* all buttons */
 div.button {
     background-color: #66CCFF;
@@ -66,10 +78,25 @@ div#fixed.button {
     font-weight: bold;
 }
 
+/* cancel style buttons */
+div.button.cancel {
+    background-color: rgb(240,240,240);
+    font-weight: normal;
+}
+
+/* tiny style buttons */
+div.button.tiny {
+    font-weight: normal;
+    font-size: 11px;
+    padding: 0px;
+    border: 1px solid rgb(100,100,100);
+    background-color: rgb(200,200,200);
+}
+
 /* the button hover */
 div.button:hover {
-    background-color: #666666 !important;
-    color: #FFFFFF !important;
+    opacity: 0.8 !important;
+    filter: alpha(opacity=50) !important;
     cursor: pointer;
 }
 
@@ -85,8 +112,8 @@ div#challenge_title {
     padding: 3px;
 }
 
-/* the description for the challenge */
-div#challenge_description {
+/* the blurb for the challenge */
+div#challenge_blurb {
     font-style: italic;
     font-size: smaller;
 }
@@ -111,6 +138,8 @@ div.donedialog {
     background-color:#fff;
     -webkit-border-radius: 5px;
     border-radius: 5px;
+    max-height: 65%;
+    overflow-y:auto;
 }
 
 /* the key 'icons' */
@@ -131,10 +160,18 @@ span.key {
 
 /* hide the challenge menu for now while the backend is not implemented. */
 #challengemenu {
+    display: block;
+}
+
+td.challengetitle {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+td.hidden {
     display: none;
 }
 
-#challengemenu div.button {
-    font-size: small;
-    background-color: #cfc;
+table.stats {
+    padding: 4px;
 }

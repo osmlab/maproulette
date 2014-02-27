@@ -1,36 +1,34 @@
-<html><head>
-<script type='text/javascript' src='{{ url_for('static', filename='js/jquery-2.0.3.min.js') }}'></script>
-<script type='text/javascript' src='{{ url_for('static', filename='js/jquery.noty.packaged.min.js') }}'></script>
-<script type='text/javascript' src='{{ url_for('static', filename='js/leaflet.js') }}'></script>
-<script type='text/javascript' src='{{ url_for('static', filename='js/maproulette.js') }}'></script>
-<link rel='stylesheet' type='text/css' href='{{ url_for('static', filename='css/style.css') }}' />
-<link rel='stylesheet' type='text/css' href='{{ url_for('static', filename='css/leaflet.css') }}' />
-<body onload='init("map")'>
-</body>
-<div class='controlpanel'>
-    <div class='title'>OpenStreetMap <em>MapRoulette</em></div>
-    <div id='user'>
-        {%- if session.osm_oauth -%}
+{% extends "base.html" %}
+{% block body %}
+<body onload="init('map')">
+<div class="controlpanel">
+    <div class="title">OpenStreetMap <em>MapRoulette</em></div>
+    <div id="user">
+        {%- if session.get('osm_token') -%}
         <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
-        logged in as {{ session.display_name }}. <a id='loginlink' href='{{ url_for('logout') }}'>log out</a>
+        signed in as <a href="{{ url_for("me") }}">{{ session.display_name }}</a>. <a href="{{ url_for("logout") }}">sign out</a>
         {%- else -%}
         <script type="text/javascript">MRManager.loggedIn = false;</script>
-        not logged in. <a id='loginlink' href='{{ url_for('oauth_authorize') }}'>log in</a>
+        not signed in. <a href="{{ url_for("oauth_authorize") }}">sign in on OSM</a>
         {%- endif -%}
     </div>
-    <div id='challenge_title'></div>
-    <div id='challenge_description'></div>
-    <div id='challengemenu'>
-        <div class='button' id='selectchallenge' onClick=MRManager.userPickChallenge()>select a different challenge</div>
-        <div class='button' id='preferences' onClick=MRManager.userPreferences()>your preferences</div>
+    <div id="challenge_title"></div>
+    <div id="challenge_blurb"></div>
+    <div id="challengemenu">
+        <div class="button tiny" onClick='MRManager.presentChallengeHelp()'>More help for this challenge</div>
+        <div class="button tiny" onClick='MRManager.presentChallengeSelectionDialog()'>Select a different challenge</div>
+        <div class="button tiny" onClick='location.href="{{ url_for("challenge_stats") }}";'>Challenge statistics</div>
+        <!--<div class="button tiny" id="preferences" onClick='MRManager.userPreferences()'>MapRoulette Options</div>-->
     </div>
-    <div id='stats'>This challenge has <span id='total'></span> tasks, and we still need to complete <span id='available'></span> of them.</div>
-    <div class="button" onClick=MRManager.nextTask('falsepositive')>THIS IS NOT AN ERROR <span class=key>q</span></div>
-    <div class="button" onClick=MRManager.nextTask('skipped')>I'M NOT SURE / SKIP <span class=key>w</span></div>
-    <div class=button onClick=MRManager.openTaskInEditor()>EDIT<span class=key>e</span></div>
-    <div class=button onClick=MRManager.openTaskInEditor('j')>EDIT IN JOSM <span class=key>r</span></div>
+    <div id="stats">This challenge has <span id="total"></span> tasks, and we still need to complete <span id="available"></span> of them.</div>
+    <hr />
+    <div class="button" onClick='MRManager.nextTask("falsepositive")'>THIS IS NOT AN ERROR <span class=key>q</span></div>
+    <div class="button" onClick='MRManager.nextTask("skipped")'>I'M NOT SURE / SKIP <span class=key>w</span></div>
+    <div class="button" onClick='MRManager.openTaskInId()'>EDIT IN iD<span class=key>e</span></div>
+    <div class="button" onClick='MRManager.openTaskInJosm()'>EDIT IN JOSM <span class=key>r</span></div>
 </div>
-<div class='notifications'></div>
-<div class='donedialog'></div>
-<div id='map'></div>
-</html>
+<div class="notifications"></div>
+<div class="donedialog"></div>
+<div id="map"></div>
+</body>
+{% endblock %}

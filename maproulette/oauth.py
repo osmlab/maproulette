@@ -1,7 +1,8 @@
-from maproulette import app, models
+from maproulette import app
+from maproulette.helpers import signed_in
 from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
-from maproulette.models import db
+from maproulette.models import db, User
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 
@@ -16,13 +17,14 @@ oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
-  # session.regenerate() this should be done elsewhere.
-    if 'osm_oauth' in session:
-        resp = session['osm_oauth']
-        return resp['oauth_token'], resp['oauth_token_secret']
+    app.logger.debug("polling tokengetter")
+    if signed_in():
+        app.logger.debug('found tokens in session')
+        return session.get('osm_token')
+    return None
 
 
-@app.route('/login')
+@app.route('/signin')
 def oauth_authorize():
     """Redirect to the authorize URL"""
 
@@ -38,7 +40,11 @@ def oauthorized(resp):
     next_url = request.args.get('next') or url_for('index')
     if resp is None:
         return redirect(next_url)
-    session['osm_oauth'] = resp
+    app.logger.debug(resp)
+    session['osm_token'] = (
+        resp['oauth_token'],
+        resp['oauth_token_secret']
+    )
     retrieve_osm_data()
     app.logger.debug('redirecting to %s' % next_url)
     return redirect(next_url)
@@ -56,19 +62,21 @@ def retrieve_osm_data():
     userxml = data.find('user')
     osmid = userxml.attrib['id']
     # query for existing user
-    if bool(models.User.query.filter(models.User.id == osmid).count()):
+    if bool(User.query.filter(User.id == osmid).count()):
         app.logger.debug('user exists, getting from database')
-        user = models.User.query.filter(models.User.id == osmid).first()
+        user = User.query.filter(User.id == osmid).first()
     else:
         app.logger.debug('user is new, create local account')
-        user = models.User()
+        user = User()
         user.id = osmid
         user.display_name = userxml.attrib['display_name']
         user.osm_account_created = userxml.attrib['account_created']
         homexml = userxml.find('home')
         if homexml is not None:
             lon = float(homexml.attrib['lon'])
-            # this is to work around a bug in OSM where the set user longitude can be outside of the -180 ... 180 range if the user panned the map across the 180 / -180 meridian
+            # this is to work around a bug in OSM where the set user longitude
+            # can be outside of the -180 ... 180 range if the user panned the
+            # map across the 180 / -180 meridian
             lon = abs(lon) % 180 * (lon / abs(lon))
             lat = homexml.attrib['lat']
             user.home_location = WKTElement(
@@ -77,7 +85,7 @@ def retrieve_osm_data():
             app.logger.debug('setting user home location')
         else:
             app.logger.debug('no home for this user')
-        languages = userxml.find('languages')
+        # languages = userxml.find('languages')
         # FIXME parse languages and add to user.languages string field
         user.changeset_count = userxml.find('changesets').attrib['count']
         # get last changeset info
@@ -110,5 +118,7 @@ def retrieve_osm_data():
         point = to_shape(user.home_location)
         session['home_location'] = [point.x, point.y] or None
     session['display_name'] = user.display_name
+    app.logger.debug('session now has display name: %s' %
+                     (session['display_name']))
     session['osm_id'] = user.id
     session['difficulty'] = user.difficulty
