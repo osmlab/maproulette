@@ -42,7 +42,7 @@ Getting from Git
 
 As the `www-data` user, run:
 
-    git https://github.com/osmlab/maproulette.git \
+    git clone https://github.com/osmlab/maproulette.git \
         /srv/www/maproulette.org/htdocs/maproulette
 
 Virtualenv
@@ -63,7 +63,7 @@ so now run
 
 And finally, install the requirements for the project
 
-     pip -i /srv/www/maproulette.org/htdocs/maproulette/requirements.txt
+     pip install -r /srv/www/maproulette.org/htdocs/maproulette/requirements.txt
 
    
 UWSGI
