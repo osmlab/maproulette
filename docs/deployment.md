@@ -13,24 +13,22 @@ The production environment we've used stores the base directory for
 the web server as `/srv/www`, with the base directory for the
 deployment as the fully qualified domain of the server, such as
 `maproulette.org`, meaning that the base directory would be
-`/srv/www/maproulette.org`.
+`/srv/www/maproulette`.
 
 Inside this directory, we will place the virtual environment used by
-maproulette, in a directory called `virtualenv`. We will not create
-this directory manually- as it needs to be created by the `virtualenv`
-command.
+maproulette, in a directory called `venv`.
 
+The app itself will live in the `app` directory in a
+directory called `maproulette` (`app/maproulette`).
 
-The program itself will live in the standard `htdocs` directory in a
-directory called `maproulette` (`htdocs/maproulette`).
-
-We will also create a log directory.
+We will also directories for log files and the uwsgi socket.
 
 In the end, you will end up with an directory structure like:
 
-    /srv/www/maproulette.org/htdocs
-    /srv/www/maproulette.org/logs
-    /srv/www/maproulette.org/virtualenv
+    /srv/www/maproulette/app
+    /srv/www/maproulette/log
+    /srv/www/maproulette/venv
+    /srv/www/maproulette/uwsgi
 
 All of these should be owned by the web server user. On Debian/Ubuntu,
 this is `www-data`, so we will use that as the identifier of the web
@@ -43,62 +41,62 @@ Getting from Git
 As the `www-data` user, run:
 
     git clone https://github.com/osmlab/maproulette.git \
-        /srv/www/maproulette.org/htdocs/maproulette
+        /srv/www/maproulette/app/maproulette
 
 Virtualenv
 ==========
 
-We will use `virtualenv` to contain the directory. We should do this
+We will use `venv` to contain the directory. We should do this
 as the final user, which we will assume to be `www-data` in this
 guide.
 
 As `www-data` run:
 
-    virtualenv /srv/www/maproulette.org/virtualenv
+    virtualenv /srv/www/maproulette/venv
 
 You will need to be using the environment set up by that virtualenv,
 so now run
 
-    source /srv/www/maproulette.org/virtualenv/bin/activate
+    source /srv/www/maproulette/venv/bin/activate
 
 And finally, install the requirements for the project
 
-     pip install -r /srv/www/maproulette.org/htdocs/maproulette/requirements.txt
+     pip install -r /srv/www/maproulette/app/maproulette/requirements.txt
 
-   
+
 UWSGI
 ======
 
-We will use UWSGI as the application container. To install it, run:
+We will use Uwsgi as the application container. To install it, run:
 
     apt-get install uwsgi uwsgi-plugin-python
 
-And then create a file `/etc/uwsgi/apps-available/maproulette.org`
+And then create a file `/etc/uwsgi/apps-available/maproulette.ini`
 which contains the following:
 
     [uwsgi]
+    plugin = python
     vhost = true
-    socket = /tmp/maproulette.org.sock
-    venv =   /srv/www/maproulette.org/virtualenv
-    chdir =  /srv/www/maproulette.org/htdocs/maproulette
-    module = maproulette
-    callable = app
+    socket = /srv/www/maproulette/uwsgi/socket
+    venv = /srv/www/maproulette/virtualenv
+    chdir = /srv/www/maproulette/app/maproulette
+    module = maproulette:app
 
-Then, create a symlink from `/etc/uwsgi/apps-enabled/maproulette.org`
+Then, create a symlink from `/etc/uwsgi/apps-enabled/maproulette.ini`
 to `/etc/uwsgi/apps-available/maproulette.org` with the command:
 
-   ln -s /etc/uwsgi/apps-available/maproulette.org \
-      /etc/uwsgi/apps-available/maproulette.org
+    ln -s /etc/uwsgi/apps-available/maproulette.ini \
+      /etc/uwsgi/apps-available/maproulette.ini
 
 Nginx
 =====
 
-We will use the Nginx web server to run our application. To install
+We will use the Nginx web server to serve up our application. To install
 it, just run:
 
     apt-get install nginx
 
-And then create a file in `/etc/nginx/sites-available/maproulette.org`
+And then create a file in `/etc/nginx/sites-available/maproulette`
 containing:
 
     server {
@@ -108,23 +106,22 @@ containing:
 
          location / {
              include uwsgi_params;
-             uwsgi_pass unix:/tmp/maproulette.org.sock;
+             uwsgi_pass unix:/srv/www/maproulette/uwsgi/socket;
           }
 
-         ## Only requests to our Host are allowed
-         if ($host !~ ^(www.maproulette.org|maproulette.org)$ ) {
-            return 444;
-         }
     }
 
 
-Which gets symlined to `/etc/nginx/sites-enabled/maproulette.org`
+Create a symlink to the enabled sites directory:
+    ln -s /etc/nginx/sites-available/maproulette\
+    /etc/nginx/sites-enabled/
 
 Finally
 ========
 
-service uwsgi restart
-service nginx restart
+Restart the services
 
-And the service should be up and running
+    service uwsgi restart
+    service nginx restart
 
+And the service should be up and running!
