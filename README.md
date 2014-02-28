@@ -119,6 +119,10 @@ At this point you should see:
 
 And you should have a MapRoulette instance at [http://localhost:5000/](http://localhost:5000/)
 
+## Production deployment
+
+We have a guide for production deployment on a Debian flavored linux machine using nginx and uwsgi. See the `docs` folder.
+
 ## Frameworks used
 
 MapRoulette relies heavily on the lightweight Flask web application framework, and some of its extensions, notably Flask-OAuth, Flask-RESTful, Flask-Script, Flask-Runner and Flask-SQLAlchemy. For working with geospatial data, MapRoulette relies on GeoAlchemy2 and Shapely.
