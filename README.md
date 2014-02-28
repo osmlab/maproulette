@@ -18,9 +18,19 @@ First we need to set up system level dependencies. This is different for Linux a
 
 On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04 and 13.10):
 
-    sudo apt-get install software-properties-common python-software-properties postgresql-server-dev-9.1 python-dev git virtualenvwrapper
+    sudo apt-get install software-properties-common python-software-properties postgresql-server-dev-all python-dev git virtualenvwrapper postgresql-client
 
-Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as part of their packages, see [here](http://trac.osgeo.org/postgis/wiki/UsersWikiInstall) for guidance.
+Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as part of their packages, see [here](http://trac.osgeo.org/postgis/wiki/UsersWikiInstall) for guidance. In short:
+
+    sudo apt-get install autoconf libtool libxml2-dev libgeos-dev libproj-dev libgdal-dev
+    wget http://download.osgeo.org/postgis/source/postgis-2.x.x.tar.gz
+    tar zxvf postgis-2.x.x.tar.gz
+    cd postgis-2.x.x
+    ./autogen.sh
+    ./configure
+    make && make install
+
+The above tested on Ubuntu 13.10 only. 
 
 If you want to install the latest PostgreSQL and PostGIS from packages for a non-LTS version of Ubuntu, [this](http://askubuntu.com/a/289388/23679) may help.
 
