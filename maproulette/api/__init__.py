@@ -466,7 +466,7 @@ api.add_resource(ApiChallengePolygon,
 ################################
 
 
-class AdminApiChallenge(ProtectedResource):
+class AdminApiChallenge(Resource):
     """Admin challenge creation endpoint"""
     def put(self, slug):
         if challenge_exists(slug):
@@ -500,7 +500,7 @@ class AdminApiChallenge(ProtectedResource):
         db.session.commit()
 
 
-class AdminApiTaskStatuses(ProtectedResource):
+class AdminApiTaskStatuses(Resource):
     """Admin Task status endpoint"""
 
     def get(self, slug):
@@ -511,7 +511,7 @@ class AdminApiTaskStatuses(ProtectedResource):
             'status': task.currentaction} for task in challenge.tasks]
 
 
-class AdminApiUpdateTask(ProtectedResource):
+class AdminApiUpdateTask(Resource):
     """Challenge Task Statuses endpoint"""
 
     def put(self, slug, identifier):
