@@ -16,7 +16,8 @@
     <div id="challenge_blurb"></div>
     <div id="challengemenu">
         <div class="button tiny" onClick='MRManager.presentChallengeHelp()'>More help for this challenge</div>
-        <div class="button tiny" onClick='MRManager.presentChallengeSelectionDialog()'>Select a different challenge</div>      
+        <div class="button tiny" onClick='MRManager.presentChallengeSelectionDialog()'>Select a different challenge</div>
+        <div class="button tiny" onClick='location.href="{{ url_for("challenge_stats") }}";'>Challenge statistics</div>
         <!--<div class="button tiny" id="preferences" onClick='MRManager.userPreferences()'>MapRoulette Options</div>-->
     </div>
     <div id="stats">This challenge has <span id="total"></span> tasks, and we still need to complete <span id="available"></span> of them.</div>

@@ -8,6 +8,8 @@ That said, read on if you want to contribute to MapRoulette development and are 
 
 Please fork the project and submit pull requests on the `develop` branch.
 
+See the code style conventions at https://github.com/osmlab/maproulette/wiki/Code-style-conventions
+
 ## Dependencies
 
 First we need to set up system level dependencies. This is different for Linux and OSX.
@@ -16,21 +18,33 @@ First we need to set up system level dependencies. This is different for Linux a
 
 On a fresh Ubuntu 12.04 LTS (also successfully tested on 13.04 and 13.10):
 
-    sudo apt-get install software-properties-common python-software-properties postgresql-server-dev-9.1 python-dev git virtualenvwrapper
+    sudo apt-get install software-properties-common python-software-properties postgresql-server-dev-all python-dev git virtualenvwrapper postgresql-client
 
-Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as part of their packages, see [here](http://trac.osgeo.org/postgis/wiki/UsersWikiInstall) for guidance.
+Also make sure you have Postgis 2.0+. Ubuntu does not offer Postgis 2.0+ yet as part of their packages, see [here](http://trac.osgeo.org/postgis/wiki/UsersWikiInstall) for guidance. In short:
+
+    sudo apt-get install autoconf libtool libxml2-dev libgeos-dev libproj-dev libgdal-dev
+    wget http://download.osgeo.org/postgis/source/postgis-2.x.x.tar.gz
+    tar zxvf postgis-2.x.x.tar.gz
+    cd postgis-2.x.x
+    ./autogen.sh
+    ./configure
+    make && make install
+
+The above tested on Ubuntu 13.10 only. 
+
+If you want to install the latest PostgreSQL and PostGIS from packages for a non-LTS version of Ubuntu, [this](http://askubuntu.com/a/289388/23679) may help.
 
 ### OSX
 
 [See installation with Homebrew](https://gist.github.com/mvexel/5526126)
 
 Note that on Mac OSX you may need to add a symlink to the `coffee` executable:
-	
+
 	ln -s ~/node_modules/coffee-script/bin/coffee /usr/local/bin/
-	
+
 ### Setting up the database
 
-Next we need to make sure we have our MapRoulette database instance set up. MapRoulette uses PostgreSQL through the  [http://www.sqlalchemy.org](SQLAlchemy) ORM and the [https://geoalchemy-2.readthedocs.org/en/latest/](GeoAlchemy2) spatial ORM. Unfortunately, GeoAlchemy2 only supports PostgreSQL / PostGIS, so we need to rely on that. 
+Next we need to make sure we have our MapRoulette database instance set up. MapRoulette uses PostgreSQL through the  [http://www.sqlalchemy.org](SQLAlchemy) ORM and the [https://geoalchemy-2.readthedocs.org/en/latest/](GeoAlchemy2) spatial ORM. Unfortunately, GeoAlchemy2 only supports PostgreSQL / PostGIS, so we need to rely on that.
 
 As the `postgres` user:
 
@@ -38,7 +52,7 @@ As the `postgres` user:
 
 Enter the password `osm` twice.
 
-Now create the three databases for the production, test and dev environments: 
+Now create the three databases for the production, test and dev environments:
 
     createdb -O osm maproulette
     createdb -O osm maproulette_test
@@ -77,12 +91,19 @@ Ensure that maproulette will be accessible to python:
 
     add2virtualenv .
 
-Have a look at the configuration defaults at `maproulette/config/__init__.py` and adapt as needed. (If you followed the previous to the letter you should not need to change a thing.)
+Generate a Flask application secret:
+
+    python bin/make_secret.py
+
+Have a look at the configuration defaults at `maproulette/config/__init__.py` and adapt as needed. In particular:
+
+* Set an application secret unique to your instance
+* Ensure that the DEFAULT_CHALLENGE exists.
 
 Generate the database tables:
 
     python manage.py create_db
-    
+
 If you're developing, you may want to load some test challenges and tasks:
 
     bin/load_fixtures.py
@@ -98,6 +119,10 @@ At this point you should see:
 
 And you should have a MapRoulette instance at [http://localhost:5000/](http://localhost:5000/)
 
+## Production deployment
+
+We have a guide for production deployment on a Debian flavored linux machine using nginx and uwsgi. See the `docs` folder.
+
 ## Frameworks used
 
 MapRoulette relies heavily on the lightweight Flask web application framework, and some of its extensions, notably Flask-OAuth, Flask-RESTful, Flask-Script, Flask-Runner and Flask-SQLAlchemy. For working with geospatial data, MapRoulette relies on GeoAlchemy2 and Shapely.
@@ -110,7 +135,7 @@ There is also [API documentation](https://github.com/osmlab/maproulette/wiki/API
 
 ### MapRoulette on Amazon EC2
 
-Note that there is also an Amazon EC2 AMI that has all the requirements for MapRoulette already installed and configured. To use, just fire up an instance of `ami-8985f0e0` and 
+Note that there is also an Amazon EC2 AMI that has all the requirements for MapRoulette already installed and configured. To use, just fire up an instance of `ami-8985f0e0` and
 
     cd maproulette
     git pull
