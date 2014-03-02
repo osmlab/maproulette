@@ -44,12 +44,14 @@ class ProductionConfig(Config):
     OSM = {
         'base_url': 'http://www.openstreetmap.org/api/0.6/',
         'request_token_url':
-        'http://www.openstreetmap.org/oauth/request_token',
-        'access_token_url': 'http://www.openstreetmap.org/oauth/access_token',
-        'authorize_url': 'http://www.openstreetmap.org/oauth/authorize',
+        'https://www.openstreetmap.org/oauth/request_token',
+        'access_token_url': 'https://www.openstreetmap.org/oauth/access_token',
+        'authorize_url': 'https://www.openstreetmap.org/oauth/authorize',
         'consumer_key': 'INSERT_CONSUMER_KEY_HERE',
         'consumer_secret': 'INSERT_CONSUMER_SECRET_HERE'
     }
+
+    LOGFILE = '/tmp/flask.log'
 
 
 class DevelopmentConfig(Config):

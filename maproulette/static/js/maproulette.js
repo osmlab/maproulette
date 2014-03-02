@@ -329,7 +329,8 @@ var MRManager = (function () {
                 // Request a challenge
                 selectChallenge();
 
-                presentChallengeDialog();
+                if (!Q.skipPresentChallenge) presentChallengeDialog();
+                else readyToEdit();
 
             } else {
 
@@ -358,6 +359,7 @@ var MRManager = (function () {
          * get a named, or random challenge
          */
         var selectChallenge = function (slug) {
+            var url = "";
             // if no specific challenge is passed in,
             // check what the cookie monster has for us
             if (!slug) {
@@ -367,7 +369,7 @@ var MRManager = (function () {
             // if we still don't have anything, let the server select a challenge for us.
             if (!slug) {
                 console.log("Letting server select a challenge");
-                url = '/api/challenge';
+                url = "/api/challenge";
             } else {
                 console.log("Getting challenge details for " + slug);
                 url = "/api/challenge/" + slug;
@@ -595,9 +597,9 @@ var MRManager = (function () {
                                 cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
                                 dialogHTML = "<h2>Pick a different challenge</h2>";
                                 for (c in challenges) {
-                                    cHTML = "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick=MRManager.userPickChallenge('" + challenges[c].slug + "')>Work on this challenge!</div></div>";
-                                    dialogHTML += cHTML;
+                                    dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick=MRManager.userPickChallenge('" + challenges[c].slug + "')>Work on this challenge!</div></div>";
                                 };
+                                dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
                                 console.log(dialogHTML);
                                 $('.donedialog').html(dialogHTML).fadeIn();
                             },
@@ -708,6 +710,10 @@ var MRManager = (function () {
             $(document).bind('keypress', 'r', function () {
                 MRManager.openTaskInJosm()
             });
+            $(document).bind('keypress', 'esc', function () {
+                $('.donedialog').fadeOut()
+            });
+
         }
 
         var displayUserStats = function (elem) {
@@ -722,7 +728,7 @@ var MRManager = (function () {
                     var fixed = 0;
                     var othercount = 0;
                     var rowHTML = "";
-                    tableHTML += "<tr><td class='challengetitle'><a href='/stats/" + c + "'>" + challenge.title + "</a><td>";
+                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + c + "'>" + challenge.title + "</a><td>";
                     for (s in challenge.statuses) {
                         var status = challenge.statuses[s];
                         var cnt = status['count'];
@@ -755,7 +761,34 @@ var MRManager = (function () {
             });
         }
 
+        var displayAllChallengesStats = function (elem) {
+            // Display the challenge summary stats as a table.
+            var endpoint = '/api/stats/challenges';
+            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
+            $.getJSON(endpoint, function (data) {
+                for (slug in data) {
+                    var challenge = data[slug]
+                    var first = moment();
+                    var last = moment().year(1900);
+                    var title = challenge['title'];
+                    var total = 0;
+                    var fixed = 0;
+                    var statuses = challenge['statuses'];
+                    for (status in statuses) {
+                        var n = statuses[status];
+                        total += n
+                        fixed += status === "fixed" ? n : 0;
+                    }
+                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + slug + "'>" + title + "</a><td>" + fixed + " out of " + total + " tasks fixed (" + Math.round(100 * (fixed / total)) + "%)";
+                }
+                tableHTML += "</tbody></table>";
+            }).complete(function () {
+                $("#" + elem).html(tableHTML);
+            });
+        }
+
         var displayChallengeStats = function (elem, slug) {
+            // Display the challenge statistics in the table container identified by id selector 'elem'
             var endpoint = '/api/stats/challenge/' + slug;
             var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
             var first = moment();
@@ -763,6 +796,22 @@ var MRManager = (function () {
             $.getJSON(endpoint, function (data) {})
         }
 
+        var displayChallengeDetails = function (slug) {
+            // displays various challenge details on the challenge page
+            var endpoint = '/api/challenge/' + slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    $('#challenge_' + key).html(data[key]).fadeIn();
+                };
+            });
+            // now get basic stats
+            endpoint = '/api/stats/challenge/' + slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    $('#challenge_' + key).html(data[key]).fadeIn();
+                };
+            });
+        }
 
         return {
             init: init,
@@ -778,7 +827,9 @@ var MRManager = (function () {
             presentChallengeHelp: presentChallengeHelp,
             registerHotkeys: registerHotkeys,
             displayUserStats: displayUserStats,
-            displayChallengeStats: displayChallengeStats
+            displayAllChallengesStats: displayAllChallengesStats,
+            displayChallengeStats: displayChallengeStats,
+            displayChallengeDetails: displayChallengeDetails
         };
     }
     ());

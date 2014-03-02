@@ -168,19 +168,6 @@ td.challengetitle {
     font-weight: bold;
 }
 
-td.challengetitle a {
-    padding: 4px;
-    text-decoration: none;
-    cursor: hand;
-    color: white;
-    background-color: black;
-}
-
-td.challengetitle a:hover {
-    color: white;
-    background-color: red;
-}
-
 td.hidden {
     display: none;
 }
