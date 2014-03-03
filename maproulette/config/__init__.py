@@ -51,7 +51,7 @@ class ProductionConfig(Config):
         'consumer_secret': 'INSERT_CONSUMER_SECRET_HERE'
     }
 
-    LOGFILE = '/tmp/flask.log'
+    LOGFILE = '/srv/www/maproulette/log/flask/maproulette.log'
 
 
 class DevelopmentConfig(Config):
