@@ -471,7 +471,7 @@ class AdminApiChallenge(Resource):
     def put(self, slug):
         if challenge_exists(slug):
             app.logger.debug('challenge exists')
-            abort(403)
+            abort(400)
         try:
             payload = json.loads(request.data)
         except Exception:
