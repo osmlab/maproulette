@@ -10,7 +10,9 @@ from geoalchemy2.shape import from_shape, to_shape
 import random
 from datetime import datetime
 from maproulette import app
+from flask import session
 from shapely.geometry import Polygon
+import pytz
 
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
@@ -263,6 +265,9 @@ class Task(db.Model):
         self.actions.append(action)
         # duplicate the action status string in the tasks table to save lookups
         self.currentaction = action.status
+        if action.status == 'fixed':
+            if self.validate_fixed():
+                self.append_action(Action('validated'))
 
     def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
@@ -277,7 +282,6 @@ class Task(db.Model):
                 return False
             setattr(self, k, v)
 
-        #
         self.geometries = []
 
         for geometry in geometries:
@@ -285,6 +289,51 @@ class Task(db.Model):
         db.session.merge(self)
         db.session.commit()
         return True
+
+    def validate_fixed(self):
+        from maproulette.oauth import get_latest_changeset
+        from maproulette.helpers import get_envelope
+        import iso8601
+
+        intersecting = False
+        timeframe = False
+
+        # get the latest changeset
+        latest_changeset = get_latest_changeset(session.get('osm_id'))
+
+        # check if the changeset bounding box covers the task geometries
+        sw = (float(latest_changeset.get('min_lon')),
+              float(latest_changeset.get('min_lat')))
+        ne = (float(latest_changeset.get('max_lon')),
+              float(latest_changeset.get('max_lat')))
+        envelope = get_envelope([ne, sw])
+        app.logger.debug(envelope)
+        for geom in [to_shape(taskgeom.geom)
+                     for taskgeom in self.geometries]:
+            if geom.intersects(envelope):
+                intersecting = True
+                break
+
+        # check if the timestamp is between assigned and fixed
+        assigned_action = Action.query.filter_by(
+            task_id=self.id).filter_by(
+            user_id=session.get('osm_id')).filter_by(
+            status='assigned').first()
+
+        # get assigned time in UTC
+        assigned_timestamp = assigned_action.timestamp
+        assigned_timestamp = assigned_timestamp.replace(tzinfo=pytz.utc)
+
+        # get the timestamp when the changeset was closed in UTC
+        changeset_closed_timestamp = iso8601.parse_date(
+            latest_changeset.get('closed_at')).replace(tzinfo=pytz.utc)
+
+        timeframe = assigned_timestamp <\
+            changeset_closed_timestamp <\
+            datetime.now(pytz.utc)
+
+        # check if the comment exists and contains 'maproulette'
+        return intersecting and timeframe
 
 
 class TaskGeometry(db.Model):
@@ -337,7 +386,8 @@ class Action(db.Model):
         nullable=False)
     timestamp = db.Column(
         db.DateTime,
-        default=datetime.now,
+        # store the timestamp as naive UTC time
+        default=datetime.now(pytz.utc).replace(tzinfo=None),
         nullable=False)
     user_id = db.Column(
         db.Integer,
@@ -356,7 +406,8 @@ class Action(db.Model):
 
     def __init__(self, status, user_id=None, editor=None):
         self.status = status
-        self.timestamp = datetime.now()
+        # store the timestamp as naive UTC time
+        self.timestamp = datetime.now(pytz.utc).replace(tzinfo=None)
         if user_id:
             self.user_id = user_id
         if editor:
