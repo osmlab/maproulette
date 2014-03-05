@@ -6,6 +6,7 @@ from functools import wraps
 import random
 import json
 from maproulette import app
+from shapely.geometry import MultiPoint
 
 
 def signed_in():
@@ -120,6 +121,12 @@ def get_random_task(challenge):
                               Task.random > rn).order_by(
             Task.random).first()
     return t
+
+
+def get_envelope(geoms):
+    """returns the spatial envelope of a list of coordinate pairs
+    in the form [(lon, lat), ...]"""
+    return MultiPoint(geoms).envelope
 
 
 class GeoPoint(object):
