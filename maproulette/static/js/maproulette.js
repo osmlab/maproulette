@@ -558,7 +558,7 @@ var MRManager = (function () {
             // We may want to consider http://stackoverflow.com/a/11389138 to
             // open a tab in the background - seems like that trick does not
             // work in all browsers.
-            window.open(constructIdUri(), '_blank');
+            window.open(constructIdUri(), 'MRIdWindow');
             updateTask('editing');
             notify.play('Your task is being loaded in iD in a separate tab. Please return here after you completed your fixes!');
             setTimeout(confirmRemap, 4000)
