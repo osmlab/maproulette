@@ -264,7 +264,7 @@ var MRManager = (function () {
                 }
             }
             // remove trailing comma - iD won't play ball with it
-            idUriComponent.replace(/,$/, "");
+            idUriComponent = idUriComponent.replace(/,$/, "");
             var uri = baseUriComponent + [idUriComponent, mapUriComponent].join('&');
             console.log('constructed ' + uri);
             return uri;
