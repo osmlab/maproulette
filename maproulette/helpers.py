@@ -112,14 +112,10 @@ def get_random_task(challenge):
     """Get a random task"""
 
     rn = random.random()
-    t = Task.query.filter(Task.challenge_slug == challenge.slug,
-                          Task.random <= rn).order_by(
+    return Task.query.filter(Task.challenge_slug == challenge.slug,
+                             Task.random <= rn,
+                             Task.is_available).order_by(
         Task.random.desc()).first()
-    if not t:
-        t = Task.query.filter(Task.challenge_slug == challenge.slug,
-                              Task.random > rn).order_by(
-            Task.random).first()
-    return t
 
 
 def get_envelope(geoms):
