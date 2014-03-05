@@ -123,6 +123,12 @@ And you should have a MapRoulette instance at [http://localhost:5000/](http://lo
 
 We have a guide for production deployment on a Debian flavored linux machine using nginx and uwsgi. See the `docs` folder.
 
+## Migrations
+
+We use [alembic](http://alembic.readthedocs.org/en/latest/) and [Flask-migrate](http://flask-migrate.readthedocs.org/en/latest/) for database migrations. When you first install, `python manage.py db init` will initialize the migration directory and configuration files to sensible defaults - but do check `migrations/alembic.ini`.
+
+Now when you pull a new version of MapRoulette that includes changes to the model, perform a `python manage.db db migrate` and edit the generated migration file in `migrations/versions` removing all references to the `spatial_ref_sys` table. (This is a PostGIS generated table that needs to be excluded from db migrations.) Then perform `python manage.py db upgrade` to migrate the database and bring it back in sync with the model.
+
 ## Frameworks used
 
 MapRoulette relies heavily on the lightweight Flask web application framework, and some of its extensions, notably Flask-OAuth, Flask-RESTful, Flask-Script, Flask-Runner and Flask-SQLAlchemy. For working with geospatial data, MapRoulette relies on GeoAlchemy2 and Shapely.
