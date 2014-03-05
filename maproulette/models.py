@@ -331,6 +331,10 @@ class Task(db.Model):
         changeset_closed_timestamp = iso8601.parse_date(
             latest_changeset.get('closed_at')).replace(tzinfo=pytz.utc)
 
+        app.logger.debug(assigned_timestamp)
+        app.logger.debug(changeset_closed_timestamp)
+        app.logger.debug(datetime.now(pytz.utc))
+
         timeframe = assigned_timestamp <\
             changeset_closed_timestamp <\
             datetime.now(pytz.utc)
