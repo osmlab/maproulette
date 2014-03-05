@@ -506,7 +506,9 @@ var MRManager = (function () {
             $.ajax({
                 url: mqurl,
                 success: function (data) {
-                    notify.play(MRHelpers.mqResultToString(data.address));
+                    notify.play(MRHelpers.mqResultToString(data.address), {
+                        timeout: false
+                    });
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log('ajax error');
