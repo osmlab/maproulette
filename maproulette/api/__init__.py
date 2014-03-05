@@ -75,7 +75,6 @@ api = Api(app)
 @api.representation('application/json')
 def output_json(data, code, headers=None):
     """Automatic JSON / GeoJSON output"""
-    app.logger.debug(data)
     # return empty result if data contains nothing
     if not data:
         resp = make_response(geojson.dumps({}), code)
@@ -187,7 +186,6 @@ class ApiChallengeList(ProtectedResource):
 
         # for local challenges, first look at lon / lat passed in
         if args.lon is not None and args.lat is not None:
-            app.logger.debug('got lon and lat')
             contains = 'POINT(%s %s)' % (args.lon, args.lat)
         # if there is none, look at the user's home location from OSM
         #elif 'home_location' in session:
@@ -197,7 +195,6 @@ class ApiChallengeList(ProtectedResource):
         query = db.session.query(Challenge).filter_by(active=True)
 
         if difficulty is not None:
-            app.logger.debug('difficulty not none')
             query = query.filter_by(difficulty=difficulty)
         if contains is not None:
             query = query.filter(Challenge.polygon.ST_Contains(contains))
@@ -408,7 +405,6 @@ class ApiChallengeTaskStatus(ProtectedResource):
         """Returns current status for the task identified by
         'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
-        app.logger.debug(task.currentaction)
         return {'status': task.currentaction}
 
 

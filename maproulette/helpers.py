@@ -87,7 +87,6 @@ def require_signedin(f):
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        app.logger.debug('osm login required. app.debug is %s' % (app.debug, ))
         if not app.debug and not 'osm_token' in session:
             abort(403)
         return f(*args, **kwargs)
