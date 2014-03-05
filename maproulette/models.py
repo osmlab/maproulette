@@ -314,6 +314,8 @@ class Task(db.Model):
                 intersecting = True
                 break
 
+        app.logger.debug('intersecting: %s ' % (intersecting,))
+
         # check if the timestamp is between assigned and fixed
         assigned_action = Action.query.filter_by(
             task_id=self.id).filter_by(
@@ -331,6 +333,8 @@ class Task(db.Model):
         timeframe = assigned_timestamp <\
             changeset_closed_timestamp <\
             datetime.now(pytz.utc)
+
+        app.logger.debug('timeframe: %s ' % (timeframe,))
 
         # check if the comment exists and contains 'maproulette'
         return intersecting and timeframe
