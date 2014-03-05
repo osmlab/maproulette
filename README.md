@@ -100,7 +100,25 @@ Have a look at the configuration defaults at `maproulette/config/__init__.py` an
 * Set an application secret unique to your instance
 * Ensure that the DEFAULT_CHALLENGE exists.
 
-Generate the database tables:
+Some of the configuration parameters are sensitive and are not included in the repository. They are loaded from an external file you need to create. It needs to contain a dict with the relevant OAuth parameters, and the secret key for the application. Use this as a template:
+
+    SECRET_KEY = 'INSERT APPLICATION SECRET HERE'
+
+    OSM = {
+        'base_url': 'http://www.openstreetmap.org/api/0.6/',
+        'request_token_url':
+        'https://www.openstreetmap.org/oauth/request_token',
+        'access_token_url': 'https://www.openstreetmap.org/oauth/access_token',
+        'authorize_url': 'https://www.openstreetmap.org/oauth/authorize',
+        'consumer_key': 'INSERT CONSUMER KEY HERE',
+        'consumer_secret': 'INSERT CONSUMER SECRET HERE'
+    }
+
+Then, create an environment variable `MAPROULETTE_SECRET_SETTINGS` to point to this file:
+
+    export MAPROULETTE_SECRET_SETTINGS='/path/to/maproulette-dev-secrets.py'
+
+Now we're ready to generate the database tables from the model:
 
     python manage.py create_db
 
