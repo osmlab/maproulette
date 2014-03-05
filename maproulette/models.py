@@ -8,7 +8,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from maproulette import app
 from flask import session
 from shapely.geometry import Polygon
@@ -337,7 +337,7 @@ class Task(db.Model):
 
         timeframe = assigned_timestamp <\
             changeset_closed_timestamp <\
-            datetime.now(pytz.utc) + datetime.timedelta(hours=1)
+            datetime.now(pytz.utc) + timedelta(hours=1)
 
         app.logger.debug('timeframe: %s ' % (timeframe,))
 
