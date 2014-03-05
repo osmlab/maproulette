@@ -6,10 +6,16 @@ import subprocess
 from flask.ext.runner import Manager
 from maproulette import app
 from maproulette.models import db
+from flask.ext.migrate import MigrateCommand, Migrate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+migrate = Migrate(app, db)
+
 manager = Manager(app)
+
+manager.add_command('db', MigrateCommand)
+
 
 @manager.command
 def clean_pyc():

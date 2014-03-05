@@ -4,6 +4,7 @@ Flask-KVSession>=0.4
 Flask-OAuthlib>=0.4.2
 Flask-SQLAlchemy>=1.0
 Flask-Runner>=2.1.0
+Flask-Migrate==1.2.0
 GeoAlchemy2>=0.2.1
 Jinja2>=2.7.2
 SQLAlchemy>=0.9.1
