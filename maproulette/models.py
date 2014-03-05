@@ -337,7 +337,7 @@ class Task(db.Model):
 
         timeframe = assigned_timestamp <\
             changeset_closed_timestamp <\
-            datetime.now(pytz.utc) + datetime.timedelta(minutes=5)
+            datetime.now(pytz.utc) + datetime.timedelta(hours=1)
 
         app.logger.debug('timeframe: %s ' % (timeframe,))
 
