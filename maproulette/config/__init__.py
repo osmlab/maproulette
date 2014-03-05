@@ -8,10 +8,6 @@ class Config(object):
     DEBUG = False
     TESTING = False
 
-    # The application secret key
-    # http://www.thedutchtable.com/2013/03/een-ei-is-geen-eivrolijk-pasen.html
-    SECRET_KEY = 'een ei is geen ei twee ei is een half ei'
-
     # This is the buffer for looking for tasks / challenges near the given
     # lon/lat
     NEARBUFFER = 0.01
@@ -20,37 +16,13 @@ class Config(object):
     # for considering a challenge 'local'
     MAX_SQ_DEGREES_FOR_LOCAL = 10
 
-    # The OAuth configuration paramters for OSM.
-    # The example key and secret point to the MapRoulette application
-    # registered at http://api06.dev.openstreetmap.org/api/0.6/
-    # This cannot be used in production.
-    OSM = {
-        'base_url': 'http://api06.dev.openstreetmap.org/api/0.6/',
-        'request_token_url':
-        'http://api06.dev.openstreetmap.org/oauth/request_token',
-        'access_token_url':
-        'http://api06.dev.openstreetmap.org/oauth/access_token',
-        'authorize_url': 'http://api06.dev.openstreetmap.org/oauth/authorize',
-        'consumer_key': 'dFdzJzU4rMaemzZXdhCR8HOixu21fT9B726uyzU8',
-        'consumer_secret': 'BhXKPNGDJHBVhkPfwyP5VPIHSDpSQXe63vwaTJ5l'
-    }
-
     DEFAULT_CHALLENGE = 'test1'
 
 
 class ProductionConfig(Config):
     """Production configuration class"""
-    SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette"
-    OSM = {
-        'base_url': 'http://www.openstreetmap.org/api/0.6/',
-        'request_token_url':
-        'https://www.openstreetmap.org/oauth/request_token',
-        'access_token_url': 'https://www.openstreetmap.org/oauth/access_token',
-        'authorize_url': 'https://www.openstreetmap.org/oauth/authorize',
-        'consumer_key': 'INSERT_CONSUMER_KEY_HERE',
-        'consumer_secret': 'INSERT_CONSUMER_SECRET_HERE'
-    }
 
+    SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette"
     LOGFILE = '/srv/www/maproulette/log/flask/maproulette.log'
 
 

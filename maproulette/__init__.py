@@ -22,6 +22,10 @@ app.config.from_object(config.DevelopmentConfig)
 #app.config.from_object(config.TestConfig)
 #app.config.from_object(config.ProductionConfig)
 
+# get the private stuff from a non-repo file specified
+# in this envvar
+app.config.from_envvar('MAPROULETTE_SECRET_SETTINGS')
+
 if not app.debug:
     import logging
     logging.basicConfig(
