@@ -173,8 +173,7 @@ class Challenge(db.Model):
         """Return the number of tasks available for this challenge."""
 
         return len(
-            [t for t in self.tasks
-                if t.currentaction in ['created', 'available', 'skipped']])
+            [t for t in self.tasks if t.is_available])
 
     @hybrid_property
     def islocal(self):
@@ -240,6 +239,14 @@ class Task(db.Model):
 
     def __repr__(self):
         return '<Task %s>' % (self.identifier)
+
+    @hybrid_property
+    def is_available(self):
+        return self.currentaction in ["created", "available", "skipped"]
+
+    @is_available.expression
+    def is_available(cls):
+        return cls.currentaction.in_(["created", "available", "skipped"])
 
     @hybrid_property
     def location(self):
