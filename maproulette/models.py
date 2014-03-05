@@ -267,6 +267,7 @@ class Task(db.Model):
         self.currentaction = action.status
         if action.status == 'fixed':
             if self.validate_fixed():
+                app.logger.debug('validated')
                 self.append_action(Action('validated'))
 
     def update(self, new_values, geometries):
