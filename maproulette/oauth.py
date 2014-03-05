@@ -1,5 +1,4 @@
 from maproulette import app
-from maproulette.helpers import signed_in
 from flask_oauthlib.client import OAuth
 from flask import request, url_for, redirect, session
 from maproulette.models import db, User
@@ -18,7 +17,7 @@ oauth.init_app(app)
 @osm.tokengetter
 def get_osm_token(token=None):
     app.logger.debug("polling tokengetter")
-    if signed_in():
+    if 'osm_token' in session:
         app.logger.debug('found tokens in session')
         return session.get('osm_token')
     return None
@@ -89,7 +88,7 @@ def retrieve_osm_data():
         # FIXME parse languages and add to user.languages string field
         user.changeset_count = userxml.find('changesets').attrib['count']
         # get last changeset info
-        changesetdata = osm.get('changesets?user=%s' % (user.id)).data
+        changesetdata = get_latest_changeset(user.id)
         try:
             lastchangeset = changesetdata.find('changeset')
             if 'min_lon' in lastchangeset.attrib:
@@ -122,3 +121,12 @@ def retrieve_osm_data():
                      (session['display_name']))
     session['osm_id'] = user.id
     session['difficulty'] = user.difficulty
+
+
+def get_latest_changeset(osm_id):
+    """Gets the latest changeset for the signed in user"""
+    if osm_id is None:
+        return None
+    endpoint = 'changesets?user=%s' % (session.get('osm_id'))
+    changesets = osm.get(endpoint).data
+    return changesets.find('changeset') or None

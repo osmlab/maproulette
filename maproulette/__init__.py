@@ -18,9 +18,9 @@ from maproulette import config
 # This is where you set MapRoulette's configuration mode
 # Look at config/__init__.py for configuration classes
 
-#app.config.from_object(config.DevelopmentConfig)
+app.config.from_object(config.DevelopmentConfig)
 #app.config.from_object(config.TestConfig)
-app.config.from_object(config.ProductionConfig)
+#app.config.from_object(config.ProductionConfig)
 
 if not app.debug:
     import logging
