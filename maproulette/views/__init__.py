@@ -8,7 +8,10 @@ from maproulette.helpers import signed_in
 @app.route('/')
 def index():
     """Display the main page"""
-    return render_template('index.html')
+    if app.config["TEASER"]:
+        return render_template('teaser.html')
+    else:
+        return render_template('index.html')
 
 
 @app.route('/logout')
