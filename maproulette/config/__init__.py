@@ -18,6 +18,11 @@ class Config(object):
 
     DEFAULT_CHALLENGE = 'test1'
 
+    # show a teaser page instead of the real thing
+    TEASER = True
+    # the text that should go into the teaser
+    TEASER_TEXT = 'New MapRoulette Coming SOON!'
+
 
 class ProductionConfig(Config):
     """Production configuration class"""
