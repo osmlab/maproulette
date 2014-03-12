@@ -88,8 +88,11 @@ var MRNotifier = function () {
     }
 }();
 
-var MRButtons = function () {
+var DefaultDoneDialog = {
+  text: "This area is being loaded in your editor. Did you fix it?",
+  buttons: ""};
 
+var MRButtons = function () {
     var buttonTypes = {
         'fixed': 'I fixed it!',
         'skipped': 'Too difficult / Couldn\'t see',
@@ -569,7 +572,7 @@ var MRManager = (function () {
         };
 
         var presentDoneDialog = function () {
-            var d = challenge.done_dlg;
+          var d = DefaultDoneDialog;
 
             // if there is no done dialog info, bail
             // FIXME we should be reverting to a default
