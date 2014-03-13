@@ -89,8 +89,9 @@ var MRNotifier = function () {
 }();
 
 var DefaultDoneDialog = {
-  text: "This area is being loaded in your editor. Did you fix it?",
-  buttons: ""};
+    text: "This area is being loaded in your editor. Did you fix it?",
+    buttons: ""
+};
 
 var MRButtons = function () {
     var buttonTypes = {
@@ -572,7 +573,7 @@ var MRManager = (function () {
         };
 
         var presentDoneDialog = function () {
-          var d = DefaultDoneDialog;
+            var d = DefaultDoneDialog;
 
             // if there is no done dialog info, bail
             // FIXME we should be reverting to a default
@@ -784,7 +785,7 @@ var MRManager = (function () {
                     for (status in statuses) {
                         var n = statuses[status];
                         total += n
-                        fixed += status === "fixed" ? n : 0;
+                        fixed += ["fixed", "validated"].indexOf(status) > -1 ? n : 0;
                     }
                     tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + slug + "'>" + title + "</a><td>" + fixed + " out of " + total + " tasks fixed (" + Math.round(100 * (fixed / total)) + "%)";
                 }
