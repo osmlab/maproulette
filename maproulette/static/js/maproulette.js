@@ -413,8 +413,10 @@ var MRManager = (function () {
                         challenge.stats[key] = value;
                     });
                     // update the stats UI elements
+                    console.log('setting total to ' + challenge.stats.total);
                     $('#stats #total').text(challenge.stats.total);
-                    $('#stats #available').text(challenge.stats.available);
+                    console.log('setting unfixed to ' + challenge.stats.unfixed);
+                    $('#stats #unfixed').text(challenge.stats.unfixed);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log('ajax error');
@@ -785,7 +787,9 @@ var MRManager = (function () {
                     for (status in statuses) {
                         var n = statuses[status];
                         total += n
-                        fixed += ["fixed", "validated"].indexOf(status) > -1 ? n : 0;
+                        fixed += ["falsepositive",
+                            "fixed", "validated"
+                        ].indexOf(status) > -1 ? n : 0;
                     }
                     tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + slug + "'>" + title + "</a><td>" + fixed + " out of " + total + " tasks fixed (" + Math.round(100 * (fixed / total)) + "%)";
                 }
