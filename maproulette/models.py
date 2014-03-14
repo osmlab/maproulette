@@ -2,7 +2,7 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import synonym
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
@@ -168,12 +168,12 @@ class Challenge(db.Model):
 
     polygon = synonym('geom', descriptor=polygon)
 
-    @hybrid_property
-    def tasks_available(self):
+    @hybrid_method
+    def tasks_havingstatus(self, statuses):
         """Return the number of tasks available for this challenge."""
 
         return len(
-            [t for t in self.tasks if t.is_available])
+            [t for t in self.tasks if t.has_status(statuses)])
 
     @hybrid_property
     def islocal(self):
@@ -240,12 +240,16 @@ class Task(db.Model):
     def __repr__(self):
         return '<Task %s>' % (self.identifier)
 
-    @hybrid_property
-    def is_available(self):
+    @hybrid_method
+    def has_status(self, statuses):
+        if not type(statuses) == list:
+            statuses = [statuses]
         return self.currentaction in ["created", "available", "skipped"]
 
-    @is_available.expression
-    def is_available(cls):
+    @has_status.expression
+    def has_status(cls, statuses):
+        if not type(statuses) == list:
+            statuses = [statuses]
         return cls.currentaction.in_(["created", "available", "skipped"])
 
     @hybrid_property
