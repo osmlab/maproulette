@@ -275,7 +275,7 @@ class Task(db.Model):
         if action.status == 'fixed':
             if self.validate_fixed():
                 app.logger.debug('validated')
-                self.append_action(Action('validated'))
+                self.append_action(Action('validated', session.get('osm_id')))
 
     def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
