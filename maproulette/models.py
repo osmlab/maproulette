@@ -13,6 +13,7 @@ from maproulette import app
 from flask import session
 from shapely.geometry import Polygon
 import pytz
+from re import match
 
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
@@ -117,6 +118,11 @@ class Challenge(db.Model):
         default='default',
         nullable=False)
 
+    @validates('slug')
+    def validate_slug(self, key, slug):
+        assert match('^[a-z0-]+$', slug)
+        return slug
+        
     # note that spatial indexes seem to be created automagically
 
     def __init__(self,
