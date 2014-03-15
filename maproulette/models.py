@@ -254,25 +254,14 @@ class Task(db.Model):
 
     @hybrid_property
     def is_available(self):
-        if self.has_status(['assigned', 'editing']):
-            app.logger.debug('getting availability for %s' % (self.id,))
-            #app.logger.debug(datetime.utcnow())
-            app.logger.debug(datetime.utcnow() -
-                             app.config['TASK_EXPIRATION_THRESHOLD'])
-            app.logger.debug(self.actions[-1].timestamp)
-            #app.logger.debug(app.config['TASK_EXPIRATION_THRESHOLD'])
-            app.logger.debug(datetime.utcnow() -
-                             app.config['TASK_EXPIRATION_THRESHOLD'] <
-                             self.actions[-1].timestamp)
         res = self.has_status([
             'available',
             'created',
             'skipped']) or (self.has_status([
             'assigned',
             'editing']) and datetime.utcnow() -
-            app.config['TASK_EXPIRATION_THRESHOLD'] <
+            app.config['TASK_EXPIRATION_THRESHOLD'] >
             self.actions[-1].timestamp)
-        app.logger.debug('returning %s' % (res,))
         return res
 
     # with currentactions as (select distinct on (task_id) timestamp,
@@ -288,6 +277,10 @@ class Task(db.Model):
             Action.task_id).order_by(Action.task_id).order_by(
             Action.id.desc()).cte(
             name="current_actions", recursive=True)
+        # before this time, a challenge is available even if it's
+        # 'assigned' or 'editing'
+        available_time = datetime.utcnow() -\
+            app.config['TASK_EXPIRATION_THRESHOLD']
         return cls.id.in_(
             db.session.query(Task.id).join(current_actions).filter(
                 or_(
@@ -299,12 +292,9 @@ class Task(db.Model):
                         current_actions.c.status.in_([
                             'editing',
                             'assigned']),
-                        datetime.utcnow() -
-                        app.config['TASK_EXPIRATION_THRESHOLD']) <
-                    current_actions.c.timestamp
-                )
-            )
-        )
+                        available_time >
+                        current_actions.c.timestamp))
+            ))
 
     @hybrid_property
     def location(self):
