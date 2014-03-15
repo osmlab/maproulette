@@ -262,6 +262,7 @@ class Task(db.Model):
             'editing']) and datetime.utcnow() -
             app.config['TASK_EXPIRATION_THRESHOLD'] >
             self.actions[-1].timestamp)
+        app.logger.debug('task %s available? %s' % (self.id, res))
         return res
 
     # with currentactions as (select distinct on (task_id) timestamp,
@@ -281,7 +282,7 @@ class Task(db.Model):
         # 'assigned' or 'editing'
         available_time = datetime.utcnow() -\
             app.config['TASK_EXPIRATION_THRESHOLD']
-        return cls.id.in_(
+        res = cls.id.in_(
             db.session.query(Task.id).join(current_actions).filter(
                 or_(
                     current_actions.c.status.in_([
@@ -295,6 +296,7 @@ class Task(db.Model):
                         available_time >
                         current_actions.c.timestamp))
             ))
+        return res
 
     @hybrid_property
     def location(self):
