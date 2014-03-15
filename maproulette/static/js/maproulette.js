@@ -608,7 +608,7 @@ var MRManager = (function () {
                                 cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
                                 dialogHTML = "<h2>Pick a different challenge</h2>";
                                 for (c in challenges) {
-                                    dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick=MRManager.userPickChallenge('" + challenges[c].slug + "')>Work on this challenge!</div></div>";
+                                    dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>";
                                 };
                                 dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
                                 console.log(dialogHTML);
@@ -694,6 +694,7 @@ var MRManager = (function () {
         };
 
         var userPickChallenge = function (slug) {
+            slug = decodeURI(slug);
             $('.donedialog').fadeOut({
                 complete: function () {
                     $('.controlpanel').fadeIn()
