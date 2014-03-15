@@ -14,6 +14,7 @@ from flask import session
 from shapely.geometry import Polygon
 import pytz
 from re import match
+from sqlalchemy.orm import validates
 
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
