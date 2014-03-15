@@ -114,10 +114,7 @@ def get_random_task(challenge):
     rn = random.random()
     return Task.query.filter(Task.challenge_slug == challenge.slug,
                              Task.random <= rn,
-                             Task.has_status([
-                                 'available',
-                                 'created',
-                                 'skipped'])).order_by(
+                             Task.is_available).order_by(
         Task.random.desc()).first()
 
 

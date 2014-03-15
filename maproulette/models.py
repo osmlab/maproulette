@@ -1,6 +1,6 @@
   # """This file contains the SQLAlchemy ORM models"""
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_, or_
 from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.ext.declarative import declarative_base
@@ -8,7 +8,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from maproulette import app
 from flask import session
 from shapely.geometry import Polygon
@@ -168,12 +168,12 @@ class Challenge(db.Model):
 
     polygon = synonym('geom', descriptor=polygon)
 
-    @hybrid_method
-    def tasks_havingstatus(self, statuses):
+    @property
+    def tasks_available(self):
         """Return the number of tasks available for this challenge."""
 
         return len(
-            [t for t in self.tasks if t.has_status(statuses)])
+            [t for t in self.tasks if t.is_available])
 
     @hybrid_property
     def islocal(self):
@@ -244,13 +244,67 @@ class Task(db.Model):
     def has_status(self, statuses):
         if not type(statuses) == list:
             statuses = [statuses]
-        return self.currentaction in ["created", "available", "skipped"]
+        return self.currentaction in statuses
 
     @has_status.expression
     def has_status(cls, statuses):
         if not type(statuses) == list:
             statuses = [statuses]
-        return cls.currentaction.in_(["created", "available", "skipped"])
+        return cls.currentaction.in_(statuses)
+
+    @hybrid_property
+    def is_available(self):
+        if self.has_status(['assigned', 'editing']):
+            app.logger.debug('getting availability for %s' % (self.id,))
+            #app.logger.debug(datetime.utcnow())
+            app.logger.debug(datetime.utcnow() -
+                             app.config['TASK_EXPIRATION_THRESHOLD'])
+            app.logger.debug(self.actions[-1].timestamp)
+            #app.logger.debug(app.config['TASK_EXPIRATION_THRESHOLD'])
+            app.logger.debug(datetime.utcnow() -
+                             app.config['TASK_EXPIRATION_THRESHOLD'] <
+                             self.actions[-1].timestamp)
+        res = self.has_status([
+            'available',
+            'created',
+            'skipped']) or (self.has_status([
+            'assigned',
+            'editing']) and datetime.utcnow() -
+            app.config['TASK_EXPIRATION_THRESHOLD'] <
+            self.actions[-1].timestamp)
+        app.logger.debug('returning %s' % (res,))
+        return res
+
+    # with currentactions as (select distinct on (task_id) timestamp,
+    # status, task_id from actions order by task_id, id desc) select id,
+    # challenge_slug from tasks join currentactions c on (id = task_id)
+    # where c.status in ('available','skipped','created') or (c.status in
+    # ('editing','assigned') and now() - c.timestamp > '1 hour');
+
+    @is_available.expression
+    def is_available(cls):
+        # the common table expression
+        current_actions = db.session.query(Action).distinct(
+            Action.task_id).order_by(Action.task_id).order_by(
+            Action.id.desc()).cte(
+            name="current_actions", recursive=True)
+        return cls.id.in_(
+            db.session.query(Task.id).join(current_actions).filter(
+                or_(
+                    current_actions.c.status.in_([
+                        'available',
+                        'skipped',
+                        'created']),
+                    and_(
+                        current_actions.c.status.in_([
+                            'editing',
+                            'assigned']),
+                        datetime.utcnow() -
+                        app.config['TASK_EXPIRATION_THRESHOLD']) <
+                    current_actions.c.timestamp
+                )
+            )
+        )
 
     @hybrid_property
     def location(self):
@@ -348,7 +402,7 @@ class Task(db.Model):
 
         timeframe = assigned_timestamp <\
             changeset_closed_timestamp <\
-            datetime.now(pytz.utc) + timedelta(hours=1)
+            datetime.now(pytz.utc) + app.config['MAX_CHANGESET_OFFSET']
 
         app.logger.debug('timeframe: %s ' % (timeframe,))
 
