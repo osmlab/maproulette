@@ -1,4 +1,3 @@
-
 # Configuration classes
 
 
@@ -22,6 +21,15 @@ class Config(object):
     TEASER = False
     # the text that should go into the teaser
     TEASER_TEXT = 'New MapRoulette Coming SOON!'
+
+    from datetime import timedelta
+
+    # The expiration threshold for tasks that are 'assigned' or 'editing'
+    TASK_EXPIRATION_THRESHOLD = timedelta(hours=1)
+
+    # The time buffer between a task marked as fixed and the timestamp on the
+    # changeset in OSM. (Used in validation)
+    MAX_CHANGESET_OFFSET = timedelta(hours=1)
 
 
 class ProductionConfig(Config):

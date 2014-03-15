@@ -238,13 +238,7 @@ class ApiStatsChallenge(ProtectedResource):
         """Return statistics for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
         total = len(challenge.tasks)
-        unfixed = challenge.tasks_havingstatus([
-            'available',
-            'created',
-            'alreadyfixed',
-            'skipped',
-            'assigned',
-            'editing'])
+        unfixed = challenge.tasks_available
         return {'total': total, 'unfixed': unfixed}
 
 

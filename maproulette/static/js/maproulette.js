@@ -461,6 +461,7 @@ var MRManager = (function () {
                 async: false,
                 success: function (data) {
                     task = data;
+                    console.log('got task ' + task.identifier);
                     //...and its geometries
                     $.ajax({
                         url: '/api/challenge/' + challenge.slug + '/task/' + task.identifier + '/geometries',
