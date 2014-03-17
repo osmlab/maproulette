@@ -531,6 +531,7 @@ var MRManager = (function () {
             // update the outgoing task
             updateTask(action);
             getAndShowTask();
+            updateHash();
         };
 
         var getAndShowTask = function () {
@@ -793,7 +794,9 @@ var MRManager = (function () {
                             "fixed", "validated"
                         ].indexOf(status) > -1 ? n : 0;
                     }
-                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + slug + "'>" + title + "</a><td>" + fixed + " out of " + total + " tasks fixed (" + Math.round(100 * (fixed / total)) + "%)";
+                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + slug + "'>" + title + "</a>
+                    <td><a href='http://maproulette.org/#c=" + slug + "'>Work on this challenge</a></td>
+                    <td>" + fixed + " out of " + total + " tasks fixed (" + Math.round(100 * (fixed / total)) + "%)";
                 }
                 tableHTML += "</tbody></table>";
             }).complete(function () {
@@ -825,6 +828,10 @@ var MRManager = (function () {
                     $('#challenge_' + key).html(data[key]).fadeIn();
                 };
             });
+        }
+
+        var updateHash = function () {
+            location.hash = 'c=' + challenge.slug + '/' + task.identifier;
         }
 
         return {
