@@ -15,7 +15,6 @@ from shapely.geometry import Polygon
 import pytz
 from re import match
 from sqlalchemy.orm import validates
-from sqlalchemy.orm import relationship, backref
 
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
@@ -122,9 +121,9 @@ class Challenge(db.Model):
 
     @validates('slug')
     def validate_slug(self, key, slug):
-        assert match('^[a-z0-]+$', slug)
+        assert match('^[a-z0-9]+$', slug)
         return slug
-        
+
     # note that spatial indexes seem to be created automagically
 
     def __init__(self,
@@ -265,7 +264,7 @@ class Task(db.Model):
 
     @hybrid_property
     def is_available(self):
-        res = self.has_status([
+        return self.has_status([
             'available',
             'created',
             'skipped']) or (self.has_status([
@@ -273,8 +272,6 @@ class Task(db.Model):
             'editing']) and datetime.utcnow() -
             app.config['TASK_EXPIRATION_THRESHOLD'] >
             self.actions[-1].timestamp)
-        app.logger.debug('task %s available? %s' % (self.id, res))
-        return res
 
     # with currentactions as (select distinct on (task_id) timestamp,
     # status, task_id from actions order by task_id, id desc) select id,
