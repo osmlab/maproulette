@@ -14,17 +14,9 @@ app = Flask(__name__,
             template_folder='templates',
             static_url_path='/static')
 
-from maproulette import config
-# This is where you set MapRoulette's configuration mode
-# Look at config/__init__.py for configuration classes
-
-app.config.from_object(config.DevelopmentConfig)
-#app.config.from_object(config.TestConfig)
-#app.config.from_object(config.ProductionConfig)
-
-# get the private stuff from a non-repo file specified
+# get configuration from a non-repo file specified
 # in this envvar
-app.config.from_envvar('MAPROULETTE_SECRET_SETTINGS')
+app.config.from_envvar('MAPROULETTE_SETTINGS')
 
 if not app.debug:
     import logging
