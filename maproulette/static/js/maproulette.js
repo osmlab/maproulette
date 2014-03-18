@@ -443,10 +443,19 @@ var MRManager = (function () {
                 success: function (data) {
                     task = data;
                     if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
-                        notify.play('This task is already fixed, or it was marked as not an error.', {
-                            type: 'warning',
-                            timeout: 'false'
-                        })
+                        setTimeout(function () {
+                            notify.play('This task is already fixed, or it was marked as not an error.', {
+                                type: 'warning',
+                                timeout: false
+                            })
+                        }, 2000);
+                    } else if (['assigned', 'editing'].indexOf(task.currentaction) > -1) {
+                        setTimeout(function () {
+                            notify.play('This task is already assigned to somebody.', {
+                                type: 'warning',
+                                timeout: false
+                            })
+                        }, 2000);
                     }
                     //...and its geometries
                     $.ajax({
