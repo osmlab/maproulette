@@ -695,6 +695,7 @@ var MRManager = (function () {
             });
             console.log('user picking challenge')
             challenge.slug = slug;
+            selectChallenge();
             task = {};
             getAndShowTask();
         };
