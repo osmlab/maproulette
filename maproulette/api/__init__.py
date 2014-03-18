@@ -238,8 +238,8 @@ class ApiStatsChallenge(ProtectedResource):
         """Return statistics for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
         total = len(challenge.tasks)
-        available = challenge.tasks_available
-        return {'total': total, 'available': available}
+        unfixed = challenge.tasks_available
+        return {'total': total, 'unfixed': unfixed}
 
 
 class ApiStatsChallengeUsers(ProtectedResource):
@@ -351,7 +351,6 @@ class ApiChallengeTask(ProtectedResource):
         if task is None:  # we did not get a lon/lat or there was no task close
             # If no location is specified, or no tasks were found, gather
             # random tasks
-            app.logger.debug('getting random task')
             task = get_random_task(challenge)
             # If no tasks are found with this method, then this challenge
             # is complete
@@ -379,7 +378,6 @@ class ApiChallengeTaskDetails(ProtectedResource):
     def post(self, slug, identifier):
         """Update the task identified by 'identifier' from
         the challenge identified by 'slug'"""
-        app.logger.debug('updating task %s' % (identifier, ))
         # initialize the parser
         parser = reqparse.RequestParser()
         parser.add_argument('action', type=str,
