@@ -51,7 +51,8 @@ challenge_summary = {
 task_fields = {
     'identifier': fields.String(attribute='identifier'),
     'instruction': fields.String(attribute='instruction'),
-    'location': PointField
+    'location': PointField,
+    'currentaction': fields.String
 }
 
 me_fields = {

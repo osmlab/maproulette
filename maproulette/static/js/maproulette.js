@@ -240,7 +240,6 @@ var MRManager = (function () {
                     break;
                 }
             }
-            console.log('constructed ' + uri)
             return uri;
         };
 
@@ -270,25 +269,27 @@ var MRManager = (function () {
             // remove trailing comma - iD won't play ball with it
             idUriComponent = idUriComponent.replace(/,$/, "");
             var uri = baseUriComponent + [idUriComponent, mapUriComponent].join('&');
-            console.log('constructed ' + uri);
             return uri;
         };
 
         /*
          * A helper function to construct the URL parameters for location and difficulty
-         * if it is for a challenge, we need the difficulty as well as the location.
          */
-        var constructUrlParameters = function (isChallenge) {
-            var urlParams = '';
-            if (task.identifier) urlParams += '/' + task.identifier;
-            urlParams += '?';
+        var constructUrlParameters = function (assign) {
+            var params = [];
+            var result = ''
+            if (task.identifier) result += '/' + task.identifier;
+            result += '?';
             if (typeof near.lat === 'number' && typeof near.lon === 'number') { // this is not quite accurate but good enough for a casual check.
-                urlParams += 'lon=' + near.lon + '&lat=' + near.lat + '&';
+                params.push('lon=' + near.lon);
+                params.push('lat=' + near.lat);
             }
-            if ([1, 2, 3].indexOf(difficulty) > -1 && isChallenge) { // difficulty must be 1,2,3
-                urlParams += 'difficulty=' + difficulty
-            }
-            return urlParams;
+            if (!assign) params.push('assign=0');
+            // if ([1, 2, 3].indexOf(difficulty) > -1 && isChallenge) { // difficulty must be 1,2,3
+            //     urlParams += 'difficulty=' + difficulty
+            // }
+            result += params.join('&');
+            return result;
         };
 
         /*
@@ -361,15 +362,12 @@ var MRManager = (function () {
             // if no specific challenge is passed in,
             // check what the cookie monster has for us
             if (!challenge.slug) {
-                console.log("Setting challenge from cookie to: " + $.cookie('challenge'));
                 challenge.slug = $.cookie('challenge');
             };
             // if we still don't have anything, let the server select a challenge for us.
             if (!challenge.slug) {
-                console.log("Letting server select a challenge");
                 url = "/api/challenge";
             } else {
-                console.log("Getting challenge details for " + challenge.slug);
                 url = "/api/challenge/" + challenge.slug;
             };
             $.ajax({
@@ -377,7 +375,6 @@ var MRManager = (function () {
                 async: false,
                 success: function (data) {
                     challenge = data;
-                    console.log('got challenge ' + challenge.slug);
                     // set the challenge cookie
                     $.cookie('challenge', challenge.slug);
                     // update the challenge detail UI elements
@@ -386,16 +383,13 @@ var MRManager = (function () {
                     // and move on to get the stats
                     getChallengeStats()
                 },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log('ajax error');
-                }
+                error: function (jqXHR, textStatus, errorThrown) {}
             });
         };
 
 
         var getChallengeStats = function () {
             // now get the challenge stats
-            console.log('getting challenge stats');
             url = '/api/stats/challenge/' + challenge.slug;
             challenge.stats = {};
             $.ajax({
@@ -405,9 +399,7 @@ var MRManager = (function () {
                         challenge.stats[key] = value;
                     });
                     // update the stats UI elements
-                    console.log('setting total to ' + challenge.stats.total);
                     $('#stats #total').text(challenge.stats.total);
-                    console.log('setting unfixed to ' + challenge.stats.unfixed);
                     $('#stats #unfixed').text(challenge.stats.unfixed);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
@@ -429,9 +421,6 @@ var MRManager = (function () {
                 url: "/api/challenge/" + challenge.slug + "/task/" + task.identifier,
                 type: "POST",
                 data: payload,
-                success: function (data) {
-                    console.log('task ' + task.identifier + ' updated')
-                },
                 error: function (jqXHR, textStatus, errorThrown) {
                     console.log('ajax error');
                 }
@@ -443,15 +432,22 @@ var MRManager = (function () {
         /*
          * get a task for the current challenge
          */
-        var getTask = function () {
+        var getTask = function (assign) {
+            // assign the task by default.
+            assign = typeof assign !== "boolean" ? true : assign;
             if (!challenge.slug) selectChallenge();
             // get a task
             $.ajax({
-                url: '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(),
+                url: '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(assign),
                 async: false,
                 success: function (data) {
                     task = data;
-                    console.log('got task ' + task.identifier);
+                    if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
+                        notify.play('This task is already fixed, or it was marked as not an error.', {
+                            type: 'warning',
+                            timeout: 'false'
+                        })
+                    }
                     //...and its geometries
                     $.ajax({
                         url: '/api/challenge/' + challenge.slug + '/task/' + task.identifier + '/geometries',
@@ -478,15 +474,11 @@ var MRManager = (function () {
             taskLayer.clearLayers();
 
             // if we don't have a task, get one
-            if (typeof task === 'undefined') {
-                console.log('we don\'t have a task');
-                return false;
-            }
+            if (typeof task === 'undefined') return false;
             // draw all features of this task on the task layer
             for (var i = 0; i < task.features.length; i++) {
                 feature = task.features[i];
                 taskLayer.addData(feature);
-                console.log('geojson layer now has ' + taskLayer.getLayers().length + ' things.');
             }
             // fit the map snugly to the task features
             map.fitBounds(taskLayer.getBounds().pad(0.2));
@@ -524,8 +516,8 @@ var MRManager = (function () {
             getAndShowTask();
         };
 
-        var getAndShowTask = function () {
-            getTask();
+        var getAndShowTask = function (assign) {
+            getTask(assign);
             drawTask();
             getChallengeStats();
             updateHash();
@@ -548,7 +540,6 @@ var MRManager = (function () {
                             type: 'error'
                         });
                     } else {
-                        console.log('the data was loaded in JOSM, now waiting for callback');
                         updateTask('editing');
                         setTimeout(confirmRemap, 4000);
                     }
@@ -603,7 +594,6 @@ var MRManager = (function () {
                                     dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>";
                                 };
                                 dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
-                                console.log(dialogHTML);
                                 $('.donedialog').html(dialogHTML).fadeIn();
                             },
                             error: function (jqXHR, textStatus, errorThrown) {
@@ -652,13 +642,9 @@ var MRManager = (function () {
         };
 
         var readyToEdit = function () {
-            console.log("Clearing the screen to edit")
             $('.donedialog').fadeOut();
             $('.controlpanel').fadeIn();
-            if (!task.identifier) {
-                console.log("No task. Loading one")
-                getAndShowTask();
-            }
+            if (!task.identifier) getAndShowTask();
         };
 
         var geolocateUser = function () {
@@ -670,7 +656,6 @@ var MRManager = (function () {
             });
             // If the location is found, let the user know, and store.
             map.on('locationfound', function (e) {
-                console.log('location found: ' + e.latlng);
                 near.lat = parseFloat(e.latlng.lat);
                 near.lon = parseFloat(e.latlng.lng);
                 notify.play('We found your location. MapRoulette will try and give you tasks closer to home if they are available.');
@@ -682,7 +667,6 @@ var MRManager = (function () {
         };
 
         var confirmRemap = function () {
-            console.log('confirming remap');
             presentDoneDialog();
         };
 
@@ -693,7 +677,6 @@ var MRManager = (function () {
                     $('.controlpanel').fadeIn()
                 }
             });
-            console.log('user picking challenge')
             challenge.slug = slug;
             selectChallenge();
             task = {};
@@ -702,6 +685,7 @@ var MRManager = (function () {
 
         var userPreferences = function () {
             console.log('user setting preferences');
+            //FIXME implement
         };
 
         var registerHotkeys = function () {
@@ -837,7 +821,6 @@ var MRManager = (function () {
                     var res = h.substr(3).split('/');
                     challenge.slug = res[0];
                     task.identifier = res[1];
-                    console.log('got challenge slug ' + challenge.slug + ' and task identifier ' + task.identifier);
                     getAndShowTask();
                     return true;
                 };
@@ -849,7 +832,6 @@ var MRManager = (function () {
                     difficulty = res[0];
                     near.lon = res[1];
                     near.lat = res[2];
-                    console.log('got diff ' + difficulty + ' and lon / lat ' + near);
                     return true;
                 }
                 if (h.indexOf('#c=') == 0) {
