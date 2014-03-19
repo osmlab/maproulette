@@ -1,0 +1,26 @@
+{
+  "name": "MapRoulette",
+  "version": "0.0.0",
+  "homepage": "https://github.com/osmlab/maproulette",
+  "authors": [
+    "Serge Wroclawski <serge@wroclawski.org>"
+  ],
+  "description": "Bower dependencies for Maproulette",
+  "license": "Apache",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery.cookie": "~1.4.0",
+    "jquery.hotkeys": "*",
+    "jquery": "~2.1.0",
+    "leaflet": "~0.7.2",
+    "moment": "~2.5.1",
+    "noty": "~2.2.2"
+  }
+}
