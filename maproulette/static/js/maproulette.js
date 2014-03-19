@@ -449,13 +449,6 @@ var MRManager = (function () {
                                 timeout: false
                             })
                         }, 2000);
-                    } else if (['assigned', 'editing'].indexOf(task.currentaction) > -1) {
-                        setTimeout(function () {
-                            notify.play('This task is already assigned to somebody.', {
-                                type: 'warning',
-                                timeout: false
-                            })
-                        }, 2000);
                     }
                     //...and its geometries
                     $.ajax({
