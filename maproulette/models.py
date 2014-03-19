@@ -285,7 +285,7 @@ class Task(db.Model):
         current_actions = db.session.query(Action).distinct(
             Action.task_id).order_by(Action.task_id).order_by(
             Action.id.desc()).cte(
-            name="current_actions", recursive=True)
+            name="current_actions")
         # before this time, a challenge is available even if it's
         # 'assigned' or 'editing'
         available_time = datetime.utcnow() -\
