@@ -224,7 +224,8 @@ var MRManager = (function () {
             var ways = [];
             var sw = bounds.getSouthWest();
             var ne = bounds.getNorthEast();
-            var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0';
+            var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
+            var selects = [];
 
             for (f in task.features) {
                 var feature = task.features[f];
@@ -233,13 +234,16 @@ var MRManager = (function () {
                 }
                 switch (feature.geometry.type) {
                 case 'Point':
-                    uri += '&select=node' + feature.properties.osmid;
+                    selects.push('node' + feature.properties.osmid);
                     break;
                 case 'LineString':
-                    uri += '&select=way' + feature.properties.osmid;
+                    selects.push('way' + feature.properties.osmid);
                     break;
                 }
             }
+
+            uri += selects.join(',');
+
             return uri;
         };
 
