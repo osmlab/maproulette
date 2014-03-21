@@ -331,9 +331,7 @@ class Task(db.Model):
         # duplicate the action status string in the tasks table to save lookups
         self.currentaction = action.status
         if action.status == 'fixed':
-            if self.validate_fixed():
-                app.logger.debug('validated')
-                self.append_action(Action('validated', session.get('osm_id')))
+            self.validate_fixed()
 
     def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
@@ -404,10 +402,11 @@ class Task(db.Model):
             changeset_closed_timestamp <\
             datetime.now(pytz.utc) + app.config['MAX_CHANGESET_OFFSET']
 
-        app.logger.debug('timeframe: %s ' % (timeframe,))
-
-        # check if the comment exists and contains 'maproulette'
-        return intersecting and timeframe
+        if intersecting and timeframe:
+            app.logger.debug('validated')
+            self.append_action(Action('validated', session.get('osm_id')))
+        else:
+            app.logger.debug('could not validate')
 
 
 class TaskGeometry(db.Model):
