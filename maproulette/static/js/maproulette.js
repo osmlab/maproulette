@@ -467,7 +467,17 @@ var MRManager = (function () {
                     });
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    console.log('ajax error');
+                    // If there's an error, let's check to see if it's
+                    // a Maproulette error
+                    if (jqXHR.status == 555) {
+                      osmerror = $.parseJSON(jqXHR.statusText);
+                      if (osmerror.error = "ChallengeComplete") {
+                        presentChallengeComplete();
+                      }
+                    }
+                  else {
+                    console.log("ajax error");
+                  }
                 }
             });
         };
@@ -583,6 +593,17 @@ var MRManager = (function () {
                 dialogHTML += MRButtons.makeButtons();
             }
             $('.donedialog').html(dialogHTML).fadeIn();
+        };
+
+        var presentCompleteChallenge = function() {
+          $('controlpanel').fadeOut();
+          $('.donedialog').fadeOut({
+            complete: function() {
+              var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
+              var dialogHTML = "<p>That challge has no more work left to do<p>" + challengeChangeButton;
+              $('.donedialog').html(dialogHTML).fadeIn();
+            }
+          });
         };
 
         var presentChallengeSelectionDialog = function () {
