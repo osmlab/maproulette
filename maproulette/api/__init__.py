@@ -1,4 +1,4 @@
-from maproulette import app
+from maproulette import app, mail
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import Raw
@@ -15,6 +15,7 @@ from shapely.geometry import asShape
 import geojson
 import json
 import markdown
+from flaskext.mail import Message
 
 
 class ProtectedResource(Resource):
@@ -356,9 +357,14 @@ class ApiChallengeTask(ProtectedResource):
             # If no tasks are found with this method, then this challenge
             # is complete
         if task is None:
+            # Send a mail to the challenge admin
+            msg = Message("Challenge {} is complete".format(challenge.slug),
+                          ["maproulette@maproulette.org"],
+                          "{} has no remaining tasks".format(challenge.title))
+            mail.send(msg)
             # Is this the right error?
             return osmerror("ChallengeComplete",
-                            "Challenge {} is complete".format(slug))
+                            "Challenge {} is complete".format(challenge.title))
         if assign:
             task.append_action(Action("assigned", osmid))
             db.session.add(task)

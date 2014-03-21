@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from simplekv.fs import FilesystemStore
 from flaskext.kvsession import KVSessionExtension
+from flaskext.mail import Mail
 
 # initialize server KV session store
 if not os.path.exists('./sessiondata'):
@@ -24,6 +25,7 @@ if not app.debug:
         filename=app.config['LOGFILE'],
         level=logging.WARN)
 
+mail = Mail(app)
 from maproulette import models, views, oauth, api
 
 # connect flask app to server KV session store
