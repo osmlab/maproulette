@@ -15,8 +15,6 @@ from shapely.geometry import asShape
 import geojson
 import json
 import markdown
-from flaskext.mail import Message
-
 
 class ProtectedResource(Resource):
     """A Resource that requires the caller to be authenticated against OSM"""
@@ -361,7 +359,6 @@ class ApiChallengeTask(ProtectedResource):
             msg = Message("Challenge {} is complete".format(challenge.slug),
                           ["maproulette@maproulette.org"],
                           "{} has no remaining tasks".format(challenge.title))
-            mail.send(msg)
             # Is this the right error?
             return osmerror("ChallengeComplete",
                             "Challenge {} is complete".format(challenge.title))
