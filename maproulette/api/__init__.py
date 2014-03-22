@@ -1,4 +1,4 @@
-from maproulette import app, mail
+from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import Raw
@@ -15,6 +15,8 @@ from shapely.geometry import asShape
 import geojson
 import json
 import markdown
+import requests
+
 
 class ProtectedResource(Resource):
     """A Resource that requires the caller to be authenticated against OSM"""
@@ -76,6 +78,7 @@ api = Api(app)
 def output_json(data, code, headers=None):
     """Automatic JSON / GeoJSON output"""
     # return empty result if data contains nothing
+    app.logger.debug(data)
     if not data:
         resp = make_response(geojson.dumps({}), code)
     # if this is a Shapely object, dump it as geojson
@@ -356,9 +359,19 @@ class ApiChallengeTask(ProtectedResource):
             # is complete
         if task is None:
             # Send a mail to the challenge admin
-            msg = Message("Challenge {} is complete".format(challenge.slug),
-                          ["maproulette@maproulette.org"],
-                          "{} has no remaining tasks".format(challenge.title))
+            requests.post(
+                "https://api.mailgun.net/v2/maproulette.org/messages",
+                auth=("api", "key-0xnt4hrv-bdqan3uu9qbmam74mn8wmk1"),
+                data={"from": "MapRoulette <admin@maproulette.org>",
+                      "to": ["maproulette@maproulette.org"],
+                      "subject":
+                      "Challenge {} is complete".format(challenge.slug),
+                      "text":
+                      "{} has no remaining tasks".format(challenge.title)})
+            # Deactivate the challenge
+            challenge.active = False
+            db.session.add(challenge)
+            db.session.commit()
             # Is this the right error?
             return osmerror("ChallengeComplete",
                             "Challenge {} is complete".format(challenge.title))
