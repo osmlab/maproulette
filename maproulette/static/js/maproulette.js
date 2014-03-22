@@ -332,6 +332,32 @@ var MRManager = (function () {
             // Register the keyboard shortcuts
             MRManager.registerHotkeys();
 
+            // Register AJAX error handler
+            $(document).ajaxError(function (event, jqxhr, settings, exception) {
+                // If there's an error, let's check to see if it's
+                // a Maproulette error
+                if (jqxhr.status == 555) {
+                    // an OSM error was thrown
+                    var osmerror = $.parseJSON(jqxhr.statusText);
+                    if (osmerror.error == "ChallengeComplete") {
+                        presentChallengeComplete();
+                    }
+                } else if (jqxhr.status == 404) {
+                    if (settings.url.match('task')) {
+                        notify.play("We can't find the task you were looking for any longer. Loading a fresh task...", {
+                            type: "error",
+                            timeout: 5000
+                        });
+                    } else if (settings.url.match('challenge')) {
+                        notify.play("The challenge you were working on is no longer active. Perhaps it was completed in the mean time. Please use the challenge selection dialog to select something else to work on.", {
+                            type: "error",
+                            timeout: 5000
+                        });
+                        presentChallengeSelectionDialog();
+                    }
+                }
+            });
+
             if (this.loggedIn) {
                 // check if the user passed things
                 if (parseHash()) readyToEdit();
@@ -405,9 +431,6 @@ var MRManager = (function () {
                     // update the stats UI elements
                     $('#stats #total').text(challenge.stats.total);
                     $('#stats #unfixed').text(challenge.stats.unfixed);
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log('ajax error');
                 }
             });
         };
@@ -424,13 +447,8 @@ var MRManager = (function () {
             $.ajax({
                 url: "/api/challenge/" + challenge.slug + "/task/" + task.identifier,
                 type: "POST",
-                data: payload,
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log('ajax error');
-                }
+                data: payload
             });
-
-
         };
 
         /*
@@ -460,24 +478,8 @@ var MRManager = (function () {
                         async: false,
                         success: function (data) {
                             task.features = data.features;
-                        },
-                        error: function (jqXHR, textStatus, errorThrown) {
-                            console.log('ajax error');
                         }
                     });
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    // If there's an error, let's check to see if it's
-                    // a Maproulette error
-                    if (jqXHR.status == 555) {
-                      osmerror = $.parseJSON(jqXHR.statusText);
-                      if (osmerror.error = "ChallengeComplete") {
-                        presentChallengeComplete();
-                      }
-                    }
-                  else {
-                    console.log("ajax error");
-                  }
                 }
             });
         };
@@ -516,9 +518,6 @@ var MRManager = (function () {
                     notify.play(MRHelpers.mqResultToString(data.address), {
                         timeout: false
                     });
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log('ajax error');
                 }
             });
         };
@@ -595,15 +594,15 @@ var MRManager = (function () {
             $('.donedialog').html(dialogHTML).fadeIn();
         };
 
-        var presentCompleteChallenge = function() {
-          $('controlpanel').fadeOut();
-          $('.donedialog').fadeOut({
-            complete: function() {
-              var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
-              var dialogHTML = "<p>That challge has no more work left to do<p>" + challengeChangeButton;
-              $('.donedialog').html(dialogHTML).fadeIn();
-            }
-          });
+        var presentCompleteChallenge = function () {
+            $('controlpanel').fadeOut();
+            $('.donedialog').fadeOut({
+                complete: function () {
+                    var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
+                    var dialogHTML = "<p>That challge has no more work left to do<p>" + challengeChangeButton;
+                    $('.donedialog').html(dialogHTML).fadeIn();
+                }
+            });
         };
 
         var presentChallengeSelectionDialog = function () {
@@ -622,9 +621,6 @@ var MRManager = (function () {
                                 };
                                 dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
                                 $('.donedialog').html(dialogHTML).fadeIn();
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                                console.log('ajax error')
                             }
                         });
                     } else {

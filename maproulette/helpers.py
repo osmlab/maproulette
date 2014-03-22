@@ -16,8 +16,8 @@ def signed_in():
 def osmerror(error, description):
     """Return an OSMError to the client"""
     payload = {'status': 555,
-                'error': error,
-                'description': description}
+               'error': error,
+               'description': description}
     response = make_response(json.dumps(payload), 555)
     return response
 
