@@ -595,7 +595,7 @@ var MRManager = (function () {
             $('.donedialog').html(dialogHTML).fadeIn();
         };
 
-        var presentCompleteChallenge = function() {
+        var presentChallengeComplete = function() {
           $('controlpanel').fadeOut();
           $('.donedialog').fadeOut({
             complete: function() {
