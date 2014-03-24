@@ -37,6 +37,7 @@ def getrandom():
 
 
 class User(db.Model):
+
     """A MapRoulette User"""
 
     __tablename__ = 'users'
@@ -76,6 +77,7 @@ class User(db.Model):
 
 
 class Challenge(db.Model):
+
     """A MapRoulette Challenge"""
 
     __tablename__ = 'challenges'
@@ -195,6 +197,7 @@ class Challenge(db.Model):
 
 
 class Task(db.Model):
+
     """A MapRoulette task"""
 
     __tablename__ = 'tasks'
@@ -209,7 +212,7 @@ class Task(db.Model):
         nullable=False)
     challenge_slug = db.Column(
         db.String,
-        db.ForeignKey('challenges.slug'))
+        db.ForeignKey('challenges.slug', onupdate="cascade"))
     random = db.Column(
         db.Float,
         default=getrandom,
@@ -410,6 +413,7 @@ class Task(db.Model):
 
 
 class TaskGeometry(db.Model):
+
     """The collection of geometries (1+) belonging to a task"""
 
     __tablename__ = 'task_geometries'
@@ -422,7 +426,7 @@ class TaskGeometry(db.Model):
         db.BigInteger)
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id'),
+        db.ForeignKey('tasks.id', onupdate="cascade"),
         nullable=False)
     geom = db.Column(
         Geometry,
@@ -448,6 +452,7 @@ class TaskGeometry(db.Model):
 
 
 class Action(db.Model):
+
     """An action on a task"""
 
     __tablename__ = 'actions'
@@ -464,10 +469,10 @@ class Action(db.Model):
         nullable=False)
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('users.id'))
+        db.ForeignKey('users.id', onupdate="cascade"))
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id'))
+        db.ForeignKey('tasks.id', onupdate="cascade"))
     status = db.Column(
         db.String(),
         nullable=False)
