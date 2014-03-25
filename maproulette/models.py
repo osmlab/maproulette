@@ -116,6 +116,9 @@ class Challenge(db.Model):
         db.SmallInteger,
         nullable=False,
         default=1)
+    tasks = db.relationship(
+        "Task",
+        backref="challenges")
     type = db.Column(
         db.String,
         default='default',
@@ -231,9 +234,6 @@ class Task(db.Model):
         db.String)
     instruction = db.Column(
         db.String)
-    challenge = db.relationship(
-        "Challenge",
-        backref=db.backref('tasks', order_by=id))
     # note that spatial indexes seem to be created automagically
     __table_args__ = (
         db.Index('idx_id', id),
