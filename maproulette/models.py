@@ -221,7 +221,7 @@ class Task(db.Model):
         default=getrandom,
         nullable=False)
     manifest = db.Column(
-        db.String)  # deprecated
+        db.String)  # not used for now
     geometries = db.relationship(
         "TaskGeometry",
         cascade='all,delete-orphan',
