@@ -3,7 +3,7 @@ from flask import abort, session, request, make_response
 from maproulette.models import Challenge, Task
 from maproulette.challengetypes import challenge_types
 from functools import wraps
-import random
+from random import shuffle
 import json
 from maproulette import app
 from shapely.geometry import MultiPoint
@@ -113,11 +113,21 @@ def localonly(f):
 def get_random_task(challenge):
     """Get a random task"""
 
-    rn = random.random()
-    return Task.query.filter(Task.challenge_slug == challenge.slug,
-                             Task.random <= rn,
-                             Task.is_available).order_by(
-        Task.random.desc()).first()
+    tasks = Task.query.filter(Task.challenge_slug == challenge.slug,
+                              Task.currentaction.in_([
+                                  'available',
+                                  'skipped',
+                                  'created'])).order_by(
+        Task.random.desc()).all()
+    app.logger.debug('got %i tasks' % (len(tasks)))
+    shuffle(tasks)
+    for t in tasks:
+        if t.is_available:
+            app.logger.debug('%s is available, returning' % (t.identifier))
+            return t
+        app.logger.debug('%s is not available' % (t.identifier))
+    app.logger.debug('no tasks available')
+    return None
 
 
 def get_envelope(geoms):
@@ -127,6 +137,7 @@ def get_envelope(geoms):
 
 
 class GeoPoint(object):
+
     """A geo-point class for use as a validation in the req parser"""
 
     def __init__(self, value):
@@ -142,6 +153,7 @@ class GeoPoint(object):
 
 
 class JsonData(object):
+
     """A simple class for use as a validation that a manifest is valid"""
 
     def __init__(self, value):
@@ -153,6 +165,7 @@ class JsonData(object):
 
 
 class JsonTasks(object):
+
     """A class for validation of a mass tasks insert"""
 
     def __init__(self, value):
