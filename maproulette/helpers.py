@@ -3,7 +3,6 @@ from flask import abort, session, request, make_response
 from maproulette.models import Challenge, Task
 from maproulette.challengetypes import challenge_types
 from functools import wraps
-from random import shuffle
 import json
 from maproulette import app
 from shapely.geometry import MultiPoint
@@ -117,10 +116,8 @@ def get_random_task(challenge):
                               Task.currentaction.in_([
                                   'available',
                                   'skipped',
-                                  'created'])).order_by(
-        Task.random.desc()).limit(1000).all()
+                                  'created'])).limit(1000).all()
     app.logger.debug('got %i tasks' % (len(tasks)))
-    shuffle(tasks)
     for t in tasks:
         if t.is_available:
             app.logger.debug('%s is available, returning' % (t.identifier))
