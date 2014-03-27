@@ -386,8 +386,7 @@ class ApiChallengeTask(ProtectedResource):
                       "subject":
                       "Challenge {} is complete".format(challenge.slug),
                       "text":
-                      "{challenge} has no remaining" +
-                      " tasks on server {server}".format(
+                      "{challenge} has no remaining tasks on server {server}".format(
                           challenge=challenge.title,
                           server=url_for('index', _external=True))})
             # Deactivate the challenge
