@@ -30,7 +30,7 @@ class TaskAdminView(ModelView):
         super(TaskAdminView, self).__init__(Task, session, **kwargs)
 
 admin = Admin(app, name="MapRoulette")
-admin.add_view(ChallengeAdminView(db.session))        
+admin.add_view(ChallengeAdminView(db.session))
 admin.add_view(TaskAdminView(db.session))
 
 @app.route('/')
