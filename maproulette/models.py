@@ -181,11 +181,15 @@ class Challenge(db.Model):
     polygon = synonym('geom', descriptor=polygon)
 
     @property
-    def tasks_available(self):
-        """Return the number of tasks available for this challenge."""
+    def approx_tasks_available(self):
+        """Return the approximate number of tasks
+        available for this challenge."""
 
         return len(
-            [t for t in self.tasks if t.is_available])
+            [t for t in self.tasks if t.currentaction in [
+                'created',
+                'skipped',
+                'available']])
 
     @hybrid_property
     def islocal(self):
