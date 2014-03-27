@@ -118,7 +118,7 @@ def get_random_task(challenge):
                                   'available',
                                   'skipped',
                                   'created'])).order_by(
-        Task.random.desc()).all()
+        Task.random.desc()).limit(1000).all()
     app.logger.debug('got %i tasks' % (len(tasks)))
     shuffle(tasks)
     for t in tasks:
