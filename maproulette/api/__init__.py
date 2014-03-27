@@ -2,7 +2,7 @@ from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import Raw
-from flask import session, make_response, request, abort
+from flask import session, make_response, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
@@ -15,14 +15,17 @@ from shapely.geometry import asShape
 import geojson
 import json
 import markdown
+import requests
 
 
 class ProtectedResource(Resource):
+
     """A Resource that requires the caller to be authenticated against OSM"""
     method_decorators = [require_signedin]
 
 
 class PointField(Raw):
+
     """An encoded point"""
 
     def format(self, geometry):
@@ -33,6 +36,7 @@ class PointField(Raw):
 
 
 class MarkdownField(Raw):
+
     """Markdown text"""
 
     def format(self, text):
@@ -51,7 +55,8 @@ challenge_summary = {
 task_fields = {
     'identifier': fields.String(attribute='identifier'),
     'instruction': fields.String(attribute='instruction'),
-    'location': PointField
+    'location': PointField,
+    'currentaction': fields.String
 }
 
 me_fields = {
@@ -76,6 +81,7 @@ api = Api(app)
 def output_json(data, code, headers=None):
     """Automatic JSON / GeoJSON output"""
     # return empty result if data contains nothing
+    app.logger.debug(data)
     if not data:
         resp = make_response(geojson.dumps({}), code)
     # if this is a Shapely object, dump it as geojson
@@ -101,12 +107,15 @@ def output_json(data, code, headers=None):
 
 
 class ApiPing(Resource):
+
     """a simple ping endpoint"""
+
     def get(self):
         return "I am alive"
 
 
 class ApiMe(ProtectedResource):
+
     def get(self):
         me = {}
         challenges = {}
@@ -149,6 +158,7 @@ class ApiMe(ProtectedResource):
 
 
 class ApiGetAChallenge(ProtectedResource):
+
     @marshal_with(challenge_summary)
     def get(self):
         """Return a single challenge"""
@@ -156,6 +166,7 @@ class ApiGetAChallenge(ProtectedResource):
 
 
 class ApiChallengeList(ProtectedResource):
+
     """Challenge list endpoint"""
 
     @marshal_with(challenge_summary)
@@ -188,7 +199,7 @@ class ApiChallengeList(ProtectedResource):
         if args.lon is not None and args.lat is not None:
             contains = 'POINT(%s %s)' % (args.lon, args.lat)
         # if there is none, look at the user's home location from OSM
-        #elif 'home_location' in session:
+        # elif 'home_location' in session:
         #    contains = 'POINT(%s %s)' % tuple(session.get('home_location'))
 
         # get the list of challenges meeting the criteria
@@ -205,6 +216,7 @@ class ApiChallengeList(ProtectedResource):
 
 
 class ApiChallengeDetail(ProtectedResource):
+
     """Single Challenge endpoint"""
 
     def get(self, slug):
@@ -214,6 +226,7 @@ class ApiChallengeDetail(ProtectedResource):
 
 
 class ApiSelfInfo(ProtectedResource):
+
     """Information about the currently logged in user"""
 
     def get(self):
@@ -222,6 +235,7 @@ class ApiSelfInfo(ProtectedResource):
 
 
 class ApiChallengePolygon(ProtectedResource):
+
     """Challenge geometry endpoint"""
 
     def get(self, slug):
@@ -232,18 +246,21 @@ class ApiChallengePolygon(ProtectedResource):
 
 
 class ApiStatsChallenge(ProtectedResource):
+
     """Challenge Statistics endpoint"""
 
     def get(self, slug):
         """Return statistics for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
         total = len(challenge.tasks)
-        unfixed = challenge.tasks_available
+        unfixed = challenge.approx_tasks_available
         return {'total': total, 'unfixed': unfixed}
 
 
 class ApiStatsChallengeUsers(ProtectedResource):
+
     """Challenge User Statistics endpoint"""
+
     def get(self, slug):
         # what we want is
         # * number of unique users participating
@@ -277,18 +294,22 @@ class ApiStatsChallengeUsers(ProtectedResource):
 
 
 class ApiStatsUser(ProtectedResource):
+
     """summary statistics for all users"""
+
     def get(self):
         pass
 
 
 class ApiStatsChallenges(ProtectedResource):
+
     """summary statistics for all challenges"""
+
     def get(self):
         challenges = {}
         # select count(t.id), t.currentaction, c.slug, c.title from
         # actions a, tasks t, challenges c where a.task_id = t.id and
-        #t.challenge_slug = c.slug group by t.currentaction, c.slug, c.title;
+        # t.challenge_slug = c.slug group by t.currentaction, c.slug, c.title;
         q = db.session.query(
             func.count(Task.id),
             Challenge.slug,
@@ -316,6 +337,7 @@ class ApiStatsChallenges(ProtectedResource):
 
 
 class ApiChallengeTask(ProtectedResource):
+
     """Random Task endpoint"""
 
     def get(self, slug):
@@ -355,9 +377,25 @@ class ApiChallengeTask(ProtectedResource):
             # If no tasks are found with this method, then this challenge
             # is complete
         if task is None:
+            # Send a mail to the challenge admin
+            requests.post(
+                "https://api.mailgun.net/v2/maproulette.org/messages",
+                auth=("api", "key-0xnt4hrv-bdqan3uu9qbmam74mn8wmk1"),
+                data={"from": "MapRoulette <admin@maproulette.org>",
+                      "to": ["maproulette@maproulette.org"],
+                      "subject":
+                      "Challenge {} is complete".format(challenge.slug),
+                      "text":
+                      "{challenge} has no remaining tasks on server {server}".format(
+                          challenge=challenge.title,
+                          server=url_for('index', _external=True))})
+            # Deactivate the challenge
+            challenge.active = False
+            db.session.add(challenge)
+            db.session.commit()
             # Is this the right error?
             return osmerror("ChallengeComplete",
-                            "Challenge {} is complete".format(slug))
+                            "Challenge {} is complete".format(challenge.title))
         if assign:
             task.append_action(Action("assigned", osmid))
             db.session.add(task)
@@ -367,6 +405,7 @@ class ApiChallengeTask(ProtectedResource):
 
 
 class ApiChallengeTaskDetails(ProtectedResource):
+
     """Task details endpoint"""
 
     def get(self, slug, identifier):
@@ -398,6 +437,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
 
 
 class ApiChallengeTaskStatus(ProtectedResource):
+
     """Task status endpoint"""
 
     def get(self, slug, identifier):
@@ -408,6 +448,7 @@ class ApiChallengeTaskStatus(ProtectedResource):
 
 
 class ApiChallengeTaskGeometries(ProtectedResource):
+
     """Task geometry endpoint"""
 
     def get(self, slug, identifier):
@@ -456,13 +497,15 @@ api.add_resource(ApiChallengeDetail,
 api.add_resource(ApiChallengePolygon,
                  '/api/challenge/<string:slug>/polygon')
 
-################################
+#
 # The Admin API ################
-################################
+#
 
 
 class AdminApiChallenge(Resource):
+
     """Admin challenge creation endpoint"""
+
     def put(self, slug):
         if challenge_exists(slug):
             app.logger.debug('challenge exists')
@@ -496,6 +539,7 @@ class AdminApiChallenge(Resource):
 
 
 class AdminApiTaskStatuses(Resource):
+
     """Admin Task status endpoint"""
 
     def get(self, slug):
@@ -507,13 +551,11 @@ class AdminApiTaskStatuses(Resource):
 
 
 class AdminApiUpdateTask(Resource):
+
     """Challenge Task Statuses endpoint"""
 
     def put(self, slug, identifier):
-        """Create or update one task. By default, the
-        geometry must be supplied as WKB, but this can
-        be overridden by adding ?geoformat=geojson to
-        the URL"""
+        """Create or update one task."""
 
         task_geometries = []
 

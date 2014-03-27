@@ -37,6 +37,7 @@ def getrandom():
 
 
 class User(db.Model):
+
     """A MapRoulette User"""
 
     __tablename__ = 'users'
@@ -76,6 +77,7 @@ class User(db.Model):
 
 
 class Challenge(db.Model):
+
     """A MapRoulette Challenge"""
 
     __tablename__ = 'challenges'
@@ -114,6 +116,9 @@ class Challenge(db.Model):
         db.SmallInteger,
         nullable=False,
         default=1)
+    tasks = db.relationship(
+        "Task",
+        backref="challenges")
     type = db.Column(
         db.String,
         default='default',
@@ -199,6 +204,7 @@ class Challenge(db.Model):
 
 
 class Task(db.Model):
+
     """A MapRoulette task"""
 
     __tablename__ = 'tasks'
@@ -213,13 +219,13 @@ class Task(db.Model):
         nullable=False)
     challenge_slug = db.Column(
         db.String,
-        db.ForeignKey('challenges.slug'))
+        db.ForeignKey('challenges.slug', onupdate="cascade"))
     random = db.Column(
         db.Float,
         default=getrandom,
         nullable=False)
     manifest = db.Column(
-        db.String)  # deprecated
+        db.String)  # not used for now
     geometries = db.relationship(
         "TaskGeometry",
         cascade='all,delete-orphan',
@@ -232,9 +238,6 @@ class Task(db.Model):
         db.String)
     instruction = db.Column(
         db.String)
-    challenge = db.relationship(
-        "Challenge",
-        backref=db.backref('tasks', order_by=id))
     # note that spatial indexes seem to be created automagically
     __table_args__ = (
         db.Index('idx_id', id),
@@ -289,7 +292,7 @@ class Task(db.Model):
         current_actions = db.session.query(Action).distinct(
             Action.task_id).order_by(Action.task_id).order_by(
             Action.id.desc()).cte(
-            name="current_actions", recursive=True)
+            name="current_actions")
         # before this time, a challenge is available even if it's
         # 'assigned' or 'editing'
         available_time = datetime.utcnow() -\
@@ -335,9 +338,7 @@ class Task(db.Model):
         # duplicate the action status string in the tasks table to save lookups
         self.currentaction = action.status
         if action.status == 'fixed':
-            if self.validate_fixed():
-                app.logger.debug('validated')
-                self.append_action(Action('validated', session.get('osm_id')))
+            self.validate_fixed()
 
     def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
@@ -408,13 +409,15 @@ class Task(db.Model):
             changeset_closed_timestamp <\
             datetime.now(pytz.utc) + app.config['MAX_CHANGESET_OFFSET']
 
-        app.logger.debug('timeframe: %s ' % (timeframe,))
-
-        # check if the comment exists and contains 'maproulette'
-        return intersecting and timeframe
+        if intersecting and timeframe:
+            app.logger.debug('validated')
+            self.append_action(Action('validated', session.get('osm_id')))
+        else:
+            app.logger.debug('could not validate')
 
 
 class TaskGeometry(db.Model):
+
     """The collection of geometries (1+) belonging to a task"""
 
     __tablename__ = 'task_geometries'
@@ -427,7 +430,7 @@ class TaskGeometry(db.Model):
         db.BigInteger)
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id'),
+        db.ForeignKey('tasks.id', onupdate="cascade"),
         nullable=False)
     geom = db.Column(
         Geometry,
@@ -453,6 +456,7 @@ class TaskGeometry(db.Model):
 
 
 class Action(db.Model):
+
     """An action on a task"""
 
     __tablename__ = 'actions'
@@ -469,10 +473,10 @@ class Action(db.Model):
         nullable=False)
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('users.id'))
+        db.ForeignKey('users.id', onupdate="cascade"))
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id'))
+        db.ForeignKey('tasks.id', onupdate="cascade"))
     status = db.Column(
         db.String(),
         nullable=False)
