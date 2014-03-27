@@ -343,7 +343,7 @@ var MRManager = (function () {
                         presentChallengeComplete();
                     }
                 } else if (jqxhr.status == 404) {
-                    if (settings.url.match('task')) {
+                    if (settings.url.match('task=')) {
                         notify.play("We can't find the task you were looking for any longer. Loading a fresh task...", {
                             type: "error",
                             timeout: 5000
@@ -413,25 +413,20 @@ var MRManager = (function () {
                     // and move on to get the stats
                     getChallengeStats()
                 },
-                error: function (jqXHR, textStatus, errorThrown) {}
             });
         };
 
 
         var getChallengeStats = function () {
             // now get the challenge stats
-            url = '/api/stats/challenge/' + challenge.slug;
-            challenge.stats = {};
-            $.ajax({
-                url: url,
-                success: function (data) {
-                    $.each(data, function (key, value) {
-                        challenge.stats[key] = value;
-                    });
-                    // update the stats UI elements
-                    $('#stats #total').text(challenge.stats.total);
-                    $('#stats #unfixed').text(challenge.stats.unfixed);
-                }
+            var endpoint = '/api/stats/challenge/' + challenge.slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    console.log('raw value: ' + data[key]);
+                    var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
+                    console.log('value for ' + key + ': ' + value);
+                    $('#challenge_' + key).html(value).fadeIn();
+                };
             });
         };
 
@@ -805,32 +800,6 @@ var MRManager = (function () {
             });
         }
 
-        var displayChallengeStats = function (elem, slug) {
-            // Display the challenge statistics in the table container identified by id selector 'elem'
-            var endpoint = '/api/stats/challenge/' + slug;
-            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
-            var first = moment();
-            var last = moment().year(1900);
-            $.getJSON(endpoint, function (data) {})
-        }
-
-        var displayChallengeDetails = function (slug) {
-            // displays various challenge details on the challenge page
-            var endpoint = '/api/challenge/' + slug;
-            $.getJSON(endpoint, function (data) {
-                for (key in data) {
-                    $('#challenge_' + key).html(data[key]).fadeIn();
-                };
-            });
-            // now get basic stats
-            endpoint = '/api/stats/challenge/' + slug;
-            $.getJSON(endpoint, function (data) {
-                for (key in data) {
-                    $('#challenge_' + key).html(data[key]).fadeIn();
-                };
-            });
-        }
-
         var updateHash = function () {
             location.hash = 't=' + challenge.slug + '/' + task.identifier;
         }
@@ -886,8 +855,6 @@ var MRManager = (function () {
             registerHotkeys: registerHotkeys,
             displayUserStats: displayUserStats,
             displayAllChallengesStats: displayAllChallengesStats,
-            displayChallengeStats: displayChallengeStats,
-            displayChallengeDetails: displayChallengeDetails
         };
     }
     ());
