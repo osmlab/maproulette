@@ -2,7 +2,7 @@ from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import Raw
-from flask import session, make_response, request, abort
+from flask import session, make_response, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
@@ -253,7 +253,7 @@ class ApiStatsChallenge(ProtectedResource):
         """Return statistics for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True)
         total = len(challenge.tasks)
-        unfixed = challenge.tasks_available
+        unfixed = challenge.approx_tasks_available
         return {'total': total, 'unfixed': unfixed}
 
 
@@ -386,7 +386,10 @@ class ApiChallengeTask(ProtectedResource):
                       "subject":
                       "Challenge {} is complete".format(challenge.slug),
                       "text":
-                      "{} has no remaining tasks".format(challenge.title)})
+                      "{challenge} has no remaining" +
+                      " tasks on server {server}".format(
+                          challenge=challenge.title,
+                          server=url_for('index', _external=True))})
             # Deactivate the challenge
             challenge.active = False
             db.session.add(challenge)
