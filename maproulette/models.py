@@ -158,6 +158,9 @@ class Challenge(db.Model):
     def __unicode__(self):
         return self.slug
 
+    def __repr__(self):
+        return '<Challenge %s>' % self.slug
+
     @hybrid_property
     def polygon(self):
         """Retrieve the polygon for this challenge,
