@@ -1,13 +1,13 @@
 /** @jsx React.DOM */
 
 // React Components
-var Button = React.createClass({displayName: 'Button',
+var Button = React.createClass({
   render: function(){
     return (
-      React.DOM.div( {className:"button",
-           onClick:this.props.onClick}, 
-        this.props.children
-      )
+      <div className="button"
+           onClick={this.props.onClick}>
+        {this.props.children}
+      </div>
     );
   }});
 
@@ -657,11 +657,11 @@ var MRManager = (function () {
   
   var presentWelcomeDialog = function() {
     React.renderComponent(
-        React.DOM.div(null, 
-        React.DOM.h1(null, "Welcome to MapRoulette"),
-        React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
-        Button( {onClick:signIn}, "Sign in")
-        ), $('.dialog')[0]);
+        <div>
+        <h1>Welcome to MapRoulette</h1>
+        <div>Sign in with OpenStreetMap to play MapRoulette</div>
+        <Button onClick={signIn}>Sign in</Button>
+        </div>, $('.dialog')[0]);
     $('.dialog').fadeIn();
   };
   
