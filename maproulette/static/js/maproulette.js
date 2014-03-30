@@ -1,3 +1,5 @@
+/** @jsx React.DOM */
+
 // get URL parameters
 // http://stackoverflow.com/a/979995
 var Q = (function () {
@@ -519,7 +521,7 @@ var MRManager = (function () {
 
         var nextTask = function (action) {
             // make the done dialog disappear if it is there
-            $('.donedialog').fadeOut();
+            $('.dialog').fadeOut();
             // update the outgoing task
             updateTask(action);
             task = {};
@@ -586,23 +588,23 @@ var MRManager = (function () {
             } else {
                 dialogHTML += MRButtons.makeButtons();
             }
-            $('.donedialog').html(dialogHTML).fadeIn();
+            $('.dialog').html(dialogHTML).fadeIn();
         };
 
         var presentChallengeComplete = function () {
             $('controlpanel').fadeOut();
-            $('.donedialog').fadeOut({
+            $('.dialog').fadeOut({
                 complete: function () {
                     var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
                     var dialogHTML = "<p>That challge has no more work left to do<p>" + challengeChangeButton;
-                    $('.donedialog').html(dialogHTML).fadeIn();
+                    $('.dialog').html(dialogHTML).fadeIn();
                 }
             });
         };
 
         var presentChallengeSelectionDialog = function () {
             $('controlpanel').fadeOut();
-            $('.donedialog').fadeOut({
+            $('.dialog').fadeOut({
                 complete: function () {
                     if (challenges.length == 0) {
                         $.ajax({
@@ -615,37 +617,37 @@ var MRManager = (function () {
                                     dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>";
                                 };
                                 dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
-                                $('.donedialog').html(dialogHTML).fadeIn();
+                                $('.dialog').html(dialogHTML).fadeIn();
                             }
                         });
                     } else {
-                        $('.donedialog').html(dialogHTML).fadeIn();
+                        $('.dialog').html(dialogHTML).fadeIn();
                     };
                 }
             });
         };
 
         var presentChallengeHelp = function () {
-            $('.donedialog').fadeOut({
+            $('.dialog').fadeOut({
                 complete: function () {
                     var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
                     var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
                         "<div>" + challenge.help + "</div>" + OKButton;
-                    $('.donedialog').html(helpHTML).fadeIn();
+                    $('.dialog').html(helpHTML).fadeIn();
                 }
             });
         };
 
         var presentWelcomeDialog = function () {
-            $('.donedialog').fadeOut();
+            $('.dialog').fadeOut();
             var OKButton = '<div class=\'button\' onclick="location.reload();location.href=\'/signin\'">Sign in</div>';
             var welcomeHTML = "<h1>Welcome to MapRoulette</h1>" + "<p>Sign in with OpenStreetMap to play MapRoulette<p>" + OKButton;
-            $('.donedialog').html(welcomeHTML).fadeIn();
+            $('.dialog').html(welcomeHTML).fadeIn();
         };
 
         var presentChallengeDialog = function () {
             if (!challenge.slug) selectChallenge();
-            $('.donedialog').fadeOut({
+            $('.dialog').fadeOut({
                 complete: function () {
                     var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
                     var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
@@ -654,13 +656,13 @@ var MRManager = (function () {
                         "<p>You will be working on this challenge:</p>" +
                         "<h2>" + challenge.title + "</h2>" +
                         "<p>" + challenge.description + "</p>" + OKButton + helpButton + changeChallengeButton;
-                    $('.donedialog').html(dialogHTML).fadeIn();
+                    $('.dialog').html(dialogHTML).fadeIn();
                 }
             });
         };
 
         var readyToEdit = function () {
-            $('.donedialog').fadeOut();
+            $('.dialog').fadeOut();
             $('.controlpanel').fadeIn();
             if (!task.identifier) getAndShowTask();
         };
@@ -690,7 +692,7 @@ var MRManager = (function () {
 
         var userPickChallenge = function (slug) {
             slug = decodeURI(slug);
-            $('.donedialog').fadeOut({
+            $('.dialog').fadeOut({
                 complete: function () {
                     $('.controlpanel').fadeIn()
                 }
@@ -720,7 +722,7 @@ var MRManager = (function () {
                 MRManager.openTaskInJosm()
             });
             $(document).bind('keypress', 'esc', function () {
-                $('.donedialog').fadeOut()
+                $('.dialog').fadeOut()
             });
 
         }
