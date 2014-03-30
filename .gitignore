@@ -11,3 +11,5 @@ migrations/*
 *.cfg
 .project
 .pydev*
+fabfile.py
+deploy_templates/*
