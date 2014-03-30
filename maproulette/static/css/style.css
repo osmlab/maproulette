@@ -125,7 +125,7 @@ div#stats {
 }
 
 /* the dialog presented after clicking 'edit' */
-div.donedialog {
+div.dialog {
     position:absolute;
     display: none;
     width: 30%;
