@@ -13,15 +13,44 @@ from wtforms.fields import SelectField, TextAreaField
 
 class ChallengeAdminView(ModelView):
     column_list = ('slug', 'title', 'blurb')
+    form_columns = ['slug', 'title', 'blurb', 'description', 'help',
+                    'difficulty', 'instruction']
     form_overrides = dict(difficulty=SelectField,
                           help=TextAreaField)
     form_args = dict(
         difficulty=dict(
-            choices=[ (1, 'Beginner'), (2, 'Intermediate'), (3, 'Advanced')]),
+            choices=[ (1, 'Beginner'),
+                      (2, 'Intermediate'),
+                      (3, 'Advanced')],
+            coerce=int),
         )
     form_widget_args = dict(
         help = dict(rows="20", cols="200")
         )
+
+    def create_model(self, form):
+        # We need to do this because of the way we instantiate challenges
+        try:
+            model = self.model(form.slug, form.title)
+            form.populate_obj(model)
+            self.session.add(model)
+            self._on_model_change(form, model, True)
+            self.session.commit()
+        except Exception as ex:
+            if self._debug:
+                raise
+
+            flash(gettext('Failed to create model. %(error)s', error=str(ex)), 'error')
+            log.exception('Failed to create model')
+            self.session.rollback()
+            return False
+        else:
+            self.after_model_change(form, model, True)
+
+        return True
+
+        # We need to override this because of the way we instantiate challenges
+        c = Challenge(form.slug, form.title)
     def __init__(self, session, **kwargs):
         super(ChallengeAdminView, self).__init__(Challenge, session, **kwargs)
 
