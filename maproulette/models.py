@@ -124,10 +124,12 @@ class Challenge(db.Model):
         default='default',
         nullable=False)
 
-    @validates('slug')
-    def validate_slug(self, key, slug):
-        assert match('^[a-z0-9]+$', slug)
-        return slug
+##    @validates('slug')
+##    def validate_slug(self, key, slug):
+##        app.logger.debug("Slug passed in: " + slug)
+##        app.logger.debug("Type: " + type(slug))
+##        assert match('^[a-z0-9]+$', str(slug))
+##        return slug
 
     # note that spatial indexes seem to be created automagically
 
