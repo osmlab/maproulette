@@ -31,8 +31,11 @@ class PointField(Raw):
     def format(self, geometry):
         # if we get a linestring, take the first point,
         # else, just get the point.
-        point = geometry.coords[0]
-        return '%f|%f' % point
+        if hasattr(geometry, 'coords'):
+            point = geometry.coords[0]
+            return '%f|%f' % point
+        else:
+            return '0|0'  # this should not happen
 
 
 class MarkdownField(Raw):
