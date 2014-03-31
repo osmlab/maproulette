@@ -324,6 +324,11 @@ class Task(db.Model):
         of the geometry retrieved here. See also the PointField class in
         the API code."""
 
+        from maproulette.helpers import osmerror
+        if not hasattr(self, 'geometries'):
+            return osmerror(
+                'no geometries',
+                'this task has no geometries, and hence no location')
         g = self.geometries[0].geom
         return to_shape(g)
 
