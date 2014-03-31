@@ -313,7 +313,7 @@ class Task(db.Model):
             ))
         return res
 
-    @hybrid_property
+    @property
     def location(self):
         """Returns the location for this task as a Shapely geometry.
         This is meant to give the client a quick hint about where the
@@ -324,13 +324,11 @@ class Task(db.Model):
         of the geometry retrieved here. See also the PointField class in
         the API code."""
 
-        from maproulette.helpers import osmerror
-        if not hasattr(self, 'geometries'):
-            return osmerror(
-                'no geometries',
-                'this task has no geometries, and hence no location')
-        g = self.geometries[0].geom
-        return to_shape(g)
+        if not hasattr(self, 'geometries') or len(self.geometries) == 0:
+            return 'POINT(0 0)'
+        else:
+            g = self.geometries[0].geom
+            return to_shape(g)
 
     @location.setter
     def location(self, shape):
