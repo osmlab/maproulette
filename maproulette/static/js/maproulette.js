@@ -1,19 +1,23 @@
 /** @jsx React.DOM */
 
 // React Components
-var Button = React.createClass({displayName: 'Button',
-  render: function(){
-    return (
-      React.DOM.div( {className:"button",
-           onClick:this.props.onClick}, 
-        this.props.children
-      )
-    );
-  }});
+var Button = React.createClass({
+    displayName: 'Button',
+    render: function () {
+        return (
+            React.DOM.div({
+                    className: "button",
+                    onClick: this.props.onClick
+                },
+                this.props.children
+            )
+        );
+    }
+});
 
-var signIn = function(){
-  location.reload();
-  location.href="/signin"
+var signIn = function () {
+    location.reload();
+    location.href = "/signin"
 }
 
 // get URL parameters
@@ -654,17 +658,19 @@ var MRManager = (function () {
             });
         };
 
-  
-  var presentWelcomeDialog = function() {
-    React.renderComponent(
-        React.DOM.div(null, 
-        React.DOM.h1(null, "Welcome to MapRoulette"),
-        React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
-        Button( {onClick:signIn}, "Sign in")
-        ), $('.dialog')[0]);
-    $('.dialog').fadeIn();
-  };
-  
+
+        var presentWelcomeDialog = function () {
+            React.renderComponent(
+                React.DOM.div(null,
+                    React.DOM.h1(null, "Welcome to MapRoulette"),
+                    React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
+                    Button({
+                        onClick: signIn
+                    }, "Sign in")
+                ), $('.dialog')[0]);
+            $('.dialog').fadeIn();
+        };
+
         var presentChallengeDialog = function () {
             if (!challenge.slug) selectChallenge();
             $('.dialog').fadeOut({

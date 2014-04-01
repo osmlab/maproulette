@@ -43,8 +43,8 @@ def create_testdata():
     import random
     from maproulette.models import db, Challenge, Task, TaskGeometry, Action
     from shapely.geometry import Point, LineString, box
-    num_challenges = 10
-    num_tasks = 100
+    num_challenges = 3
+    num_tasks = 1000
     # the gettysburg address
     challenge_help_test = "Sample challenge *help* text"
     challenge_instruction_test = "Challenge instruction text"
@@ -62,13 +62,13 @@ def create_testdata():
         miny = 20
         maxy = 50
         challengepoly = None
-        slug = "test%d" % i 
+        slug = "test%d" % i
         title = "Test Challenge %d" % i
         challenge = Challenge(slug, title)
         challenge.difficulty = random.choice([1, 2, 3])
         challenge.active = True
         challenge.blurb = "This is test challenge number %d" % i
-        challenge.description = "This describes test challenge %d in detail" % i
+        challenge.description = "This describes test challenge %d" % i
         challenge.help = challenge_help_test
         challenge.instruction = challenge_instruction_test
         # have bounding boxes for all but the first two challenges.
