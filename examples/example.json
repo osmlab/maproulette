@@ -1,0 +1,45 @@
+[
+    {
+        "geometries": {
+            "features": [
+                {
+                    "geometry": {
+                        "coordinates": [
+                            [
+                                41.6238076,
+                                15.1027029
+                            ],
+                            [
+                                41.6237129,
+                                15.1024066
+                            ],
+                            [
+                                41.6234308,
+                                15.1027489
+                            ],
+                            [
+                                41.6232767,
+                                15.1030065
+                            ],
+                            [
+                                41.6224843,
+                                15.1030852
+                            ],
+                            [
+                                41.6226488,
+                                15.1035361
+                            ]
+                        ],
+                        "type": "LineString"
+                    },
+                    "properties": {
+                        "osmid": 265752390
+                    },
+                    "type": "Feature"
+                }
+            ],
+            "type": "FeatureCollection"
+        },
+        "instruction": "This is molise"
+    }
+]
