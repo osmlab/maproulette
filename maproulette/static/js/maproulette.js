@@ -365,7 +365,8 @@ var MRManager = (function () {
                         presentChallengeComplete();
                     }
                 } else if (jqxhr.status == 404) {
-                    if (settings.url.match('task=')) {
+                    if (settings.url.match('task')) {
+                        // the task cannot be found
                         notify.play("We can't find the task you were looking for any longer. Loading a fresh task...", {
                             type: "error",
                             timeout: 5000
