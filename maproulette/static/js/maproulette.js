@@ -1,19 +1,23 @@
 /** @jsx React.DOM */
 
 // React Components
-var Button = React.createClass({displayName: 'Button',
-  render: function(){
-    return (
-      React.DOM.div( {className:"button",
-           onClick:this.props.onClick}, 
-        this.props.children
-      )
-    );
-  }});
+var Button = React.createClass({
+    displayName: 'Button',
+    render: function () {
+        return (
+            React.DOM.div({
+                    className: "button",
+                    onClick: this.props.onClick
+                },
+                this.props.children
+            )
+        );
+    }
+});
 
-var signIn = function(){
-  location.reload();
-  location.href="/signin"
+var signIn = function () {
+    location.reload();
+    location.href = "/signin"
 }
 
 // get URL parameters
@@ -361,7 +365,8 @@ var MRManager = (function () {
                         presentChallengeComplete();
                     }
                 } else if (jqxhr.status == 404) {
-                    if (settings.url.match('task=')) {
+                    if (settings.url.match('task')) {
+                        // the task cannot be found
                         notify.play("We can't find the task you were looking for any longer. Loading a fresh task...", {
                             type: "error",
                             timeout: 5000
@@ -477,7 +482,7 @@ var MRManager = (function () {
                 async: false,
                 success: function (data) {
                     task = data;
-                    if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
+                    if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.status) > -1) {
                         setTimeout(function () {
                             notify.play('This task is already fixed, or it was marked as not an error.', {
                                 type: 'warning',
@@ -654,17 +659,19 @@ var MRManager = (function () {
             });
         };
 
-  
-  var presentWelcomeDialog = function() {
-    React.renderComponent(
-        React.DOM.div(null, 
-        React.DOM.h1(null, "Welcome to MapRoulette"),
-        React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
-        Button( {onClick:signIn}, "Sign in")
-        ), $('.dialog')[0]);
-    $('.dialog').fadeIn();
-  };
-  
+
+        var presentWelcomeDialog = function () {
+            React.renderComponent(
+                React.DOM.div(null,
+                    React.DOM.h1(null, "Welcome to MapRoulette"),
+                    React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
+                    Button({
+                        onClick: signIn
+                    }, "Sign in")
+                ), $('.dialog')[0]);
+            $('.dialog').fadeIn();
+        };
+
         var presentChallengeDialog = function () {
             if (!challenge.slug) selectChallenge();
             $('.dialog').fadeOut({

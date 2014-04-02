@@ -6,6 +6,7 @@ from functools import wraps
 import json
 from maproulette import app
 from shapely.geometry import MultiPoint
+import random
 
 
 def signed_in():
@@ -112,11 +113,14 @@ def localonly(f):
 def get_random_task(challenge):
     """Get a random task"""
 
+    # get a thousand tasks
     tasks = Task.query.filter(Task.challenge_slug == challenge.slug,
                               Task.currentaction.in_([
                                   'available',
                                   'skipped',
-                                  'created'])).limit(1000).all()
+                                  'created']),
+                              Task.random >= random.random()).order_by(
+        Task.random).limit(1000).all()
     app.logger.debug('got %i tasks' % (len(tasks)))
     for t in tasks:
         if t.is_available:

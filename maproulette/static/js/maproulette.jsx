@@ -477,7 +477,7 @@ var MRManager = (function () {
                 async: false,
                 success: function (data) {
                     task = data;
-                    if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
+                    if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.status) > -1) {
                         setTimeout(function () {
                             notify.play('This task is already fixed, or it was marked as not an error.', {
                                 type: 'warning',
