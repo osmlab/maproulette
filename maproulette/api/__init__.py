@@ -59,7 +59,7 @@ task_fields = {
     'identifier': fields.String(attribute='identifier'),
     'instruction': fields.String(attribute='instruction'),
     'location': PointField,
-    'currentaction': fields.String
+    'status': fields.String(attribute='currentaction')
 }
 
 me_fields = {
