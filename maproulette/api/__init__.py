@@ -383,7 +383,7 @@ class ApiChallengeTask(ProtectedResource):
             # Send a mail to the challenge admin
             requests.post(
                 "https://api.mailgun.net/v2/maproulette.org/messages",
-                auth=("api", "key-0xnt4hrv-bdqan3uu9qbmam74mn8wmk1"),
+                auth=("api", app.config["MAILGUN_API_KEY"]),
                 data={"from": "MapRoulette <admin@maproulette.org>",
                       "to": ["maproulette@maproulette.org"],
                       "subject":
