@@ -10,6 +10,7 @@ import grequests
 import geojson
 import json
 import argparse
+import logging
 
 
 def is_running_instance(api_url):
@@ -34,7 +35,7 @@ def create_challenge_if_not_exists(slug, title):
 
 def generate_id(slug, osmid, payload):
     # generate a unique identifier
-    digest = hashlib.sha256(json.dumps(payload)).hexdigest()
+    digest = hashlib.md5(json.dumps(payload)).hexdigest()
     return "{slug}-{osmid}-{digest}".format(slug=slug,
                                             osmid=osmid,
                                             digest=digest
@@ -144,6 +145,13 @@ def get_tasks_from_json(args):
 
 if __name__ == "__main__":
 
+    logging.basicConfig()
+    rootlogger = logging.getLogger()
+    rootlogger.setLevel(logging.WARNING)
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(logging.WARNING)
+    requests_log.propagate = True
+
     # arguments schmarguments
     help_text = 'This script creates a challenge and populates it with tasks \
         from an osmosis schema OSM database or a JSON file with features. \
@@ -180,6 +188,14 @@ if __name__ == "__main__":
                         help='the output file where answer from the server, \
                         are written. \
                         Defaults to responses.json.')
+    parser.add_argument('-v', '--verbose',
+                        default=False,
+                        action='store_true',
+                        help='Enable verbose output of http requests')
+    parser.add_argument('--debug',
+                        default=False,
+                        action='store_true',
+                        help='Enable debugging output of http requests')
 
     subparsers = parser.add_subparsers(help='Specify the source of the tasks')
 
@@ -202,6 +218,14 @@ if __name__ == "__main__":
                              help='JSON file with tasks')
 
     args = parser.parse_args()
+
+    if args.verbose:
+        rootlogger.setLevel(logging.INFO)
+        requests_log.setLevel(logging.INFO)
+
+    if args.debug:
+        rootlogger.setLevel(logging.DEBUG)
+        requests_log.setLevel(logging.DEBUG)
 
     slug = args.challenge_slug
     # the MapROulette API endpoints
