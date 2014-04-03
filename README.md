@@ -124,7 +124,7 @@ Now we're ready to generate the database tables from the model:
 
 If you're developing, you may want to load some test challenges and tasks:
 
-    bin/load_fixtures.py
+    python manage.py create_testdata
 
 Finally, run the server:
 
