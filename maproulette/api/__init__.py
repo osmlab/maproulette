@@ -547,7 +547,7 @@ class AdminApiTaskStatuses(Resource):
 
     def get(self, slug):
         """Return task statuses for the challenge identified by 'slug'"""
-        challenge = get_challenge_or_404(slug, True)
+        challenge = get_challenge_or_404(slug, True, False)
         return [{
             'identifier': task.identifier,
             'status': task.currentaction} for task in challenge.tasks]
