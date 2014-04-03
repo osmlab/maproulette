@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from maproulette import app, config
+from maproulette import app
 from maproulette.models import db, Challenge, Task, TaskGeometry, Action
 from shapely.geometry import Point, LineString, box
 import uuid
@@ -48,9 +48,6 @@ of withering injustice. It came as a joyous daybreak to end the
 long night of captivity."""
 
 point = Point(0.0, 0.0)
-
-# This determines which database is going to be populated
-app.config.from_object(config.DevelopmentConfig)
 
 # delete old tasks and challenges
 db.session.query(TaskGeometry).delete()
