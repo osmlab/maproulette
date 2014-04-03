@@ -1,0 +1,9 @@
+[uwsgi]
+vhost = true
+socket = /tmp/{{instance}}.sock
+venv = /srv/www/{{instance}}/virtualenv
+chdir = /srv/www/{{instance}}/htdocs/maproulette
+module = maproulette
+callable = app
+env = MAPROULETTE_SETTINGS=/srv/www/{{instance}}/config.py
+

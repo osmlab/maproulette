@@ -1,0 +1,16 @@
+server {
+    listen 80;
+    server_tokens off;
+    server_name {{instance}};
+
+     location / {
+         include uwsgi_params;
+         uwsgi_pass unix:/tmp/{{instance}}.sock;
+     }
+
+     ## Only requests to our Host are allowed
+     if ($host !~ ^({{instance}})$ ) {
+        return 444;
+     }
+}
+
