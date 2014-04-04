@@ -135,8 +135,6 @@ def create_databases():
     cmd = "psql -h localhost -U osm -d maproulette_dev -c 'CREATE EXTENSION postgis'"
     run('su -s /bin/bash -c "%s" postgres' % cmd)
 
-    
-
 def setup_system():
     update_packages()
     upgrade_packages()

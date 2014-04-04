@@ -12,5 +12,19 @@ server {
      if ($host !~ ^({{instance}})$ ) {
         return 444;
      }
+{% if settings != 'dev' %}
+
+    location /admin {
+        allow 127.0.0.1;
+        deny all;
+    }
+
+
+    locatation /api/admin {
+        allow 127.0.0.1;
+        deny all;
+    }
+
+{% endif %}
 }
 

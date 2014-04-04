@@ -3,6 +3,14 @@
 # http://www.thedutchtable.com/2013/03/een-ei-is-geen-eivrolijk-pasen.html
 SECRET_KEY = 'een ei is geen ei twee ei is een half ei'
 
+{% if setting == "dev" %}
+{% set db = "maproulette_dev" %}
+{% elif setting == "test" %}
+{% set db = "maproulette_test" %}
+{% elif setting == "prod" %}
+{% set db = "maproulette_test" %}
+{% endif %}
+
 # The database connection
 SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/{{db}}"
 
@@ -37,10 +45,8 @@ TASK_EXPIRATION_THRESHOLD = timedelta(hours=1)
 # changeset in OSM. (Used in validation)
 MAX_CHANGESET_OFFSET = timedelta(hours=1)
 
-
 # the default challenge to run
 DEFAULT_CHALLENGE = 'test1'
-
 
 # The OAuth configuration paramters for OSM.
 
@@ -48,12 +54,20 @@ DEFAULT_CHALLENGE = 'test1'
 # registered at http://api06.dev.openstreetmap.org/api/0.6/
 # This cannot be used in production.
 
+{% if setting == "dev" %}
+{% set osm_url = "http://api06.dev.openstreetmap.org" %}
+{% elif setting == "test" %}
+{% set osm_url = "https://www.openstreetmap.org" %}
+{% elif setting == "prod" %}
+{% set osm_url = "https://www.openstreetmap.org" %}
+{% endif %}
+
 OSM = {
-    'base_url': 'https://{{server}}/api/0.6/',
+    'base_url': '{{osm_url}}/api/0.6/',
     'request_token_url':
-    'https://{{server}}/oauth/request_token',
-    'access_token_url': 'https://{{server}}/oauth/access_token',
-    'authorize_url': 'https://{{server}}/oauth/authorize',
-    'consumer_key': 'dFdzJzU4rMaemzZXdhCR8HOixu21fT9B726uyzU8',
-    'consumer_secret': 'BhXKPNGDJHBVhkPfwyP5VPIHSDpSQXe63vwaTJ5l'
+    '{{osm_url}}/oauth/request_token',
+    'access_token_url': '{{osm_url}}/oauth/access_token',
+    'authorize_url': '{{osm_url}}/oauth/authorize',
+    'consumer_key': '{{consumer_key}}',
+    'consumer_secret': '{{consumer_secret}}'
 }
