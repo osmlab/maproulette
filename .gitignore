@@ -15,3 +15,4 @@ fabfile.py
 deploy_templates/*
 deploy_files/*
 
+examples/responses.json
