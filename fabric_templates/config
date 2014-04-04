@@ -49,18 +49,13 @@ MAX_CHANGESET_OFFSET = timedelta(hours=1)
 DEFAULT_CHALLENGE = 'test1'
 
 # The OAuth configuration paramters for OSM.
-
-# The example key and secret point to the MapRoulette application
-# registered at http://api06.dev.openstreetmap.org/api/0.6/
-# This cannot be used in production.
-
-{% if setting == "dev" %}
-{% set osm_url = "http://api06.dev.openstreetmap.org" %}
-{% elif setting == "test" %}
-{% set osm_url = "https://www.openstreetmap.org" %}
-{% elif setting == "prod" %}
-{% set osm_url = "https://www.openstreetmap.org" %}
-{% endif %}
+{% if setting == "dev" -%}
+{% set osm_url = "http://api06.dev.openstreetmap.org" -%}
+{% elif setting == "test" -%}
+{% set osm_url = "https://www.openstreetmap.org" -%}
+{% elif setting == "prod" -%}
+{% set osm_url = "https://www.openstreetmap.org" -%}
+{% endif -%}
 
 OSM = {
     'base_url': '{{osm_url}}/api/0.6/',
