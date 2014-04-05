@@ -1,5 +1,7 @@
 /** @jsx React.DOM */
 
+console.log("Loading Maproulette");
+
 // React Components
 var Button = React.createClass({displayName: 'Button',
   render: function(){
@@ -11,26 +13,11 @@ var Button = React.createClass({displayName: 'Button',
     );
   }});
 
-// Misc functions
-
 var signIn = function(){
+  console.log("Welcome dialog over")
   location.reload();
   location.href="/signin"
 }
-
-// Decorator to close the dialog box and run the specified function.
-// If it's a react component, unmounts it too
-var closeDialog = function(fun){
-    return function(){
-        $('.dialog').fadeOut({
-            complete: function(){
-                fun();
-                // If this is a react component, we don't need it anymore
-                React.unmountComponentAtNode(document.getElementById('dialog'));
-            }
-        });
-    }
-};
 
 // get URL parameters
 // http://stackoverflow.com/a/979995
@@ -234,6 +221,7 @@ var MRConfig = (function () {
 }());
 
 var MRManager = (function () {
+        console.log("Defining MRManager");
         var map;
         var challenges = [];
         var challenge = {};
@@ -659,30 +647,30 @@ var MRManager = (function () {
             });
         };
 
-    var presentChallengeHelp = function () {
-        React.renderComonent(
-                React.DOM.div(null, 
-                React.DOM.h1(null, challenge.title, " Help"),
-                React.DOM.div( {className:"text"}, 
-                  challenge.help
-                ),
-                Button( {onClick:closeDialog(MRManager.readyToEdit)}, "OK")
-                ),
-            document.getElementById('dialog'));
-        $('.dialog').fadeIn();
-    };
+        var presentChallengeHelp = function () {
+            $('.dialog').fadeOut({
+                complete: function () {
+                    var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
+                    var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
+                        "<div>" + challenge.help + "</div>" + OKButton;
+                    $('.dialog').html(helpHTML).fadeIn();
+                }
+            });
+        };
 
+  
   var presentWelcomeDialog = function() {
+    console.log("Starting Welcome dialog");
     React.renderComponent(
-        React.DOM.div(null, 
-        React.DOM.h1(null, "Welcome to MapRoulette"),
-        React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
-        Button( {onClick:signIn}, "Sign in")
-        ), $('.dialog')[0]);
+      React.DOM.div(null, 
+                    React.DOM.h1(null, "Welcome to MapRoulette"),
+                    React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
+                    Button( {onClick:signIn}, "Sign in")
+                   ), $('.dialog')[0]);
     $('.dialog').fadeIn();
   };
   
-    var presentChallengeDialog = function () {
+        var presentChallengeDialog = function () {
             if (!challenge.slug) selectChallenge();
             $('.dialog').fadeOut({
                 complete: function () {

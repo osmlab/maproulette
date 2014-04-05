@@ -1,37 +1,5 @@
 /** @jsx React.DOM */
 
-// React Components
-var Button = React.createClass({displayName: 'Button',
-  render: function(){
-    return (
-      React.DOM.div( {className:"button",
-           onClick:this.props.onClick}, 
-        this.props.children
-      )
-    );
-  }});
-
-// Misc functions
-
-var signIn = function(){
-  location.reload();
-  location.href="/signin"
-}
-
-// Decorator to close the dialog box and run the specified function.
-// If it's a react component, unmounts it too
-var closeDialog = function(fun){
-    return function(){
-        $('.dialog').fadeOut({
-            complete: function(){
-                fun();
-                // If this is a react component, we don't need it anymore
-                React.unmountComponentAtNode(document.getElementById('dialog'));
-            }
-        });
-    }
-};
-
 // get URL parameters
 // http://stackoverflow.com/a/979995
 var Q = (function () {
@@ -124,38 +92,11 @@ var MRNotifier = function () {
 
 var DefaultDoneDialog = {
     text: "This area is being loaded in your editor. Did you fix it?",
-    buttons: ""
+    buttons: [{"label": "I fixed it!", "action": "fixed"},
+              {"label": "Too difficult/Couldn't see", "action": "skipped"},
+              {"label": "It was not an error", "action": "falsepositive"},
+              {"label": "Someone beat me to it", "action": "alreadyfixed"}] 
 };
-
-var MRButtons = function () {
-    var buttonTypes = {
-        'fixed': 'I fixed it!',
-        'skipped': 'Too difficult / Couldn\'t see',
-        'falsepositive': 'It was not an error',
-        'alreadyfixed': 'Someone beat me to it'
-    };
-
-    var makeButton = function (buttonType) {
-        if (!(buttonType in buttonTypes)) {
-            return false
-        }
-        return '<div class=\'button\' onClick=MRManager.nextTask(\'' + buttontype + '\') id=\'' + buttonType + '\'>' + buttonTypes[buttonType] + '</div>';
-    };
-
-    var makeButtons = function () {
-        var buttonHTML = '';
-        for (key in buttonTypes) {
-            buttonHTML += '<div class=\'button\' onClick=MRManager.nextTask(\'' + key + '\') id=\'' + key + '\'>' + buttonTypes[key] + '</div>\n';
-        }
-        return buttonHTML;
-    };
-
-    return {
-        makeButton: makeButton,
-        makeButtons: makeButtons
-    };
-
-}();
 
 var MRHelpers = (function () {
 
@@ -366,39 +307,24 @@ var MRManager = (function () {
             // Register the keyboard shortcuts
             MRManager.registerHotkeys();
 
-            // Register AJAX error handler
-            $(document).ajaxError(function (event, jqxhr, settings, exception) {
-                // If there's an error, let's check to see if it's
-                // a Maproulette error
-                if (jqxhr.status == 555) {
-                    // an OSM error was thrown
-                    var osmerror = $.parseJSON(jqxhr.statusText);
-                    if (osmerror.error == "ChallengeComplete") {
-                        presentChallengeComplete();
-                    }
-                } else if (jqxhr.status == 404) {
-                    if (settings.url.match('task=')) {
-                        notify.play("We can't find the task you were looking for any longer. Loading a fresh task...", {
-                            type: "error",
-                            timeout: 5000
-                        });
-                    } else if (settings.url.match('challenge')) {
-                        notify.play("The challenge you were working on is no longer active. Perhaps it was completed in the mean time. Please use the challenge selection dialog to select something else to work on.", {
-                            type: "error",
-                            timeout: 5000
-                        });
-                        presentChallengeSelectionDialog();
-                    }
-                }
-            });
-
             if (this.loggedIn) {
                 // check if the user passed things
                 if (parseHash()) readyToEdit();
                 else presentChallengeDialog();
             } else {
-                // a friendly welcome
-                presentWelcomeDialog();
+                // present a friendly welcome
+              $('.donedialog').fadeOut({
+                complete: function() {
+                  React.renderComponent(
+                      <h1>Welcome to MapRoulette</h1>
+                      <p>Sign in with OpenStreetMap to play MapRoulette<p>
+                      <Button onClick={location.reload();location.href="/signin"}
+                    Sign in
+                    </Button>,
+                    $(".donedialog"));
+                  $(".donedialog").fadeIn();
+                }
+              }); 
             }
         };
 
@@ -447,21 +373,29 @@ var MRManager = (function () {
                     // and move on to get the stats
                     getChallengeStats()
                 },
+                error: function (jqXHR, textStatus, errorThrown) {}
             });
         };
 
 
         var getChallengeStats = function () {
             // now get the challenge stats
-            // var endpoint = '/api/stats/challenge/' + challenge.slug;
-            // $.getJSON(endpoint, function (data) {
-            //     for (key in data) {
-            //         console.log('raw value: ' + data[key]);
-            //         var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
-            //         console.log('value for ' + key + ': ' + value);
-            //         $('#challenge_' + key).html(value).fadeIn();
-            //     };
-            // });
+            url = '/api/stats/challenge/' + challenge.slug;
+            challenge.stats = {};
+            $.ajax({
+                url: url,
+                success: function (data) {
+                    $.each(data, function (key, value) {
+                        challenge.stats[key] = value;
+                    });
+                    // update the stats UI elements
+                    $('#stats #total').text(challenge.stats.total);
+                    $('#stats #unfixed').text(challenge.stats.unfixed);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log('ajax error');
+                }
+            });
         };
 
         var updateTask = function (action) {
@@ -476,8 +410,13 @@ var MRManager = (function () {
             $.ajax({
                 url: "/api/challenge/" + challenge.slug + "/task/" + task.identifier,
                 type: "POST",
-                data: payload
+                data: payload,
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log('ajax error');
+                }
             });
+
+
         };
 
         /*
@@ -492,7 +431,7 @@ var MRManager = (function () {
                 url: '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(assign),
                 async: false,
                 success: function (data) {
-                    task = data;
+q                    task = data;
                     if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
                         setTimeout(function () {
                             notify.play('This task is already fixed, or it was marked as not an error.', {
@@ -507,8 +446,24 @@ var MRManager = (function () {
                         async: false,
                         success: function (data) {
                             task.features = data.features;
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.log('ajax error');
                         }
                     });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    // If there's an error, let's check to see if it's
+                    // a Maproulette error
+                    if (jqXHR.status == 555) {
+                      osmerror = $.parseJSON(jqXHR.statusText);
+                      if (osmerror.error = "ChallengeComplete") {
+                        presentChallengeComplete();
+                      }
+                    }
+                  else {
+                    console.log("ajax error");
+                  }
                 }
             });
         };
@@ -547,13 +502,16 @@ var MRManager = (function () {
                     notify.play(MRHelpers.mqResultToString(data.address), {
                         timeout: false
                     });
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log('ajax error');
                 }
             });
         };
 
         var nextTask = function (action) {
             // make the done dialog disappear if it is there
-            $('.dialog').fadeOut();
+            $('.donedialog').fadeOut();
             // update the outgoing task
             updateTask(action);
             task = {};
@@ -603,88 +561,67 @@ var MRManager = (function () {
         };
 
         var presentDoneDialog = function () {
-            var d = DefaultDoneDialog;
-
-            // if there is no done dialog info, bail
-            // FIXME we should be reverting to a default
-            if (typeof d === 'undefined') {
-                return false
-            }
-            var dialogHTML = '<div class=\'text\'>' + d.text + '</div>';
-
-            if (typeof d.buttons === 'string' && d.buttons.length > 0) {
-                var buttons = d.buttons.split('|');
-                for (var i = 0; i < buttons.length; i++) {
-                    dialogHTML += MRButtons.makeButton(buttons[i]);
-                }
-            } else {
-                dialogHTML += MRButtons.makeButtons();
-            }
-            $('.dialog').html(dialogHTML).fadeIn();
+          React.renderComponent(
+            <DoneDialog dialog=DefaultDoneDialog />,
+            $('.donedialog'));
+          $('.donedialog').fadeIn();
         };
+        
 
-        var presentChallengeComplete = function () {
-            $('controlpanel').fadeOut();
-            $('.dialog').fadeOut({
-                complete: function () {
-                    var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
-                    var dialogHTML = "<p>That challge has no more work left to do<p>" + challengeChangeButton;
-                    $('.dialog').html(dialogHTML).fadeIn();
-                }
-            });
+        var presentChallengeComplete = function() {
+          $('controlpanel').fadeOut();
+          $('.donedialog').fadeOut({
+            complete: function() {
+              React.renderComponent(
+                <p>That challenge has no more work left to do</p>
+                <Button onClick={MRMangaer.presentChallengeSelectionDialog()}>
+                  Pick another challenge
+                </Button>, $('.donedialog'));
+              $('.donedialog')..fadeIn();
+            }
+          });
         };
 
         var presentChallengeSelectionDialog = function () {
             $('controlpanel').fadeOut();
-            $('.dialog').fadeOut({
+            $('.donedialog').fadeOut({
                 complete: function () {
                     if (challenges.length == 0) {
                         $.ajax({
                             url: "/api/challenges",
                             success: function (data) {
                                 challenges = data;
-                                cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
-                                dialogHTML = "<h2>Pick a different challenge</h2>";
-                                for (c in challenges) {
-                                    dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>";
-                                };
-                                dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
-                                $('.dialog').html(dialogHTML).fadeIn();
+                                React.renderComponent(
+                                  <ChallengeSelectionDialog challenges=challenges />, $(".donedialog");
+                                $('.donedialog').fadeIn();
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                console.log('ajax error')
                             }
                         });
                     } else {
-                        $('.dialog').html(dialogHTML).fadeIn();
+                        React.renderComponent(
+                                  <ChallengeSelectionDialog challenges=challenges />, $(".donedialog");
+                        $('.donedialog').fadeIn();
                     };
                 }
             });
         };
 
-    var presentChallengeHelp = function () {
-        React.renderComonent(
-                React.DOM.div(null, 
-                React.DOM.h1(null, challenge.title, " Help"),
-                React.DOM.div( {className:"text"}, 
-                  challenge.help
-                ),
-                Button( {onClick:closeDialog(MRManager.readyToEdit)}, "OK")
-                ),
-            document.getElementById('dialog'));
-        $('.dialog').fadeIn();
-    };
+        var presentChallengeHelp = function () {
+            $('.donedialog').fadeOut({
+                complete: function () {
+                  React.renderComponent(
+                    <challengeHelpDialog challenge=challenge>,
+                    $(".donedialog"));
+                  $('.donedialog').fadeIn();
+                }
+            });
+        };
 
-  var presentWelcomeDialog = function() {
-    React.renderComponent(
-        React.DOM.div(null, 
-        React.DOM.h1(null, "Welcome to MapRoulette"),
-        React.DOM.div(null, "Sign in with OpenStreetMap to play MapRoulette"),
-        Button( {onClick:signIn}, "Sign in")
-        ), $('.dialog')[0]);
-    $('.dialog').fadeIn();
-  };
-  
-    var presentChallengeDialog = function () {
+        var presentChallengeDialog = function () {
             if (!challenge.slug) selectChallenge();
-            $('.dialog').fadeOut({
+            $('.donedialog').fadeOut({
                 complete: function () {
                     var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
                     var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
@@ -693,13 +630,13 @@ var MRManager = (function () {
                         "<p>You will be working on this challenge:</p>" +
                         "<h2>" + challenge.title + "</h2>" +
                         "<p>" + challenge.description + "</p>" + OKButton + helpButton + changeChallengeButton;
-                    $('.dialog').html(dialogHTML).fadeIn();
+                    $('.donedialog').html(dialogHTML).fadeIn();
                 }
             });
         };
 
         var readyToEdit = function () {
-            $('.dialog').fadeOut();
+            $('.donedialog').fadeOut();
             $('.controlpanel').fadeIn();
             if (!task.identifier) getAndShowTask();
         };
@@ -729,7 +666,7 @@ var MRManager = (function () {
 
         var userPickChallenge = function (slug) {
             slug = decodeURI(slug);
-            $('.dialog').fadeOut({
+            $('.donedialog').fadeOut({
                 complete: function () {
                     $('.controlpanel').fadeIn()
                 }
@@ -759,7 +696,7 @@ var MRManager = (function () {
                 MRManager.openTaskInJosm()
             });
             $(document).bind('keypress', 'esc', function () {
-                $('.dialog').fadeOut()
+                $('.donedialog').fadeOut()
             });
 
         }
@@ -839,6 +776,32 @@ var MRManager = (function () {
             });
         }
 
+        var displayChallengeStats = function (elem, slug) {
+            // Display the challenge statistics in the table container identified by id selector 'elem'
+            var endpoint = '/api/stats/challenge/' + slug;
+            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
+            var first = moment();
+            var last = moment().year(1900);
+            $.getJSON(endpoint, function (data) {})
+        }
+
+        var displayChallengeDetails = function (slug) {
+            // displays various challenge details on the challenge page
+            var endpoint = '/api/challenge/' + slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    $('#challenge_' + key).html(data[key]).fadeIn();
+                };
+            });
+            // now get basic stats
+            endpoint = '/api/stats/challenge/' + slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    $('#challenge_' + key).html(data[key]).fadeIn();
+                };
+            });
+        }
+
         var updateHash = function () {
             location.hash = 't=' + challenge.slug + '/' + task.identifier;
         }
@@ -894,6 +857,8 @@ var MRManager = (function () {
             registerHotkeys: registerHotkeys,
             displayUserStats: displayUserStats,
             displayAllChallengesStats: displayAllChallengesStats,
+            displayChallengeStats: displayChallengeStats,
+            displayChallengeDetails: displayChallengeDetails
         };
     }
     ());
@@ -903,3 +868,50 @@ function init(elemName) {
     $('.controlpanel').fadeOut();
     MRManager.init(elemName);
 }
+
+var Button = React.createClass({
+  render: function(){
+    return (
+      <div className="button"
+           onClick={this.props.onClick}>
+        {this.props.children}
+      </div> 
+);
+}});
+
+var ChallengeHelpDialog = React.createClass({
+  render: function(){
+    return (
+      <h1>{this.props.challenge.title} Help</h1>
+      <div>{this.props.challenge.help}</div>
+      <Button onClick={MRMangaer.readyToEdit()}>OK</Button>);
+  }
+});
+
+var DoneDialog = React.createClass({
+  render: function(){
+    var buttonArray = this.props.buttons.map(function(button) {
+      return <Button onClick={MRMangaer.nextTask(this.props.action)}>{this.props.label}</Button>};)
+    return (
+      <div class="text">{this.props.text}</div>
+      {buttonArray}
+    );                                         
+  }
+});
+
+var ChallengeSelectionDialog = React.createClass({
+  render: function() {
+    challengesArray = this.props.challenges.map(function(challenge) {
+      return (<div className="challengeBox"><h3>{challenge.title}</h3>
+                <p>challenge.blurb</p>
+                <Button onClick={MRMangaer.userPickChallenge(encodeURI(challenge.slug))}>
+                Work on this challenge!</div></div>);
+    return (<h2>Pick a different challenge</h2>
+            {challengesArray});
+    }
+  );
+ }
+});
+
+
+
