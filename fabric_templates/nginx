@@ -8,23 +8,22 @@ server {
          uwsgi_pass unix:/tmp/{{instance}}.sock;
      }
 
+{% if settings != 'dev' -%}
      ## Only requests to our Host are allowed
      if ($host !~ ^({{instance}})$ ) {
         return 444;
      }
-{% if settings != 'dev' %}
 
     location /admin {
         allow 127.0.0.1;
         deny all;
     }
 
-
     location /api/admin {
         allow 127.0.0.1;
         deny all;
     }
 
-{% endif %}
+{% endif -%}
 }
 
