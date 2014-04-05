@@ -11,10 +11,26 @@ var Button = React.createClass({
     );
   }});
 
+// Misc functions
+
 var signIn = function(){
   location.reload();
   location.href="/signin"
 }
+
+// Decorator to close the dialog box and run the specified function.
+// If it's a react component, unmounts it too
+var closeDialog = function(fun){
+    return function(){
+        $('.dialog').fadeOut({
+            complete: function(){
+                fun();
+                // If this is a react component, we don't need it anymore
+                React.unmountComponentAtNode(document.getElementById('dialog'));
+            }
+        });
+    }
+};
 
 // get URL parameters
 // http://stackoverflow.com/a/979995
@@ -643,18 +659,19 @@ var MRManager = (function () {
             });
         };
 
-        var presentChallengeHelp = function () {
-            $('.dialog').fadeOut({
-                complete: function () {
-                    var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>OK</div>";
-                    var helpHTML = "<h1>" + challenge.title + " Help</h1>" +
-                        "<div>" + challenge.help + "</div>" + OKButton;
-                    $('.dialog').html(helpHTML).fadeIn();
-                }
-            });
-        };
+    var presentChallengeHelp = function () {
+        React.renderComonent(
+                <div>
+                <h1>{challenge.title} Help</h1>
+                <div className="text">
+                  {challenge.help}
+                </div>
+                <Button onClick={closeDialog(MRManager.readyToEdit)}>OK</Button>
+                </div>,
+            document.getElementById('dialog'));
+        $('.dialog').fadeIn();
+    };
 
-  
   var presentWelcomeDialog = function() {
     React.renderComponent(
         <div>
@@ -665,7 +682,7 @@ var MRManager = (function () {
     $('.dialog').fadeIn();
   };
   
-        var presentChallengeDialog = function () {
+    var presentChallengeDialog = function () {
             if (!challenge.slug) selectChallenge();
             $('.dialog').fadeOut({
                 complete: function () {
