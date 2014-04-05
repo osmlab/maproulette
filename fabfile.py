@@ -72,7 +72,8 @@ def checkout_repo(instance, branch=None):
 
 def install_python_dependencies(instance):
     dirname = "/srv/www/%s" % instance
-    cmd = 'source %s/virtualenv/bin/activate && pip install -r %s/htdocs/maproulette/requirements.txt' % (dirname, dirname)
+    cmd = 'source %s/virtualenv/bin/activate && pip\
+    install -r %s/htdocs/maproulette/requirements.txt' % (dirname, dirname)
     sudo('su -s /bin/bash -c "%s" www-data' % cmd)
 
 
@@ -88,6 +89,9 @@ def setup_uwsgi_file(instance):
 
 
 def setup_nginx_file(instance):
+    # remove 'default' from sites-enabled
+    if exists('/etc/nginx/sites-enabled/default'):
+        sudo('rm /etc/nginx/sites-enabled/default')
     sites_available_file = "/etc/nginx/sites-available/%s" % instance
     sites_enabled_file = "/etc/nginx/sites-enabled/%s" % instance
     upload_template("nginx", sites_available_file,
@@ -95,7 +99,8 @@ def setup_nginx_file(instance):
                     use_sudo=True,
                     template_dir="fabric_templates",
                     context={"instance": instance})
-    sudo("ln -s %s %s" % (sites_available_file, sites_enabled_file))
+    if not exists(sites_enabled_file):
+        sudo("ln -s %s %s" % (sites_available_file, sites_enabled_file))
 
 
 def setup_config_file(instance, setting):
@@ -156,7 +161,7 @@ def install_postgis():
 
 
 def create_db_user():
-    cmd = "createuser -s -w osm"
+    cmd = 'createuser -s -w osm'
     sudo('su -s /bin/bash -c "%s" postgres' % cmd)
 
 
