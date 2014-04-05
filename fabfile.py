@@ -2,7 +2,7 @@ from fabric.api import run
 from fabric.colors import red
 from fabric.contrib.files import exists, cd, upload_template, sed
 from fabric.contrib.project import rsync_project
-from fabric.operations import sudo
+from fabric.operations import sudo, local
 
 pg_hba_fname = "/etc/postgresql/9.3/main/pg_hba.conf"
 
@@ -121,7 +121,11 @@ def setup_config_file(instance, setting):
     restart_uwsgi()
 
 
+def jsx():
+    local("cat ./maproulette/static/js/maproulette.jsx | jsx > ./maproulette/static/js/maproulette.js")
+
 def rsync(instance, reload_pip=False):
+    jsx()
     basedir = "/srv/www/%s" % instance
     target = basedir + '/htdocs/'
     rsync_project(target, delete="yes", exclude=".git")
