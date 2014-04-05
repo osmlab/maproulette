@@ -1,6 +1,6 @@
 from fabric.api import run
 from fabric.colors import red
-from fabric.contrib.files import exists, cd, upload_template, sed
+from fabric.contrib.files import exists, cd, upload_template, sed, append
 from fabric.contrib.project import rsync_project
 from fabric.operations import sudo, local
 
@@ -54,8 +54,7 @@ def create_deploy_directories(instance):
 
 def create_virtualenv(instance):
     dirname = "/srv/www/%s" % instance
-    cmd = "virtualenv %s/virtualenv" % (dirname)
-    sudo('su -s /bin/bash -c "%s" www-data' % cmd)
+    sudo("virtualenv %s/virtualenv" % (dirname), user="www-data")
 
 
 def checkout_repo(instance, branch=None):
@@ -67,14 +66,14 @@ def checkout_repo(instance, branch=None):
         cmd = "git clone https://github.com/osmlab/maproulette.git %s" %\
             (dirname)
     with cd("/srv/www"):
-        sudo('su -s /bin/bash -c "%s" www-data' % cmd)
+        sudo(cmd, user="www-data")
 
 
 def install_python_dependencies(instance):
     dirname = "/srv/www/%s" % instance
     cmd = 'source %s/virtualenv/bin/activate && pip\
     install -r %s/htdocs/maproulette/requirements.txt' % (dirname, dirname)
-    sudo('su -s /bin/bash -c "%s" www-data' % cmd)
+    sudo(cmd, user="www-data")
 
 
 def setup_uwsgi_file(instance):
@@ -90,8 +89,7 @@ def setup_uwsgi_file(instance):
 
 def setup_nginx_file(instance):
     # remove 'default' from sites-enabled
-    if exists('/etc/nginx/sites-enabled/default'):
-        sudo('rm /etc/nginx/sites-enabled/default')
+    sudo('rm -f /etc/nginx/sites-enabled/default')
     sites_available_file = "/etc/nginx/sites-available/%s" % instance
     sites_enabled_file = "/etc/nginx/sites-enabled/%s" % instance
     upload_template("nginx", sites_available_file,
@@ -134,8 +132,7 @@ def rsync(instance, reload_pip=False):
 
 
 def git_pull(instance):
-    cmd = "cd /srv/www/%s/htdocs/maproulette && git pull" % instance
-    sudo('su -s /bin/bash -c "%s" www-data' % cmd)
+    sudo("cd /srv/www/%s/htdocs/maproulette && git pull" % instance, user="www-data")
 
 
 def setup_postgres_permissions():
@@ -152,9 +149,7 @@ def setup_postgres_permissions():
 def install_postgis():
     # from
     # http://trac.osgeo.org/postgis/wiki/UsersWikiPostGIS21UbuntuPGSQL93Apt
-    sudo(
-        "sh -c 'echo \"deb http://apt.postgresql.org/"
-        "pub/repos/apt/ precise-pgdg main\"' >> /etc/apt/sources.list")
+    append("/etc/apt/sources.list", "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main", use_sudo=True)
     run("wget --quiet -O - http://apt.postgresql.org/pub/"
         "repos/apt/ACCC4CF8.asc | sudo apt-key add -")
     update_packages()
@@ -165,26 +160,16 @@ def install_postgis():
 
 
 def create_db_user():
-    cmd = 'createuser -s -w osm'
-    sudo('su -s /bin/bash -c "%s" postgres' % cmd)
+    sudo('createuser -s -w osm', user='postgres')
 
 
 def create_databases():
-    cmd = "createdb -O osm maproulette"
-    sudo('su -s /bin/bash -c "%s" postgres' % cmd)
-    cmd = "createdb -O osm maproulette_test"
-    sudo('su -s /bin/bash -c "%s" postgres' % cmd)
-    cmd = "createdb -O osm maproulette_dev"
-    sudo('su -s /bin/bash -c "%s" postgres' % cmd)
-    cmd = "psql -U osm -d maproulette"\
-        " -c 'CREATE EXTENSION postgis'"
-    sudo('su -s /bin/bash -c "%s" postgres' % cmd)
-    cmd = "psql -U osm -d maproulette_test"\
-        " -c 'CREATE EXTENSION postgis'"
-    sudo('su -s /bin/bash -c "%s" postgres' % cmd)
-    cmd = "psql -U osm -d maproulette_dev"\
-        " -c 'CREATE EXTENSION postgis'"
-    sudo('su -s /bin/bash -c "%s" postgres' % cmd)
+    sudo("createdb -O osm maproulette", user='postgres')
+    sudo("createdb -O osm maproulette_test", user='postgres')
+    sudo("createdb -O osm maproulette_dev", user='postgres')
+    sudo("psql -U osm -d maproulette -c 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -d maproulette_test -c 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -d maproulette_dev -c 'CREATE EXTENSION postgis'", user='postgres')
 
 
 def setup_system():
