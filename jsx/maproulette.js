@@ -371,11 +371,9 @@ var MRManager = (function () {
             $(document).ajaxError(function (event, jqxhr, settings, exception) {
                 // If there's an error, let's check to see if it's
                 // a Maproulette error
-                console.log('ajax error');
                 lastResponse = jqxhr.status;
                 if (lastResponse == 555) {
                     // an OSM error was thrown
-                    console.log('osm error');
                     var osmerror = $.parseJSON(jqxhr.responseText);
                     if (osmerror.error == "ChallengeComplete") {
                         presentChallengeComplete();
@@ -387,18 +385,14 @@ var MRManager = (function () {
             });
 
             if (this.loggedIn) {
-                console.log('init. checking hash');
                 // check if the user passed things
                 if (parseHash()) {
-                    console.log('user passed hash');
                     readyToEdit();
                 } else {
-                    console.log('no hash - presenting challenge dialog');
                     selectChallenge();
                     if (lastResponse === 200) presentChallengeDialog();
                 }
             } else {
-                console.log('presenting welcome');
                 // a friendly welcome
                 presentWelcomeDialog();
             }
@@ -424,7 +418,6 @@ var MRManager = (function () {
          * get a named, or random challenge
          */
         var selectChallenge = function () {
-            console.log('selecting a challenge');
             var url = "";
             // if no specific challenge is passed in,
             // check what the cookie monster has for us
@@ -433,10 +426,8 @@ var MRManager = (function () {
             };
             // if we still don't have anything, let the server select a challenge for us.
             if (!challenge.slug) {
-                console.log('no challenge in cookie, server select');
                 url = "/api/challenge";
             } else {
-                console.log('we had challenge ' + challenge.slug + ' in a cookie, retrieving');
                 url = "/api/challenge/" + challenge.slug;
             };
             $.ajax({
@@ -489,7 +480,6 @@ var MRManager = (function () {
          * get a task for the current challenge
          */
         var getTask = function (assign) {
-            console.log('getting next task..');
             // assign the task by default.
             assign = typeof assign !== "boolean" ? true : assign;
             // get a task
@@ -497,7 +487,6 @@ var MRManager = (function () {
                 url: '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(assign),
                 async: false,
                 success: function (data) {
-                    console.log('got task success');
                     task = data;
                     if (['fixed', 'alreadyfixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
                         setTimeout(function () {
@@ -565,7 +554,6 @@ var MRManager = (function () {
             $('.dialog').fadeOut();
             // update the outgoing task
             if (action != undefined) {
-                console.log('updating outgoing task');
                 updateTask(action);
             }
             task = {};
