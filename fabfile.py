@@ -120,7 +120,8 @@ def setup_config_file(instance, setting):
 
 
 def jsx():
-    local("cat ./maproulette/static/js/maproulette.jsx | jsx > ./maproulette/static/js/maproulette.js")
+    local("cat ./jsx/maproulette.js | jsx > ./maproulette/static/js/maproulette.js")
+
 
 def rsync(instance, reload_pip=False):
     jsx()
