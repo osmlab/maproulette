@@ -637,8 +637,20 @@ var MRManager = (function () {
                             challenges = data;
                             cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
                             dialogHTML = "<h2>Pick a different challenge</h2>";
+                            var challengeboxes = [[],[],[]];
                             for (c in challenges) {
-                                dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>";
+                                var difficulty = parseInt(challenges[c].difficulty);
+                                console.log(difficulty);
+                                var difficultyBadge = '<span class=difficultyBadge><span class=d' + difficulty + '>';
+                                difficultyBadge += difficulty==1?'EASY':difficulty==2?'MODERATE':'HARD';
+                                difficultyBadge += '</span></span>';
+                                challengeboxes[difficulty-1].push("<div class='challengeBox'><span class=title>" + challenges[c].title + "</span>" + difficultyBadge + "<p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>");
+                            };
+                            for (var d=0;d<3;d++) {
+                                console.log('adding challenges of difficulty ' + d);
+                                for (challengebox in challengeboxes[d]) {
+                                    dialogHTML += challengeboxes[d][challengebox];
+                                }
                             };
                             dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
                             $('.dialog').html(dialogHTML).fadeIn();
