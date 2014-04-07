@@ -239,6 +239,7 @@ var MRManager = (function () {
         var challenge = {};
         var task = {};
         var editor;
+        var lastResponse;
         var near = (Q.lon && Q.lat) ? {
             'lon': parseFloat(Q.lon),
             'lat': parseFloat(Q.lat)
@@ -370,33 +371,34 @@ var MRManager = (function () {
             $(document).ajaxError(function (event, jqxhr, settings, exception) {
                 // If there's an error, let's check to see if it's
                 // a Maproulette error
-                if (jqxhr.status == 555) {
+                console.log('ajax error');
+                lastResponse = jqxhr.status;
+                if (lastResponse == 555) {
                     // an OSM error was thrown
-                    var osmerror = $.parseJSON(jqxhr.statusText);
+                    console.log('osm error');
+                    var osmerror = $.parseJSON(jqxhr.responseText);
                     if (osmerror.error == "ChallengeComplete") {
                         presentChallengeComplete();
                     }
-                } else if (jqxhr.status == 404) {
-                    if (settings.url.match('task=')) {
-                        notify.play("We can't find the task you were looking for any longer. Loading a fresh task...", {
-                            type: "error",
-                            timeout: 5000
-                        });
-                    } else if (settings.url.match('challenge')) {
-                        notify.play("The challenge you were working on is no longer active. Perhaps it was completed in the mean time. Please use the challenge selection dialog to select something else to work on.", {
-                            type: "error",
-                            timeout: 5000
-                        });
-                        presentChallengeSelectionDialog();
-                    }
+                } else if (lastResponse == 404) {
+                    // the challenge or task cannot be found - assuming the challenge is no longer active.
+                    presentChallengeComplete();
                 }
             });
 
             if (this.loggedIn) {
+                console.log('init. checking hash');
                 // check if the user passed things
-                if (parseHash()) readyToEdit();
-                else presentChallengeDialog();
+                if (parseHash()) {
+                    console.log('user passed hash');
+                    readyToEdit();
+                } else {
+                    console.log('no hash - presenting challenge dialog');
+                    selectChallenge();
+                    if (lastResponse === 200) presentChallengeDialog();
+                }
             } else {
+                console.log('presenting welcome');
                 // a friendly welcome
                 presentWelcomeDialog();
             }
@@ -422,6 +424,7 @@ var MRManager = (function () {
          * get a named, or random challenge
          */
         var selectChallenge = function () {
+            console.log('selecting a challenge');
             var url = "";
             // if no specific challenge is passed in,
             // check what the cookie monster has for us
@@ -430,8 +433,10 @@ var MRManager = (function () {
             };
             // if we still don't have anything, let the server select a challenge for us.
             if (!challenge.slug) {
+                console.log('no challenge in cookie, server select');
                 url = "/api/challenge";
             } else {
+                console.log('we had challenge ' + challenge.slug + ' in a cookie, retrieving');
                 url = "/api/challenge/" + challenge.slug;
             };
             $.ajax({
@@ -484,16 +489,17 @@ var MRManager = (function () {
          * get a task for the current challenge
          */
         var getTask = function (assign) {
+            console.log('getting next task..');
             // assign the task by default.
             assign = typeof assign !== "boolean" ? true : assign;
-            if (!challenge.slug) selectChallenge();
             // get a task
             $.ajax({
                 url: '/api/challenge/' + challenge.slug + '/task' + constructUrlParameters(assign),
                 async: false,
                 success: function (data) {
+                    console.log('got task success');
                     task = data;
-                    if (['fixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
+                    if (['fixed', 'alreadyfixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.currentaction) > -1) {
                         setTimeout(function () {
                             notify.play('This task is already fixed, or it was marked as not an error.', {
                                 type: 'warning',
@@ -507,6 +513,9 @@ var MRManager = (function () {
                         async: false,
                         success: function (data) {
                             task.features = data.features;
+                            drawTask();
+                            getChallengeStats();
+                            updateHash();
                         }
                     });
                 }
@@ -555,17 +564,13 @@ var MRManager = (function () {
             // make the done dialog disappear if it is there
             $('.dialog').fadeOut();
             // update the outgoing task
-            updateTask(action);
+            if (action != undefined) {
+                console.log('updating outgoing task');
+                updateTask(action);
+            }
             task = {};
-            getAndShowTask();
+            getTask();
         };
-
-        var getAndShowTask = function (assign) {
-            getTask(assign);
-            drawTask();
-            getChallengeStats();
-            updateHash();
-        }
 
         var openTaskInJosm = function () {
             if (map.getZoom() < MRConfig.minZoomLevelForEditing) {
@@ -628,7 +633,7 @@ var MRManager = (function () {
             $('.dialog').fadeOut({
                 complete: function () {
                     var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
-                    var dialogHTML = "<p>That challge has no more work left to do<p>" + challengeChangeButton;
+                    var dialogHTML = "The challenge you were working on is all done. Thanks for helping out!<p>" + changeChallengeButton;
                     $('.dialog').html(dialogHTML).fadeIn();
                 }
             });
@@ -638,23 +643,19 @@ var MRManager = (function () {
             $('controlpanel').fadeOut();
             $('.dialog').fadeOut({
                 complete: function () {
-                    if (challenges.length == 0) {
-                        $.ajax({
-                            url: "/api/challenges",
-                            success: function (data) {
-                                challenges = data;
-                                cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
-                                dialogHTML = "<h2>Pick a different challenge</h2>";
-                                for (c in challenges) {
-                                    dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>";
-                                };
-                                dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
-                                $('.dialog').html(dialogHTML).fadeIn();
-                            }
-                        });
-                    } else {
-                        $('.dialog').html(dialogHTML).fadeIn();
-                    };
+                    $.ajax({
+                        url: "/api/challenges",
+                        success: function (data) {
+                            challenges = data;
+                            cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
+                            dialogHTML = "<h2>Pick a different challenge</h2>";
+                            for (c in challenges) {
+                                dialogHTML += "<div class=\'challengeBox\'><h3>" + challenges[c].title + "</h3><p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>";
+                            };
+                            dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
+                            $('.dialog').html(dialogHTML).fadeIn();
+                        }
+                    });
                 }
             });
         };
@@ -683,7 +684,6 @@ var MRManager = (function () {
   };
   
     var presentChallengeDialog = function () {
-            if (!challenge.slug) selectChallenge();
             $('.dialog').fadeOut({
                 complete: function () {
                     var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
@@ -701,7 +701,7 @@ var MRManager = (function () {
         var readyToEdit = function () {
             $('.dialog').fadeOut();
             $('.controlpanel').fadeIn();
-            if (!task.identifier) getAndShowTask();
+            if (!task.identifier) nextTask();
         };
 
         var geolocateUser = function () {
@@ -737,7 +737,7 @@ var MRManager = (function () {
             challenge.slug = slug;
             selectChallenge();
             task = {};
-            getAndShowTask();
+            nextTask();
         };
 
         var userPreferences = function () {
@@ -852,7 +852,7 @@ var MRManager = (function () {
                     var res = h.substr(3).split('/');
                     challenge.slug = res[0];
                     task.identifier = res[1];
-                    getAndShowTask();
+                    getTask(false);
                     return true;
                 };
                 if (h.indexOf('#p=') == 0) {
@@ -882,7 +882,6 @@ var MRManager = (function () {
         return {
             init: init,
             nextTask: nextTask,
-            getAndShowTask: getAndShowTask,
             openTaskInId: openTaskInId,
             openTaskInJosm: openTaskInJosm,
             geolocateUser: geolocateUser,
