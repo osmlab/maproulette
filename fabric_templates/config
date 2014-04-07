@@ -66,3 +66,6 @@ OSM = {
     'consumer_key': '{{consumer_key}}',
     'consumer_secret': '{{consumer_secret}}'
 }
+
+# The MailGun API KEY
+MAILGUN_API_KEY = 'REPLACE WITH YOUR MAILGUN API KEY'
