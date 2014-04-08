@@ -239,7 +239,6 @@ var MRManager = (function () {
         var challenge = {};
         var task = {};
         var editor;
-        var lastResponse;
         var near = (Q.lon && Q.lat) ? {
             'lon': parseFloat(Q.lon),
             'lat': parseFloat(Q.lat)
@@ -371,14 +370,13 @@ var MRManager = (function () {
             $(document).ajaxError(function (event, jqxhr, settings, exception) {
                 // If there's an error, let's check to see if it's
                 // a Maproulette error
-                lastResponse = jqxhr.status;
-                if (lastResponse == 555) {
+                if (jqxhr.status == 555) {
                     // an OSM error was thrown
                     var osmerror = $.parseJSON(jqxhr.responseText);
                     if (osmerror.error == "ChallengeComplete") {
                         presentChallengeComplete();
                     }
-                } else if (lastResponse == 404) {
+                } else if (jqxhr.status == 404) {
                     // the challenge or task cannot be found - assuming the challenge is no longer active.
                     presentChallengeComplete();
                 }
@@ -390,7 +388,6 @@ var MRManager = (function () {
                     readyToEdit();
                 } else {
                     selectChallenge();
-                    if (lastResponse === 200) presentChallengeDialog();
                 }
             } else {
                 // a friendly welcome
@@ -417,7 +414,10 @@ var MRManager = (function () {
         /*
          * get a named, or random challenge
          */
-        var selectChallenge = function () {
+        var selectChallenge = function (presentDialog) {
+            console.log('going to select challenge');
+            // by default, present the challenge dialog after selecting the challenge.
+            presentDialog = typeof presentDialog !== 'undefined' ? presentDialog : true;
             var url = "";
             // if no specific challenge is passed in,
             // check what the cookie monster has for us
@@ -435,13 +435,15 @@ var MRManager = (function () {
                 async: false,
                 success: function (data) {
                     challenge = data;
+                    console.log('selected challenge ' + challenge.slug);
                     // set the challenge cookie
                     $.cookie('challenge', challenge.slug);
                     // update the challenge detail UI elements
                     $('#challenge_title').text(challenge.title);
                     $('#challenge_blurb').text(challenge.blurb);
                     // and move on to get the stats
-                    getChallengeStats()
+                    getChallengeStats();
+                    if (presentDialog) presentChallengeDialog();
                 },
             });
         };
@@ -640,14 +642,12 @@ var MRManager = (function () {
                             var challengeboxes = [[],[],[]];
                             for (c in challenges) {
                                 var difficulty = parseInt(challenges[c].difficulty);
-                                console.log(difficulty);
                                 var difficultyBadge = '<span class=difficultyBadge><span class=d' + difficulty + '>';
                                 difficultyBadge += difficulty==1?'EASY':difficulty==2?'MODERATE':'HARD';
                                 difficultyBadge += '</span></span>';
                                 challengeboxes[difficulty-1].push("<div class='challengeBox'><span class=title>" + challenges[c].title + "</span>" + difficultyBadge + "<p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>");
                             };
                             for (var d=0;d<3;d++) {
-                                console.log('adding challenges of difficulty ' + d);
                                 for (challengebox in challengeboxes[d]) {
                                     dialogHTML += challengeboxes[d][challengebox];
                                 }
@@ -684,18 +684,22 @@ var MRManager = (function () {
   };
   
     var presentChallengeDialog = function () {
-            $('.dialog').fadeOut({
-                complete: function () {
-                    var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
-                    var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
-                    var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
-                    var dialogHTML = "<h1>Welcome to MapRoulette!</h1>" +
-                        "<p>You will be working on this challenge:</p>" +
-                        "<h2>" + challenge.title + "</h2>" +
-                        "<p>" + challenge.description + "</p>" + OKButton + helpButton + changeChallengeButton;
-                    $('.dialog').html(dialogHTML).fadeIn();
-                }
-            });
+            if (!challenge.slug) {
+                presentChallengeSelectionDialog();
+            } else {
+                $('.dialog').fadeOut({
+                    complete: function () {
+                        var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
+                        var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
+                        var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
+                        var dialogHTML = "<h1>Welcome to MapRoulette!</h1>" +
+                            "<p>You will be working on this challenge:</p>" +
+                            "<h2>" + challenge.title + "</h2>" +
+                            "<p>" + challenge.description + "</p>" + OKButton + helpButton + changeChallengeButton;
+                        $('.dialog').html(dialogHTML).fadeIn();
+                    }
+                });
+            }
         };
 
         var readyToEdit = function () {
@@ -735,7 +739,7 @@ var MRManager = (function () {
                 }
             });
             challenge.slug = slug;
-            selectChallenge();
+            selectChallenge(false);
             task = {};
             nextTask();
         };
@@ -844,6 +848,7 @@ var MRManager = (function () {
         }
 
         var parseHash = function () {
+            console.log('parsing hash');
             if (location.hash) {
                 var h = location.hash;
                 if (h.indexOf('#t=') == 0) {
@@ -857,7 +862,7 @@ var MRManager = (function () {
                 };
                 if (h.indexOf('#p=') == 0) {
                     // we have a request for location / difficulty
-                    // looking like #q=1/-122.432/44.23123
+                    // looking like #p=1/-122.432/44.23123
                     // (difficulty/lon/lat)
                     var res = h.substr(3).split('/');
                     difficulty = res[0];
