@@ -69,6 +69,15 @@ def checkout_repo(instance, branch=None):
         sudo(cmd, user="www-data")
 
 
+def flask_manage(instance, command):
+    dirname = "/srv/www/%s" % instance
+    cmd = "export MAPROULETTE_SETTINGS=%s/config.py &&\
+    source %s/virtualenv/bin/activate && python\
+    manage.py %s" % (dirname, dirname, command)
+    with cd("%s/htdocs/maproulette" % dirname):
+        sudo(cmd, user="www-data")
+
+
 def install_python_dependencies(instance):
     dirname = "/srv/www/%s" % instance
     cmd = 'source %s/virtualenv/bin/activate && pip\
@@ -141,8 +150,8 @@ def setup_postgres_permissions():
         print(red(pg_hba_fname + "is not present on the filesystem"))
         exit()
     sed(pg_hba_fname,
-        "local\s+all\s+all\s+peer",
-        "local\tall\t\tall\t\t\t\t\ttrust",
+        "host\s*all\s*all\s*127.0.0.1/32\s*md5",
+        "host\tall\tall\t127.0.0.1/32\ttrust",
         use_sudo="yes")
     restart_postgres()
 
@@ -168,9 +177,9 @@ def create_databases():
     sudo("createdb -O osm maproulette", user='postgres')
     sudo("createdb -O osm maproulette_test", user='postgres')
     sudo("createdb -O osm maproulette_dev", user='postgres')
-    sudo("psql -U osm -d maproulette -c 'CREATE EXTENSION postgis'", user='postgres')
-    sudo("psql -U osm -d maproulette_test -c 'CREATE EXTENSION postgis'", user='postgres')
-    sudo("psql -U osm -d maproulette_dev -c 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -h localhost -d maproulette -c 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -h localhost -d maproulette_test -c 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -h localhost -d maproulette_dev -c 'CREATE EXTENSION postgis'", user='postgres')
 
 
 def setup_system():
@@ -191,6 +200,7 @@ def create_deployment(instance, setting="dev", branch=None):
     setup_uwsgi_file(instance)
     setup_nginx_file(instance)
     setup_config_file(instance, setting)
+    flask_manage(instance, command='create_db')
     restart_uwsgi()
     restart_nginx()
 
