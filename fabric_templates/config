@@ -12,7 +12,7 @@ SECRET_KEY = 'een ei is geen ei twee ei is een half ei'
 {% endif %}
 
 # The database connection
-SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/{{db}}"
+SQLALCHEMY_DATABASE_URI = "postgresql://osm@localhost/{{db}}"
 
 # show a teaser page instead of the real thing
 TEASER = False
