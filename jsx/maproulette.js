@@ -379,6 +379,11 @@ var MRManager = (function () {
                 } else if (jqxhr.status == 404) {
                     // the challenge or task cannot be found - assuming the challenge is no longer active.
                     presentChallengeComplete();
+                } else if (jqxhr.status === 0) {
+                    // status code 0 is returned if remote control does not respond
+                    notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?', {
+                        type: 'error'
+                    });
                 }
             });
 
@@ -415,7 +420,6 @@ var MRManager = (function () {
          * get a named, or random challenge
          */
         var selectChallenge = function (presentDialog) {
-            console.log('going to select challenge');
             // by default, present the challenge dialog after selecting the challenge.
             presentDialog = typeof presentDialog !== 'undefined' ? presentDialog : true;
             var url = "";
@@ -435,7 +439,6 @@ var MRManager = (function () {
                 async: false,
                 success: function (data) {
                     challenge = data;
-                    console.log('selected challenge ' + challenge.slug);
                     // set the challenge cookie
                     $.cookie('challenge', challenge.slug);
                     // update the challenge detail UI elements
@@ -745,7 +748,6 @@ var MRManager = (function () {
         };
 
         var userPreferences = function () {
-            console.log('user setting preferences');
             //FIXME implement
         };
 
@@ -848,7 +850,6 @@ var MRManager = (function () {
         }
 
         var parseHash = function () {
-            console.log('parsing hash');
             if (location.hash) {
                 var h = location.hash;
                 if (h.indexOf('#t=') == 0) {
