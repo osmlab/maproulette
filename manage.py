@@ -114,5 +114,30 @@ def create_testdata(challenges=10, tasks=100):
     # commit the generated tasks and the challenge to the database.
     db.session.commit()
 
+
+@manager.command
+def clean_stale_tasks():
+
+    from maproulette.models import db, Task, Action
+    from sqlalchemy.sql.functions import max
+    from datetime import datetime, timedelta
+    import pytz
+
+    current_time = datetime.now(pytz.utc)
+    stale_threshold = current_time - timedelta(hours=1)
+    counter = 0
+
+    for task in db.session.query(Task).filter(
+        Task.currentaction.in_(['assigned', 'editing'])).join(
+        Task.actions).group_by(
+        Task.id).having(max(Action.timestamp) < stale_threshold).all():
+        task.append_action(Action("available"))
+        db.session.add(task)
+        print "setting task %s to available" % (task.identifier)
+        counter += 1
+    db.session.commit()
+    print 'done. %i tasks made available' % counter
+
+
 if __name__ == "__main__":
     manager.run()
