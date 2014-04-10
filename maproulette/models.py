@@ -13,8 +13,6 @@ from maproulette import app
 from flask import session
 from shapely.geometry import Polygon
 import pytz
-from re import match
-from sqlalchemy.orm import validates
 
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
@@ -345,8 +343,8 @@ class Task(db.Model):
         self.actions.append(action)
         # duplicate the action status string in the tasks table to save lookups
         self.currentaction = action.status
-        if action.status == 'fixed':
-            self.validate_fixed()
+        # if action.status == 'fixed':
+        #     self.validate_fixed()
 
     def update(self, new_values, geometries):
         """This updates a task based on a dict with new values"""
