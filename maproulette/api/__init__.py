@@ -84,7 +84,6 @@ api = Api(app)
 def output_json(data, code, headers=None):
     """Automatic JSON / GeoJSON output"""
     # return empty result if data contains nothing
-    app.logger.debug(data)
     if not data:
         resp = make_response(geojson.dumps({}), code)
     # if this is a Shapely object, dump it as geojson
@@ -358,15 +357,6 @@ class ApiChallengeTask(ProtectedResource):
         assign = args['assign']
         lon = args['lon']
         lat = args['lat']
-
-        app.logger.info(
-            "{user} requesting task from {challenge} near\
-             ({lon}, {lat}) assiging: {assign}".format(
-            user=osmid,
-            challenge=slug,
-            lon=lon,
-            lat=lat,
-            assign=assign))
 
         task = None
         if lon and lat:

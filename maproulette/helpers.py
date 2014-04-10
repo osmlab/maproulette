@@ -135,7 +135,6 @@ def get_random_task(challenge):
                                   'created']),
                               Task.random < rn)
 
-    app.logger.debug(q)
     return q.first()
 
 
