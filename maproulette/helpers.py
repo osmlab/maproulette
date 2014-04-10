@@ -6,7 +6,7 @@ from functools import wraps
 import json
 from maproulette import app
 from shapely.geometry import MultiPoint
-from random import random
+from random import random, seed
 
 
 def signed_in():
@@ -113,6 +113,7 @@ def localonly(f):
 def get_random_task(challenge):
     """Get a random task"""
 
+    seed()
     rn = random()
 
     # get a random task. first pass
