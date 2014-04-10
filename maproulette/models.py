@@ -343,6 +343,7 @@ class Task(db.Model):
         self.actions.append(action)
         # duplicate the action status string in the tasks table to save lookups
         self.currentaction = action.status
+        db.session.commit()
         # if action.status == 'fixed':
         #     self.validate_fixed()
 
