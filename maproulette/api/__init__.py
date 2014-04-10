@@ -367,6 +367,7 @@ class ApiChallengeTask(ProtectedResource):
             # If no location is specified, or no tasks were found, gather
             # random tasks
             task = get_random_task(challenge)
+            app.logger.debug('got task %s' % task.id)
             # If no tasks are found with this method, then this challenge
             # is complete
         if task is None:

@@ -6,7 +6,7 @@ from functools import wraps
 import json
 from maproulette import app
 from shapely.geometry import MultiPoint
-from random import random, seed
+from random import random
 
 
 def signed_in():
@@ -113,8 +113,8 @@ def localonly(f):
 def get_random_task(challenge):
     """Get a random task"""
 
-    seed()
     rn = random()
+    app.logger.debug(rn)
 
     # get a random task. first pass
     q = Task.query.filter(Task.challenge_slug == challenge.slug,
@@ -122,7 +122,7 @@ def get_random_task(challenge):
                               'available',
                               'skipped',
                               'created']),
-                          Task.random >= rn)
+                          Task.random >= rn).order_by(Task.random)
     if q.first() is None:
         # we may not have gotten one if there is no task with
         # Task.random <= the random value. chance of this gets
@@ -133,7 +133,7 @@ def get_random_task(challenge):
                                   'available',
                                   'skipped',
                                   'created']),
-                              Task.random < rn)
+                              Task.random < rn).order_by(Task.random)
 
     return q.first()
 
