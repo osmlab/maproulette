@@ -6,6 +6,7 @@ from functools import wraps
 import json
 from maproulette import app
 from shapely.geometry import MultiPoint
+from random import random
 
 
 def signed_in():
@@ -112,19 +113,29 @@ def localonly(f):
 def get_random_task(challenge):
     """Get a random task"""
 
-    tasks = Task.query.filter(Task.challenge_slug == challenge.slug,
+    rn = random()
+
+    # get a random task. first pass
+    q = Task.query.filter(Task.challenge_slug == challenge.slug,
+                          Task.currentaction.in_([
+                              'available',
+                              'skipped',
+                              'created']),
+                          Task.random >= rn)
+    if q.first() is None:
+        # we may not have gotten one if there is no task with
+        # Task.random <= the random value. chance of this gets
+        # bigger as the remaining available task number gets
+        # smaller
+        q = Task.query.filter(Task.challenge_slug == challenge.slug,
                               Task.currentaction.in_([
                                   'available',
                                   'skipped',
-                                  'created'])).limit(1000).all()
-    app.logger.debug('got %i tasks' % (len(tasks)))
-    for t in tasks:
-        if t.is_available:
-            app.logger.debug('%s is available, returning' % (t.identifier))
-            return t
-        app.logger.debug('%s is not available' % (t.identifier))
-    app.logger.debug('no tasks available')
-    return None
+                                  'created']),
+                              Task.random < rn)
+
+    app.logger.debug(q)
+    return q.first()
 
 
 def get_envelope(geoms):
