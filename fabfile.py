@@ -1,6 +1,6 @@
 from fabric.api import run
 from fabric.colors import red
-from fabric.contrib.files import exists, cd, upload_template, sed, append
+from fabric.contrib.files import exists, cd, upload_template, sed, append, contains
 from fabric.contrib.project import rsync_project
 from fabric.operations import sudo, local
 
@@ -47,8 +47,8 @@ def install_packages():
 def create_deploy_directories(instance):
     basedir = "/srv/www/%s" % instance
     sudo("mkdir -p %s" % basedir)
-    sudo("mkdir -p %s/virtualenv %s/htdocs %s/log" %
-         (basedir, basedir, basedir))
+    sudo("mkdir -p %s/virtualenv %s/htdocs %s/log %s/cron" %
+         (basedir, basedir, basedir, basedir))
     sudo("chown -R www-data:www-data %s" % basedir)
 
 
@@ -76,6 +76,23 @@ def flask_manage(instance, command):
     manage.py %s" % (dirname, dirname, command)
     with cd("%s/htdocs/maproulette" % dirname):
         sudo(cmd, user="www-data")
+
+
+def setup_cron(instance):
+    dirname = "/srv/www/%s" % instance
+    upload_template("cron", "%s/cron/scrub_stale_tasks.sh" % dirname,
+                    use_sudo=True,
+                    use_jinja=True,
+                    template_dir="fabric_templates",
+                    context={"instance": instance})
+    sudo('chown www-data:www-data %s/cron/scrub_stale_tasks.sh' % dirname)
+    sudo('chmod 0755 %s/cron/scrub_stale_tasks.sh' % dirname, user='www-data')
+    sudo('crontab -l >/tmp/crondump', user='www-data')
+    if not contains('/tmp/crondump', 'scrub_stale_tasks.sh'):
+        sudo('echo "15 * * * * %s/cron/scrub_stale_tasks.sh >>'
+             ' %s/log/scrub_stale_tasks.log" >> /tmp/crondump' %
+             (dirname, dirname), user='www-data')
+        sudo('crontab /tmp/crondump', user='www-data')
 
 
 def install_python_dependencies(instance):
@@ -129,7 +146,8 @@ def setup_config_file(instance, setting):
 
 
 def jsx():
-    local("cat ./jsx/maproulette.js | jsx > ./maproulette/static/js/maproulette.js")
+    local("cat ./jsx/maproulette.js | jsx >"
+          " ./maproulette/static/js/maproulette.js")
 
 
 def rsync(instance, reload_pip=False):
@@ -142,7 +160,8 @@ def rsync(instance, reload_pip=False):
 
 
 def git_pull(instance):
-    sudo("cd /srv/www/%s/htdocs/maproulette && git pull" % instance, user="www-data")
+    sudo("cd /srv/www/%s/htdocs/maproulette && git pull" %
+         instance, user="www-data")
 
 
 def setup_postgres_permissions():
@@ -159,7 +178,8 @@ def setup_postgres_permissions():
 def install_postgis():
     # from
     # http://trac.osgeo.org/postgis/wiki/UsersWikiPostGIS21UbuntuPGSQL93Apt
-    append("/etc/apt/sources.list", "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main", use_sudo=True)
+    append("/etc/apt/sources.list", "deb http://apt.postgresql.org/"
+           "pub/repos/apt/ precise-pgdg main", use_sudo=True)
     run("wget --quiet -O - http://apt.postgresql.org/pub/"
         "repos/apt/ACCC4CF8.asc | sudo apt-key add -")
     update_packages()
@@ -177,9 +197,12 @@ def create_databases():
     sudo("createdb -O osm maproulette", user='postgres')
     sudo("createdb -O osm maproulette_test", user='postgres')
     sudo("createdb -O osm maproulette_dev", user='postgres')
-    sudo("psql -U osm -h localhost -d maproulette -c 'CREATE EXTENSION postgis'", user='postgres')
-    sudo("psql -U osm -h localhost -d maproulette_test -c 'CREATE EXTENSION postgis'", user='postgres')
-    sudo("psql -U osm -h localhost -d maproulette_dev -c 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -h localhost -d maproulette -c"
+         " 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -h localhost -d maproulette_test -c"
+         " 'CREATE EXTENSION postgis'", user='postgres')
+    sudo("psql -U osm -h localhost -d maproulette_dev -c"
+         " 'CREATE EXTENSION postgis'", user='postgres')
 
 
 def setup_system():
@@ -199,6 +222,7 @@ def create_deployment(instance, setting="dev", branch=None):
     install_python_dependencies(instance)
     setup_uwsgi_file(instance)
     setup_nginx_file(instance)
+    setup_cron(instance)
     setup_config_file(instance, setting)
     flask_manage(instance, command='create_db')
     restart_uwsgi()
