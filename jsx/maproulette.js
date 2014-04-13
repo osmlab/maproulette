@@ -663,8 +663,8 @@ var MRManager = (function () {
             });
         };
 
-    var presentChallengeHelp = function () {
-        React.renderComonent(
+    var presentChallengeHelp = function (){
+        React.renderComponent(
                 <div>
                 <h1>{challenge.title} Help</h1>
                 <div className="text">
