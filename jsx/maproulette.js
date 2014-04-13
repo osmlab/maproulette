@@ -685,25 +685,27 @@ var MRManager = (function () {
         </div>, document.getElementById('dialog'));
     $('#dialog').fadeIn();
   };
+    
 
-    var presentChallengeDialog = function () {
-            if (!challenge.slug) {
-                presentChallengeSelectionDialog();
-            } else {
-                $('#dialog').fadeOut({
-                    complete: function () {
-                        var OKButton = "<div class='button' onclick='MRManager.readyToEdit()'>Let's go!</div>";
-                        var helpButton = "<div class='button' onclick='MRManager.presentChallengeHelp()'>More help</div>";
-                        var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
-                        var dialogHTML = "<h1>Welcome to MapRoulette!</h1>" +
-                            "<p>You will be working on this challenge:</p>" +
-                            "<h2>" + challenge.title + "</h2>" +
-                            "<p>" + challenge.description + "</p>" + OKButton + helpButton + changeChallengeButton;
-                        $('#dialog').html(dialogHTML).fadeIn();
-                    }
-                });
-            }
+    var presentChallengeDialog = function(){
+        if (!challenge.slug){
+            presentChallengeSelectionDialog();
         };
+        React.renderComponent(
+            <div>
+                <h1>Welcome to MapRoulette!</h1>
+                <p>You will be working on this challenge:</p>
+                <h2>{challenge.title}</h2>
+                <p>{challenge.description}</p>
+                <Button onClick={MRManager.readyToEdit}>
+                Let's go!</Button>
+                <Button onClick={MRManager.presentChallengeSelectionDialog}>
+                <Button onClick={MRManager.presentChallengeHelp}>
+                More Help</Button>
+                Pick another challenge</Button>
+            </div>, document.getElementById('dialog'));
+        $("#dialog").fadeIn();
+    };
 
         var readyToEdit = function () {
             $('#dialog').fadeOut();
