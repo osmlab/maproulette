@@ -11,6 +11,88 @@ var Button = React.createClass({
     );
   }});
 
+var CancelButton = React.createClass({
+  render: function(){
+    return (
+      <div className="button cancel"
+           onClick={this.props.onClick}>
+        {this.props.children}
+      </div>
+    );
+  }});
+
+var DifficultyBadge = React.createClass({
+    render: function(){
+        var value = parseInt(this.props.difficulty);
+        switch (value) {
+            case 1:
+            return (
+                <span className="difficultyBadge">
+                <span className="d1">
+                EASY</span></span>
+            );
+            case 2:
+            return (
+                <span className="difficultyBadge">
+                <span className="d2">
+                MODERATE</span></span>
+            );
+            case 3:
+            return (
+                <span className="difficultyBadge">
+                <span className="d3">
+                HARD</span></span>);
+        };
+    }
+});
+
+var ChallengeBox = React.createClass({
+    render: function(){
+        var slug = this.props.challenge.slug;
+        var pickMe = function(){
+            MRManager.userPickChallenge(slug);
+        };
+        return(
+            <div className="challengeBox">
+            <span className="title">{this.props.challenge.title}</span>
+            <DifficultyBadge difficulty={this.props.challenge.difficulty} />
+            <p>{this.props.challenge.blurb}</p>
+            <Button onClick={pickMe}>Work on this challenge</Button>
+            </div>
+        );
+    }
+});
+
+var ChallengeSelectionDialog = React.createClass({
+    getInitialState: function() {
+        return {challenges: []};
+        },
+    componentWillMount: function(){
+        $.ajax({
+            url: "/api/challenges",
+            dataType: 'json',
+            success: function(data) {
+                data.sort(function(a, b){
+                    return(a.difficulty - b.difficulty)
+                });
+                this.setState({challenges: data});
+            }.bind(this)
+        })
+    },
+    render: function(){
+        var challengeBoxes = this.state.challenges.map(function(challenge){
+            return <ChallengeBox challenge={challenge} />;
+        });
+        return (
+            <div>
+            <h2>Pick a different challenge</h2>
+            {challengeBoxes}
+            <CancelButton onClick={MRManager.readyToEdit}>Nevermind</CancelButton>
+            </div>
+        );
+    }}
+);
+
 // Misc functions
 
 var signIn = function(){
@@ -622,7 +704,7 @@ var MRManager = (function () {
         };
 
     var presentChallengeComplete = function(){
-        react.renderComponent(
+        React.renderComponent(
             <div>
             <p>The challenge you were working on is all done.
                Thanks for helping out!
@@ -635,33 +717,8 @@ var MRManager = (function () {
 
         var presentChallengeSelectionDialog = function () {
             $('controlpanel').fadeOut();
-            $('#dialog').fadeOut({
-                complete: function () {
-                    $.ajax({
-                        url: "/api/challenges",
-                        success: function (data) {
-                            challenges = data;
-                            cancelButton = "<div class='button cancel' onclick='MRManager.readyToEdit()'>Nevermind</div>";
-                            dialogHTML = "<h2>Pick a different challenge</h2>";
-                            var challengeboxes = [[],[],[]];
-                            for (c in challenges) {
-                                var difficulty = parseInt(challenges[c].difficulty);
-                                var difficultyBadge = '<span class=difficultyBadge><span class=d' + difficulty + '>';
-                                difficultyBadge += difficulty==1?'EASY':difficulty==2?'MODERATE':'HARD';
-                                difficultyBadge += '</span></span>';
-                                challengeboxes[difficulty-1].push("<div class='challengeBox'><span class=title>" + challenges[c].title + "</span>" + difficultyBadge + "<p>" + challenges[c].blurb + "<div class='button' onclick='MRManager.userPickChallenge(encodeURI(\"" + challenges[c].slug + "\"))'>Work on this challenge!</div></div>");
-                            };
-                            for (var d=0;d<3;d++) {
-                                for (challengebox in challengeboxes[d]) {
-                                    dialogHTML += challengeboxes[d][challengebox];
-                                }
-                            };
-                            dialogHTML += "<div class='button' onClick=MRManager.readyToEdit()>Nevermind</div";
-                            $('#dialog').html(dialogHTML).fadeIn();
-                        }
-                    });
-                }
-            });
+            React.renderComponent(<ChallengeSelectionDialog />, document.getElementById('dialog'));
+            $('#dialog').fadeIn();
         };
 
     var presentChallengeHelp = function (){
@@ -694,17 +751,19 @@ var MRManager = (function () {
         };
         React.renderComponent(
             <div>
-                <h1>Welcome to MapRoulette!</h1>
-                <p>You will be working on this challenge:</p>
-                <h2>{challenge.title}</h2>
-                <p>{challenge.description}</p>
-                <Button onClick={MRManager.readyToEdit}>
-                Let's go!</Button>
-                <Button onClick={MRManager.presentChallengeSelectionDialog}>
-                <Button onClick={MRManager.presentChallengeHelp}>
-                More Help</Button>
-                Pick another challenge</Button>
-            </div>, document.getElementById('dialog'));
+            <h1>Welcome to MapRoulette!</h1>
+            <p>You will be working on this challenge:</p>
+            <h2>{challenge.title}</h2>
+            <p>{challenge.description}</p>
+            <Button onClick={MRManager.readyToEdit}>
+            Let&#39;s go!
+            </Button>
+            <Button onClick={MRManager.presentChallengeSelectionDialog}>
+            Pick another challenge</Button>
+            <Button onClick={MRManager.presentChallengeHelp}>
+            More Help</Button>
+            </div>,
+            document.getElementById('dialog'));
         $("#dialog").fadeIn();
     };
 
