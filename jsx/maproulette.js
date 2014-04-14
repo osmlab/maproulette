@@ -621,16 +621,17 @@ var MRManager = (function () {
             $('#dialog').html(dialogHTML).fadeIn();
         };
 
-        var presentChallengeComplete = function () {
-            $('controlpanel').fadeOut();
-            $('#dialog').fadeOut({
-                complete: function () {
-                    var changeChallengeButton = "<div class='button' onclick='MRManager.presentChallengeSelectionDialog()'>Pick another challenge</div>";
-                    var dialogHTML = "The challenge you were working on is all done. Thanks for helping out!<p>" + changeChallengeButton;
-                    $('#dialog').html(dialogHTML).fadeIn();
-                }
-            });
-        };
+    var presentChallengeComplete = function(){
+        react.renderComponent(
+            <div>
+            <p>The challenge you were working on is all done.
+               Thanks for helping out!
+            </p>
+            <Button onClick={MRManager.presentChallengeSelectionDialog}>
+              Pick another challenge</Button>
+            </div>, document.getElementById('dialog'));
+        $('#dialog').fadeIn();
+    };
 
         var presentChallengeSelectionDialog = function () {
             $('controlpanel').fadeOut();
