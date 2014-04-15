@@ -44,6 +44,16 @@ def install_packages():
          ' '.join(packages), shell=False)
 
 
+def install_nodejs():
+    sudo('sudo add-apt-repository -y ppa:chris-lea/node.js')
+    update_packages()
+    sudo('apt-get -q install nodejs')
+
+
+def install_react_tools():
+    sudo('npm install -g react-tools')
+
+
 def create_deploy_directories(instance):
     basedir = "/srv/www/%s" % instance
     sudo("mkdir -p %s" % basedir)
@@ -145,13 +155,20 @@ def setup_config_file(instance, setting):
     restart_uwsgi()
 
 
-def jsx():
-    local("cat ./jsx/maproulette.js | jsx >"
-          " ./maproulette/static/js/maproulette.js")
+def compile_jsx(instance=None):
+    if not instance:
+        # we are compiling locally
+        local("cat ./jsx/maproulette.js | jsx >"
+              " ./maproulette/static/js/maproulette.js")
+    else:
+        basedir = "/srv/www/%s" % instance
+        sudo("cat %s/htdocs/maproulette/jsx/maproulette.js "
+             "| jsx > %s/htdocs/maproulette/maproulette/static"
+             "/js/maproulette.js" % (basedir, basedir))
 
 
 def rsync(instance, reload_pip=False):
-    jsx()
+    compile_jsx()
     basedir = "/srv/www/%s" % instance
     target = basedir + '/htdocs/'
     rsync_project(target, delete="yes", exclude=".git")
@@ -205,7 +222,7 @@ def create_databases():
          " 'CREATE EXTENSION postgis'", user='postgres')
 
 
-def setup_system():
+def setup_system(with_react_tools=True):
     update_packages()
     upgrade_packages()
     install_packages()
@@ -213,6 +230,9 @@ def setup_system():
     setup_postgres_permissions()
     create_db_user()
     create_databases()
+    if with_react_tools:
+        install_nodejs()
+        install_react_tools()
 
 
 def create_deployment(instance, setting="dev", branch=None):
@@ -228,6 +248,12 @@ def create_deployment(instance, setting="dev", branch=None):
     restart_uwsgi()
     restart_nginx()
 
+
+def update_application(instance):
+    git_pull(instance)
+    compile_jsx(instance)
+    restart_uwsgi()
+    
 
 def deploy(instance, setting="dev", branch=None):
     setup_system()
