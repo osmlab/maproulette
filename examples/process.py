@@ -17,6 +17,7 @@ CFS_STATUSES = ('created', 'falsepositive', 'skipped')
 
 HEADERS = {'content-type': 'application/json'}
 
+
 def is_running_instance(api_url):
     try:
         r = requests.get(base + 'ping')
@@ -39,123 +40,6 @@ def create_challenge_if_not_exists(slug, title):
             data=json.dumps({"title": title, "active": True})
         )
     print 'challenge existed.'
-
-
-def get_current_task_statuses(slug):
-    r = requests.get(mr_api_querystatuses_endpoint.format(slug=slug))
-    return dict((s['identifier'], s['status']) for s in r.json())
-
-
-def generate_id(slug, osmid, payload):
-    # generate a unique identifier
-    payload['geometries']['features'] = \
-        sorted(payload['geometries']['features'])
-
-    digest = hashlib.md5(json.dumps(payload), sort_keys=True).hexdigest()
-    return "{slug}-{osmid}-{digest}".format(slug=slug,
-                                            osmid=osmid,
-                                            digest=digest
-                                            )
-
-
-def prepare_task(node, args, osmid, geom):
-        instruction = node.get("instruction", None) or args.instruction or ''
-
-        payload = json.dumps({"instruction": instruction,
-                              "geometries": geom
-                              }
-                             )
-
-        identifier = node.get('id', None)
-
-        if identifier is None:
-            identifier = generate_id(slug=args.challenge_slug,
-                                     osmid=osmid,
-                                     payload=payload
-                                     )
-        return identifier, payload
-
-
-def select_tasks(newtasks, oldtasks):
-    for identifier, payload in newtasks:
-        if identifier in oldtasks.keys():
-            if oldtasks[identifier] in CFS_STATUSES:
-                # if task is (created, falsepositive, skipped) skip it
-                continue
-
-            else:
-                # if task is (fixed, closed) then it should not be selected
-                # in the first place, raise an error
-                continue
-        else:
-            # altrimenti (l'identificativo non esiste)
-            # è un nuovo task, lo carico
-            yield identifier, payload
-
-
-def post_tasks(slug, newtasks, oldtasks):
-    # and fire!
-    s = requests.session()
-
-    task_requests = []
-    newids = set()
-    for identifier, payload in select_tasks(newtasks, oldtasks):
-        newids.add(identifier)
-        task_requests.append(
-            grequests.put(
-                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                session=s,
-                data=payload,
-                headers=HEADERS))
-
-    return grequests.map(task_requests), newids
-
-
-def update_tasks_instruction(slug, tasks, instruction):
-    s = requests.session()
-
-    task_requests = []
-    for identifier, payload in tasks:
-        task_requests.append(
-            grequests.put(
-                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                session=s,
-                data=payload,
-                headers=HEADERS))
-
-    return grequests.map(task_requests), newids
-
-
-def update_tasks_geometries(slug, tasks):
-    s = requests.session()
-
-    task_requests = []
-    for identifier in closeids:
-        task_requests.append(
-            grequests.put(
-                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                session=s,
-                data=payload,
-                headers=HEADERS))
-
-    return grequests.map(task_requests), newids
-
-
-def close_tasks(slug, closeids):
-    payload = {"status" : "deleted"}
-
-    s = requests.session()
-
-    task_requests = []
-    for identifier in closeids:
-        task_requests.append(
-            grequests.put(
-                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                session=s,
-                data=payload,
-                headers=HEADERS))
-
-    return grequests.map(task_requests), newids
 
 
 def get_tasks_from_db(args):
@@ -210,14 +94,121 @@ def get_tasks_from_json(args):
         tasks = json.load(infile)
 
     for task in tasks:
-        osmid = task['geometries']['features'][0]['properties']['osmid']
-        geom = task['geometries']
+        if not args.close:
+            osmid = task['geometries']['features'][0]['properties']['osmid']
+            geom = task['geometries']
 
-        yield prepare_task(node=task,
-                           args=args,
-                           osmid=osmid,
-                           geom=geom
-                           )
+            yield prepare_task(node=task,
+                               args=args,
+                               osmid=osmid,
+                               geom=geom
+                               )
+        else:
+            for task in tasks:
+                yield task
+
+
+def get_current_task_statuses(slug):
+    r = requests.get(mr_api_querystatuses_endpoint.format(slug=slug))
+    return dict((s['identifier'], s['status']) for s in r.json())
+
+
+def generate_id(slug, osmid, payload):
+    # generate a unique identifier
+    payload['geometries']['features'] = \
+        sorted(payload['geometries']['features'])
+
+    digest = hashlib.md5(json.dumps(payload, sort_keys=True)).hexdigest()
+    return "{slug}-{osmid}-{digest}".format(slug=slug,
+                                            osmid=osmid,
+                                            digest=digest
+                                            )
+
+
+def prepare_task(node, args, osmid, geom):
+        instruction = node.get("instruction", None) or args.instruction or ''
+
+        payload = {"instruction": instruction,
+                   "geometries": geom
+                   }
+
+        identifier = node.get('id', None)
+
+        if identifier is None:
+            identifier = generate_id(slug=args.challenge_slug,
+                                     osmid=osmid,
+                                     payload=payload
+                                     )
+        return identifier, payload
+
+
+def select_tasks(newtasks, oldtasks):
+    for identifier, payload in newtasks:
+        if identifier in oldtasks.keys():
+            if oldtasks[identifier] in CFS_STATUSES:
+                # if task is already there, skip it
+                continue
+        else:
+            # new task, create it
+            yield identifier, payload
+
+
+def post_tasks(slug, tasks):
+    # and fire!
+    s = requests.session()
+
+    task_requests = []
+    newids = set()
+    for identifier, payload in tasks:
+        newids.add(identifier)
+        task_requests.append(
+            grequests.put(
+                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
+                session=s,
+                data=payload,
+                headers=HEADERS))
+
+    return grequests.map(task_requests), newids
+
+
+def update_tasks(slug, tasks, instruction=None, statuses=None):
+    s = requests.session()
+
+    task_requests = []
+    for identifier, payload in tasks:
+        if instruction is not None:
+            payload = {"instruction": instruction,
+                       "geometries": payload["geometries"]
+                       }
+
+        if identifier not in statuses.keys():
+            continue
+
+        task_requests.append(
+            grequests.put(
+                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
+                session=s,
+                data=payload,
+                headers=HEADERS))
+
+    return grequests.map(task_requests)
+
+
+def close_tasks(slug, closeids):
+    payload = {"status": "deleted"}
+
+    s = requests.session()
+
+    task_requests = []
+    for identifier in closeids:
+        task_requests.append(
+            grequests.put(
+                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
+                session=s,
+                data=payload,
+                headers=HEADERS))
+
+    return grequests.map(task_requests)
 
 
 def write_responses(responses, output):
@@ -318,7 +309,6 @@ if __name__ == "__main__":
                              help='JSON file with tasks')
 
     args = parser.parse_args()
-    print args
 
     if args.verbose:
         rootlogger.setLevel(logging.INFO)
@@ -357,7 +347,9 @@ if __name__ == "__main__":
         else:
             create_challenge_if_not_exists(slug, challenge_title)
 
-    statuses = get_current_task_statuses(slug)
+    statuses = {}
+    if not args.dry:
+        statuses = get_current_task_statuses(slug)
 
     tasks = []
     if 'query' in args:
@@ -370,11 +362,13 @@ if __name__ == "__main__":
     if not args.dry or args.force_post:
         if not (args.close or
                 args.update_geometries or args.update_instruction):
+
+            tasks = select_tasks(tasks, statuses)
             responses, newids = post_tasks(slug=slug, tasks=tasks)
 
             write_responses(responses, args.output)
 
-            oldids = set(old 
+            oldids = set(old
                          for old in statuses.keys()
                          if old['status'] in CFS_STATUSES)
 
@@ -382,20 +376,19 @@ if __name__ == "__main__":
             responses = close_tasks(slug, closeids)
 
         else:
-            if args.update_instruction:
-                # prepare stuff to update/close
-                responses = update_tasks_instruction(
-                    slug=slug,
-                    tasks=tasks,
-                    instructions=args.instruction)
-
-            elif args.update_geometries:
-                responses = update_tasks_geometries(slug=slug, tasks=tasks)
-
+            if args.update_instruction or args.update_geometries:
+                instructions = args.instruction or None
+                responses = update_tasks(slug=slug,
+                                         tasks=tasks,
+                                         instructions=instructions,
+                                         statuses=statuses
+                                         )
             else:
                 # args.close = True
-                # calculate closeids
-                responses = close_tasks(slug=slug, closeids=closeids)
+                responses = close_tasks(slug=slug,
+                                        closeids=tasks,
+                                        statuses=statuses
+                                        )
 
         write_responses(responses, args.output)
 
