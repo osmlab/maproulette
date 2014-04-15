@@ -97,8 +97,11 @@ def setup_cron(instance):
                     context={"instance": instance})
     sudo('chown www-data:www-data %s/cron/scrub_stale_tasks.sh' % dirname)
     sudo('chmod 0755 %s/cron/scrub_stale_tasks.sh' % dirname, user='www-data')
-    sudo('crontab -l >/tmp/crondump', user='www-data')
+    if exists('/var/spool/cron/crontabs/www-data'):
+        # if an existing crontab file exists, start with that
+        sudo('crontab -l >/tmp/crondump', user='www-data')
     if not contains('/tmp/crondump', 'scrub_stale_tasks.sh'):
+        # check if the job is already in the file
         sudo('echo "15 * * * * %s/cron/scrub_stale_tasks.sh >>'
              ' %s/log/scrub_stale_tasks.log" >> /tmp/crondump' %
              (dirname, dirname), user='www-data')
@@ -222,7 +225,7 @@ def create_databases():
          " 'CREATE EXTENSION postgis'", user='postgres')
 
 
-def setup_system(with_react_tools=True):
+def setup_system():
     update_packages()
     upgrade_packages()
     install_packages()
@@ -230,9 +233,8 @@ def setup_system(with_react_tools=True):
     setup_postgres_permissions()
     create_db_user()
     create_databases()
-    if with_react_tools:
-        install_nodejs()
-        install_react_tools()
+    install_nodejs()
+    install_react_tools()
 
 
 def create_deployment(instance, setting="dev", branch=None):
@@ -245,6 +247,7 @@ def create_deployment(instance, setting="dev", branch=None):
     setup_cron(instance)
     setup_config_file(instance, setting)
     flask_manage(instance, command='create_db')
+    compile_jsx(instance)
     restart_uwsgi()
     restart_nginx()
 
@@ -253,7 +256,7 @@ def update_application(instance):
     git_pull(instance)
     compile_jsx(instance)
     restart_uwsgi()
-    
+
 
 def deploy(instance, setting="dev", branch=None):
     setup_system()
