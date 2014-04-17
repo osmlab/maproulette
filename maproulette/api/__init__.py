@@ -59,7 +59,7 @@ task_fields = {
     'identifier': fields.String(attribute='identifier'),
     'instruction': fields.String(attribute='instruction'),
     'location': PointField,
-    'currentaction': fields.String
+    'status': fields.String
 }
 
 me_fields = {
@@ -309,20 +309,20 @@ class ApiStatsChallenges(ProtectedResource):
 
     def get(self):
         challenges = {}
-        # select count(t.id), t.currentaction, c.slug, c.title from
+        # select count(t.id), t.status, c.slug, c.title from
         # actions a, tasks t, challenges c where a.task_id = t.id and
-        # t.challenge_slug = c.slug group by t.currentaction, c.slug, c.title;
+        # t.challenge_slug = c.slug group by t.status, c.slug, c.title;
         q = db.session.query(
             func.count(Task.id),
             Challenge.slug,
             Challenge.title,
-            Task.currentaction).select_from(Task).join(
+            Task.status).select_from(Task).join(
             Challenge).group_by(
-            Task.currentaction,
+            Task.status,
             Challenge.slug,
             Challenge.title).order_by(
             Challenge.title,
-            Task.currentaction)
+            Task.status)
         for status_count,\
             challenge_slug,\
             challenge_title,\
@@ -367,7 +367,6 @@ class ApiChallengeTask(ProtectedResource):
             # If no location is specified, or no tasks were found, gather
             # random tasks
             task = get_random_task(challenge)
-            app.logger.debug('got task %s' % task.id)
             # If no tasks are found with this method, then this challenge
             # is complete
         if task is None:
@@ -380,7 +379,8 @@ class ApiChallengeTask(ProtectedResource):
                       "subject":
                       "Challenge {} is complete".format(challenge.slug),
                       "text":
-                      "{challenge} has no remaining tasks on server {server}".format(
+                      "{challenge} has no remaining tasks"
+                      " on server {server}".format(
                           challenge=challenge.title,
                           server=url_for('index', _external=True))})
             # Deactivate the challenge
@@ -438,7 +438,7 @@ class ApiChallengeTaskStatus(ProtectedResource):
         """Returns current status for the task identified by
         'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
-        return {'status': task.currentaction}
+        return {'status': task.status}
 
 
 class ApiChallengeTaskGeometries(ProtectedResource):
@@ -502,15 +502,12 @@ class AdminApiChallenge(Resource):
 
     def put(self, slug):
         if challenge_exists(slug):
-            app.logger.debug('challenge exists')
             return {}
         try:
             payload = json.loads(request.data)
         except Exception:
-            app.logger.debug('payload invalid, no json')
             abort(400)
         if not 'title' in payload:
-            app.logger.debug('payload invalid, no title')
             abort(400)
         c = Challenge(
             slug,
@@ -541,7 +538,7 @@ class AdminApiTaskStatuses(Resource):
         challenge = get_challenge_or_404(slug, True, False)
         return [{
             'identifier': task.identifier,
-            'status': task.currentaction} for task in challenge.tasks]
+            'status': task.status} for task in challenge.tasks]
 
 
 class AdminApiUpdateTask(Resource):
@@ -558,8 +555,6 @@ class AdminApiUpdateTask(Resource):
 
         exists = task_exists(slug, identifier)
 
-        app.logger.debug("taskdata: %s" % (taskdata,))
-
         # abort if the taskdata does not contain geometries and it's a new task
         if not 'geometries' in taskdata:
             if not exists:
@@ -567,12 +562,8 @@ class AdminApiUpdateTask(Resource):
         else:
             # extract the geometries
             geometries = taskdata.pop('geometries')
-            app.logger.debug("geometries: %s" % (geometries,))
-            app.logger.debug("features: %s" % (geometries['features'],))
-
             # parse the geometries
             for feature in geometries['features']:
-                app.logger.debug(feature)
                 osmid = feature['properties'].get('osmid')
                 shape = asShape(feature['geometry'])
                 t = TaskGeometry(osmid, shape)
@@ -587,13 +578,11 @@ class AdminApiUpdateTask(Resource):
         # now we check if the task exists
         if exists:
             # if it does, update it
-            app.logger.debug('existing task')
             task = get_task_or_404(slug, identifier)
             if not task.update(taskdata, task_geometries):
                 abort(400)
         else:
             # if it does not, create it
-            app.logger.debug('new task')
             new_task = Task(slug, identifier)
             new_task.update(taskdata, task_geometries)
         return {}
