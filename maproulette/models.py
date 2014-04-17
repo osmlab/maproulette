@@ -189,7 +189,7 @@ class Challenge(db.Model):
         available for this challenge."""
 
         return len(
-            [t for t in self.tasks if t.currentaction in [
+            [t for t in self.tasks if t.status in [
                 'created',
                 'skipped',
                 'available']])
@@ -237,7 +237,7 @@ class Task(db.Model):
         "Action",
         cascade='all,delete-orphan',
         backref=db.backref("task"))
-    currentaction = db.Column(
+    status = db.Column(
         db.String)
     instruction = db.Column(
         db.String)
@@ -264,13 +264,13 @@ class Task(db.Model):
     def has_status(self, statuses):
         if not type(statuses) == list:
             statuses = [statuses]
-        return self.currentaction in statuses
+        return self.status in statuses
 
     @has_status.expression
     def has_status(cls, statuses):
         if not type(statuses) == list:
             statuses = [statuses]
-        return cls.currentaction.in_(statuses)
+        return cls.status.in_(statuses)
 
     @hybrid_property
     def is_available(self):
@@ -283,9 +283,9 @@ class Task(db.Model):
             app.config['TASK_EXPIRATION_THRESHOLD'] >
             self.actions[-1].timestamp)
 
-    # with currentactions as (select distinct on (task_id) timestamp,
+    # with statuses as (select distinct on (task_id) timestamp,
     # status, task_id from actions order by task_id, id desc) select id,
-    # challenge_slug from tasks join currentactions c on (id = task_id)
+    # challenge_slug from tasks join statuses c on (id = task_id)
     # where c.status in ('available','skipped','created') or (c.status in
     # ('editing','assigned') and now() - c.timestamp > '1 hour');
 
@@ -342,7 +342,7 @@ class Task(db.Model):
     def append_action(self, action):
         self.actions.append(action)
         # duplicate the action status string in the tasks table to save lookups
-        self.currentaction = action.status
+        self.status = action.status
         db.session.commit()
         # if action.status == 'fixed':
         #     self.validate_fixed()
