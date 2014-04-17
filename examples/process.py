@@ -3,14 +3,15 @@
 import hashlib
 import psycopg2
 import getpass
-from psycopg2.extras import register_hstore, DictCursor
-from shapely import wkb
+import simplejson
 import requests
 import grequests
 import geojson
 import json
 import argparse
 import logging
+from shapely import wkb
+from psycopg2.extras import register_hstore, DictCursor
 
 
 CFS_STATUSES = ('created', 'falsepositive', 'skipped')
@@ -39,7 +40,8 @@ def create_challenge_if_not_exists(slug, title):
             mr_api_createchallenge_endpoint.format(slug=slug),
             data=json.dumps({"title": title, "active": True})
         )
-    print 'challenge existed.'
+    else:
+        print 'challenge existed.'
 
 
 def get_tasks_from_db(args):
@@ -97,8 +99,6 @@ def get_tasks_from_json(args):
 
     for task in tasks:
         if not args.close:
-            import pdb
-            pdb.set_trace()
             osmid = task['geometries']['features'][0]['properties']['osmid']
             geom = task['geometries']
 
@@ -223,6 +223,9 @@ def write_responses(responses, output):
             except AttributeError:
                 newr = json.dumps({'identifier': r, 'status': 'failed'})
                 outfile.write(str(newr+'\n'))
+            except simplejson.scanner.JSONDecodeError:
+                newr = json.dumps({'identifier': r, 'status': r.status_code})
+                outfile.write(str(newr+'\n'))
 
 
 if __name__ == "__main__":
@@ -295,6 +298,10 @@ if __name__ == "__main__":
                         default=False,
                         action='store_true',
                         help='Enable debugging output of http requests')
+    parser.add_argument('--no-close',
+                        default=False,
+                        action='store_true',
+                        help='Do not close the statuses')
 
     subparsers = parser.add_subparsers(help='Specify the source of the tasks')
 
@@ -375,7 +382,8 @@ if __name__ == "__main__":
             responses, newids = post_tasks(slug=slug, tasks=tasks)
 
             responses = [res
-                         if isinstance(res, requests.models.Response)
+                         if (isinstance(res, requests.models.Response)
+                             and res.ok)
                          else nid
                          for res, nid in zip(responses, newids)
                          ]
@@ -384,10 +392,11 @@ if __name__ == "__main__":
 
             oldids = set(old
                          for old in statuses.keys()
-                         if old['status'] in CFS_STATUSES)
+                         if statuses[old] in CFS_STATUSES)
 
-            closeids = oldids - newids
-            responses = close_tasks(slug, closeids)
+            if not args.no_close:
+                closeids = oldids - newids
+                responses = close_tasks(slug, closeids)
 
         else:
             if args.update_instruction or args.update_geometries:
