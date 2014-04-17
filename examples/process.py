@@ -19,7 +19,7 @@ CFS_STATUSES = ('created', 'falsepositive', 'skipped')
 CLOSING_PAYLOAD = json.dumps({"status": "closed"})
 
 
-DELETING_PAYLOAD = json.dumps({"status": "closed"})
+DELETING_PAYLOAD = json.dumps({"status": "deleted"})
 
 HEADERS = {'content-type': 'application/json'}
 
@@ -217,6 +217,7 @@ def post_tasks(slug, tasks, sync):
 
 
 def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
+    updids = set()
 
     with Requester(sync) as req:
         for identifier, payload in tasks:
@@ -228,27 +229,31 @@ def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
                            "geometries": payload["geometries"]
                            }
 
+            updids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
             req.request(url=url, payload=payload)
 
         responses = req.finish()
 
-    return responses
+    return responses, updids
 
 
 def close_tasks_by_id(slug, closeids, sync=False):
+    closeids = set()
 
     with Requester(sync) as req:
         for identifier in closeids:
+            closeids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
             req.request(url=url, payload=CLOSING_PAYLOAD)
 
         responses = req.finish()
 
-    return responses
+    return responses, closeids
 
 
 def delete_tasks(slug, tasks, statuses, sync=False):
+    delids = set()
 
     with Requester(sync) as req:
         for identifier, orig_p in tasks:
@@ -256,12 +261,13 @@ def delete_tasks(slug, tasks, statuses, sync=False):
             if identifier not in statuses.keys():
                 continue
 
+            delids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
             req.request(url=url, payload=DELETING_PAYLOAD)
 
         responses = req.finish()
 
-    return responses
+    return responses, delids
 
 
 def write_responses(responses, output):
@@ -439,10 +445,13 @@ if __name__ == "__main__":
         if not (args.delete or
                 args.update_geometries or args.update_instruction):
 
-            tasks = select_tasks(tasks, statuses)
+            all_tasks = [t for t in tasks]
+            rimids = set([nid for nid, p in all_tasks])
+
+            tasks_to_post = select_tasks(all_tasks, statuses)
             responses, newids = post_tasks(
                 slug=slug,
-                tasks=tasks,
+                tasks=tasks_to_post,
                 sync=args.sync)
 
             responses = [(res, nid)
@@ -456,25 +465,37 @@ if __name__ == "__main__":
                          if statuses[old] in CFS_STATUSES)
 
             if not args.no_close:
-                closeids = oldids - newids
-                responses = close_tasks_by_id(slug, closeids)
+                closeids = oldids - newids - rimids
+                responses, cloids = close_tasks_by_id(slug, closeids)
+
+                responses = [(res, cid)
+                             for res, cid in zip(responses, cloids)
+                             ]
 
         else:
             if args.update_instruction or args.update_geometries:
                 instructions = args.instruction or None
-                responses = update_tasks(slug=slug,
-                                         tasks=tasks,
-                                         instructions=instructions,
-                                         statuses=statuses,
-                                         sync=args.sync
-                                         )
+                responses, updids = update_tasks(slug=slug,
+                                                 tasks=tasks,
+                                                 instructions=instructions,
+                                                 statuses=statuses,
+                                                 sync=args.sync
+                                                 )
+
+                responses = [(res, uid)
+                             for res, uid in zip(responses, updids)
+                             ]
+
             else:
                 # args.delete = True
-                responses = delete_tasks(slug=slug,
-                                         tasks=tasks,
-                                         statuses=statuses,
-                                         sync=args.sync
-                                         )
+                responses, delids = delete_tasks(slug=slug,
+                                                 tasks=tasks,
+                                                 statuses=statuses,
+                                                 sync=args.sync
+                                                 )
+                responses = [(res, did)
+                             for res, did in zip(responses, delids)
+                             ]
 
         write_responses(responses, args.output)
 
