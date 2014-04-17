@@ -114,11 +114,10 @@ def get_random_task(challenge):
     """Get a random task"""
 
     rn = random()
-    app.logger.debug(rn)
 
     # get a random task. first pass
     q = Task.query.filter(Task.challenge_slug == challenge.slug,
-                          Task.currentaction.in_([
+                          Task.status.in_([
                               'available',
                               'skipped',
                               'created']),
@@ -129,13 +128,13 @@ def get_random_task(challenge):
         # bigger as the remaining available task number gets
         # smaller
         q = Task.query.filter(Task.challenge_slug == challenge.slug,
-                              Task.currentaction.in_([
+                              Task.status.in_([
                                   'available',
                                   'skipped',
                                   'created']),
                               Task.random < rn).order_by(Task.random)
 
-    return q.first()
+    return q.first() or None
 
 
 def get_envelope(geoms):
