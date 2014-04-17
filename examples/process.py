@@ -143,6 +143,8 @@ def prepare_task(node, args, osmid, geom):
                                      osmid=osmid,
                                      payload=payload
                                      )
+
+        payload = json.dumps(payload)
         return identifier, payload
 
 
@@ -157,43 +159,68 @@ def select_tasks(newtasks, oldtasks):
             yield identifier, payload
 
 
-def post_tasks(slug, tasks):
+def post_tasks(slug, tasks, sync=False):
     # and fire!
     s = requests.session()
 
+    responses = []
     task_requests = []
     newids = set()
+
     for identifier, payload in tasks:
         newids.add(identifier)
-        task_requests.append(
-            grequests.put(
-                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                session=s,
-                data=payload,
-                headers=HEADERS))
+        if sync:
+            responses.append(
+                requests.put(
+                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
+                    data=payload,
+                    headers=HEADERS))
 
-    return grequests.map(task_requests), newids
+        else:
+            task_requests.append(
+                grequests.put(
+                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
+                    session=s,
+                    data=payload,
+                    headers=HEADERS))
+
+    if not sync:
+        responses = grequests.map(task_requests)
+
+    return responses, newids
 
 
-def update_tasks(slug, tasks, instruction=None, statuses=None):
+def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
     s = requests.session()
 
     task_requests = []
     for identifier, payload in tasks:
+        if identifier not in statuses.keys():
+            continue
+
         if instruction is not None:
             payload = {"instruction": instruction,
                        "geometries": payload["geometries"]
                        }
 
-        if identifier not in statuses.keys():
-            continue
 
-        task_requests.append(
-            grequests.put(
-                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                session=s,
-                data=payload,
-                headers=HEADERS))
+        if sync:
+            responses.append(
+                requests.put(
+                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
+                    data=payload,
+                    headers=HEADERS))
+
+        else:
+            task_requests.append(
+                grequests.put(
+                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
+                    session=s,
+                    data=payload,
+                    headers=HEADERS))
+
+    if not sync:
+        responses = grequests.map(task_requests)
 
     return grequests.map(task_requests)
 
@@ -216,15 +243,23 @@ def close_tasks(slug, closeids):
 
 
 def write_responses(responses, output):
-    for r in responses:
+    for res, nid in responses:
         with open(output, 'a+') as outfile:
             try:
-                outfile.write(str(r.json())+'\n')
+                outfile.write(str(res.json())+'\n')
+
             except AttributeError:
-                newr = json.dumps({'identifier': r, 'status': 'failed'})
+                newr = json.dumps({'identifier': nid,
+                                   'status': 'failed'
+                                   }
+                                  )
                 outfile.write(str(newr+'\n'))
+
             except simplejson.scanner.JSONDecodeError:
-                newr = json.dumps({'identifier': r, 'status': r.status_code})
+                newr = json.dumps({'identifier': nid,
+                                   'status': res.status_code
+                                   }
+                                  )
                 outfile.write(str(newr+'\n'))
 
 
@@ -302,6 +337,12 @@ if __name__ == "__main__":
                         default=False,
                         action='store_true',
                         help='Do not close the statuses')
+    parser.add_argument('--sync',
+                        default=False,
+                        action='store_true',
+                        help='Make only synchronous requests')
+
+
 
     subparsers = parser.add_subparsers(help='Specify the source of the tasks')
 
@@ -379,12 +420,15 @@ if __name__ == "__main__":
                 args.update_geometries or args.update_instruction):
 
             tasks = select_tasks(tasks, statuses)
-            responses, newids = post_tasks(slug=slug, tasks=tasks)
+            responses, newids = post_tasks(
+                slug=slug,
+                tasks=tasks,
+                sync=args.sync)
 
-            responses = [res
-                         if (isinstance(res, requests.models.Response)
-                             and res.ok)
-                         else nid
+            import pdb
+            pdb.set_trace()
+
+            responses = [(res, nid)
                          for res, nid in zip(responses, newids)
                          ]
 
