@@ -242,7 +242,8 @@ def close_tasks(slug, closeids, statuses=None, sync=False):
 
     with Requester(sync) as req:
         for identifier in closeids:
-            if identifier not in statuses.keys():
+
+            if statuses and identifier not in statuses.keys():
                 continue
 
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
