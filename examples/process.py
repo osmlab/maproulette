@@ -145,7 +145,49 @@ def prepare_task(node, args, osmid, geom):
                                      )
 
         payload = json.dumps(payload)
+
         return identifier, payload
+
+
+class Requester(object):
+
+    def __init__(self, sync=False):
+        self.sync = sync
+
+    def __enter__(self):
+        if self.sync:
+            self.responses = []
+
+        else:
+            self.session = requests.session()
+
+            self.task_requests = []
+
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def request(self, url, payload):
+        if self.sync:
+            self.responses.append(
+                requests.put(url,
+                             data=payload,
+                             headers=HEADERS
+                             ))
+        else:
+            self.task_requests.append(
+                grequests.put(url,
+                              session=self.session,
+                              data=payload,
+                              headers=HEADERS
+                              ))
+
+    def finish(self):
+        if self.sync:
+            return self.responses
+        else:
+            return grequests.map(self.task_requests)
 
 
 def select_tasks(newtasks, oldtasks):
@@ -159,87 +201,56 @@ def select_tasks(newtasks, oldtasks):
             yield identifier, payload
 
 
-def post_tasks(slug, tasks, sync=False):
-    # and fire!
-    s = requests.session()
-
-    responses = []
-    task_requests = []
+def post_tasks(slug, tasks, sync):
     newids = set()
 
-    for identifier, payload in tasks:
-        newids.add(identifier)
-        if sync:
-            responses.append(
-                requests.put(
-                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                    data=payload,
-                    headers=HEADERS))
+    with Requester(sync) as req:
+        for identifier, payload in tasks:
+            newids.add(identifier)
+            import pdb
+            pdb.set_trace()
+            url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
+            req.request(url=url, payload=payload)
 
-        else:
-            task_requests.append(
-                grequests.put(
-                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                    session=s,
-                    data=payload,
-                    headers=HEADERS))
-
-    if not sync:
-        responses = grequests.map(task_requests)
+        responses = req.finish()
 
     return responses, newids
 
 
 def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
-    s = requests.session()
 
-    task_requests = []
-    for identifier, payload in tasks:
-        if identifier not in statuses.keys():
-            continue
+    with Requester(sync) as req:
+        for identifier, payload in tasks:
+            if identifier not in statuses.keys():
+                continue
 
-        if instruction is not None:
-            payload = {"instruction": instruction,
-                       "geometries": payload["geometries"]
-                       }
+            if instruction is not None:
+                payload = {"instruction": instruction,
+                           "geometries": payload["geometries"]
+                           }
 
+            url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
+            req.request(url=url, payload=payload)
 
-        if sync:
-            responses.append(
-                requests.put(
-                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                    data=payload,
-                    headers=HEADERS))
+        responses = req.finish()
 
-        else:
-            task_requests.append(
-                grequests.put(
-                    mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                    session=s,
-                    data=payload,
-                    headers=HEADERS))
-
-    if not sync:
-        responses = grequests.map(task_requests)
-
-    return grequests.map(task_requests)
+    return responses
 
 
-def close_tasks(slug, closeids):
+def close_tasks(slug, closeids, statuses=None, sync=False):
     payload = {"status": "deleted"}
 
-    s = requests.session()
+    with Requester(sync) as req:
+        for identifier in closeids:
+            if identifier not in statuses.keys():
+                continue
 
-    task_requests = []
-    for identifier in closeids:
-        task_requests.append(
-            grequests.put(
-                mr_api_addtask_endpoint.format(slug=slug, id=identifier),
-                session=s,
-                data=payload,
-                headers=HEADERS))
+            url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
+            req.request(url=url, payload=payload)
 
-    return grequests.map(task_requests)
+        responses = req.finish()
+
+    return responses
 
 
 def write_responses(responses, output):
@@ -342,8 +353,6 @@ if __name__ == "__main__":
                         action='store_true',
                         help='Make only synchronous requests')
 
-
-
     subparsers = parser.add_subparsers(help='Specify the source of the tasks')
 
     # create the parser for the "db" command
@@ -375,6 +384,10 @@ if __name__ == "__main__":
         requests_log.setLevel(logging.DEBUG)
 
     slug = args.challenge_slug
+
+    if not args.server.endswith('/'):
+        raise ValueError('Server name must have a trailing slash')
+
     # the MapROulette API endpoints
     base = args.server + "api/"
     # - for getting a challenge
@@ -425,9 +438,6 @@ if __name__ == "__main__":
                 tasks=tasks,
                 sync=args.sync)
 
-            import pdb
-            pdb.set_trace()
-
             responses = [(res, nid)
                          for res, nid in zip(responses, newids)
                          ]
@@ -448,13 +458,15 @@ if __name__ == "__main__":
                 responses = update_tasks(slug=slug,
                                          tasks=tasks,
                                          instructions=instructions,
-                                         statuses=statuses
+                                         statuses=statuses,
+                                         sync=args.sync
                                          )
             else:
                 # args.close = True
                 responses = close_tasks(slug=slug,
                                         closeids=tasks,
-                                        statuses=statuses
+                                        statuses=statuses,
+                                        sync=args.sync
                                         )
 
         write_responses(responses, args.output)
