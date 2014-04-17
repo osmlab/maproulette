@@ -16,6 +16,11 @@ from psycopg2.extras import register_hstore, DictCursor
 
 CFS_STATUSES = ('created', 'falsepositive', 'skipped')
 
+CLOSING_PAYLOAD = json.dumps({"status": "closed"})
+
+
+DELETING_PAYLOAD = json.dumps({"status": "closed"})
+
 HEADERS = {'content-type': 'application/json'}
 
 
@@ -98,18 +103,14 @@ def get_tasks_from_json(args):
             tasks = [tasks]
 
     for task in tasks:
-        if not args.close:
-            osmid = task['geometries']['features'][0]['properties']['osmid']
-            geom = task['geometries']
+        osmid = task['geometries']['features'][0]['properties']['osmid']
+        geom = task['geometries']
 
-            yield prepare_task(node=task,
-                               args=args,
-                               osmid=osmid,
-                               geom=geom
-                               )
-        else:
-            for task in tasks:
-                yield task
+        yield prepare_task(node=task,
+                           args=args,
+                           osmid=osmid,
+                           geom=geom
+                           )
 
 
 def get_current_task_statuses(slug):
@@ -207,8 +208,6 @@ def post_tasks(slug, tasks, sync):
     with Requester(sync) as req:
         for identifier, payload in tasks:
             newids.add(identifier)
-            import pdb
-            pdb.set_trace()
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
             req.request(url=url, payload=payload)
 
@@ -237,17 +236,28 @@ def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
     return responses
 
 
-def close_tasks(slug, closeids, statuses=None, sync=False):
-    payload = {"status": "deleted"}
+def close_tasks_by_id(slug, closeids, sync=False):
 
     with Requester(sync) as req:
         for identifier in closeids:
+            url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
+            req.request(url=url, payload=CLOSING_PAYLOAD)
 
-            if statuses and identifier not in statuses.keys():
+        responses = req.finish()
+
+    return responses
+
+
+def delete_tasks(slug, tasks, statuses, sync=False):
+
+    with Requester(sync) as req:
+        for identifier, orig_p in tasks:
+
+            if identifier not in statuses.keys():
                 continue
 
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
-            req.request(url=url, payload=payload)
+            req.request(url=url, payload=DELETING_PAYLOAD)
 
         responses = req.finish()
 
@@ -312,18 +322,14 @@ if __name__ == "__main__":
                         help='dry run: no connection will be made, and no \
                         content will be sent.')
     group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument('--create',
+    group.add_argument('--delete',
                        default=False,
                        action='store_true',
-                       help='TBW')
-    group.add_argument('--close',
-                       default=False,
-                       action='store_true',
-                       help='TBW')
+                       help='Set status of tasks to "deleted"')
     parser.add_argument('--force-post',
                         default=False,
                         action='store_true',
-                        help='execute responses even with dry run set.')
+                        help='Post tasks even with dry run set.')
     parser.add_argument('--output',
                         default='responses.json',
                         help='the output file where answer from the server, \
@@ -332,11 +338,11 @@ if __name__ == "__main__":
     parser.add_argument('--update-instruction',
                         action='store_true',
                         default=False,
-                        help='TBW')
+                        help='Update challenge instruction')
     parser.add_argument('--update-geometries',
                         action='store_true',
                         default=False,
-                        help='Enable verbose output of http requests')
+                        help='Update geometries of task')
     parser.add_argument('-v', '--verbose',
                         default=False,
                         action='store_true',
@@ -412,7 +418,7 @@ if __name__ == "__main__":
 
     # if the challenge does not exist, create it.
     if not args.dry:
-        if args.close or args.update_instruction or args.update_geometries:
+        if args.delete or args.update_instruction or args.update_geometries:
             assert challenge_exists(args.challenge_slug)
         else:
             create_challenge_if_not_exists(slug, challenge_title)
@@ -430,7 +436,7 @@ if __name__ == "__main__":
 
     responses = []
     if not args.dry or args.force_post:
-        if not (args.close or
+        if not (args.delete or
                 args.update_geometries or args.update_instruction):
 
             tasks = select_tasks(tasks, statuses)
@@ -451,7 +457,7 @@ if __name__ == "__main__":
 
             if not args.no_close:
                 closeids = oldids - newids
-                responses = close_tasks(slug, closeids)
+                responses = close_tasks_by_id(slug, closeids)
 
         else:
             if args.update_instruction or args.update_geometries:
@@ -463,12 +469,12 @@ if __name__ == "__main__":
                                          sync=args.sync
                                          )
             else:
-                # args.close = True
-                responses = close_tasks(slug=slug,
-                                        closeids=tasks,
-                                        statuses=statuses,
-                                        sync=args.sync
-                                        )
+                # args.delete = True
+                responses = delete_tasks(slug=slug,
+                                         tasks=tasks,
+                                         statuses=statuses,
+                                         sync=args.sync
+                                         )
 
         write_responses(responses, args.output)
 
