@@ -92,9 +92,13 @@ def get_tasks_from_json(args):
 
     with open(args.json_file, 'r') as infile:
         tasks = json.load(infile)
+        if isinstance(tasks, dict):
+            tasks = [tasks]
 
     for task in tasks:
         if not args.close:
+            import pdb
+            pdb.set_trace()
             osmid = task['geometries']['features'][0]['properties']['osmid']
             geom = task['geometries']
 
@@ -214,7 +218,11 @@ def close_tasks(slug, closeids):
 def write_responses(responses, output):
     for r in responses:
         with open(output, 'a+') as outfile:
-            outfile.write(str(r.json())+'\n')
+            try:
+                outfile.write(str(r.json())+'\n')
+            except AttributeError:
+                newr = json.dumps({'identifier': r, 'status': 'failed'})
+                outfile.write(str(newr+'\n'))
 
 
 if __name__ == "__main__":
@@ -365,6 +373,12 @@ if __name__ == "__main__":
 
             tasks = select_tasks(tasks, statuses)
             responses, newids = post_tasks(slug=slug, tasks=tasks)
+
+            responses = [res
+                         if isinstance(res, requests.models.Response)
+                         else nid
+                         for res, nid in zip(responses, newids)
+                         ]
 
             write_responses(responses, args.output)
 
