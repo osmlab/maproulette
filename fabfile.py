@@ -247,6 +247,7 @@ def create_deployment(instance, setting="dev", branch=None):
     setup_cron(instance)
     setup_config_file(instance, setting)
     flask_manage(instance, command='create_db')
+    flask_manage(instance, command='db init')  # initialize alembic
     compile_jsx(instance)
     restart_uwsgi()
     restart_nginx()
@@ -254,6 +255,7 @@ def create_deployment(instance, setting="dev", branch=None):
 
 def update_application(instance):
     git_pull(instance)
+    flask_manage(instance, command='db upgrade')
     compile_jsx(instance)
     restart_uwsgi()
 
