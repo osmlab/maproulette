@@ -44,6 +44,16 @@ def install_packages():
          ' '.join(packages), shell=False)
 
 
+def install_nodejs():
+    sudo('sudo add-apt-repository -y ppa:chris-lea/node.js')
+    update_packages()
+    sudo('apt-get -q install nodejs')
+
+
+def install_react_tools():
+    sudo('npm install -g react-tools')
+
+
 def create_deploy_directories(instance):
     basedir = "/srv/www/%s" % instance
     sudo("mkdir -p %s" % basedir)
@@ -87,8 +97,11 @@ def setup_cron(instance):
                     context={"instance": instance})
     sudo('chown www-data:www-data %s/cron/scrub_stale_tasks.sh' % dirname)
     sudo('chmod 0755 %s/cron/scrub_stale_tasks.sh' % dirname, user='www-data')
-    sudo('crontab -l >/tmp/crondump', user='www-data')
+    if exists('/var/spool/cron/crontabs/www-data'):
+        # if an existing crontab file exists, start with that
+        sudo('crontab -l >/tmp/crondump', user='www-data')
     if not contains('/tmp/crondump', 'scrub_stale_tasks.sh'):
+        # check if the job is already in the file
         sudo('echo "15 * * * * %s/cron/scrub_stale_tasks.sh >>'
              ' %s/log/scrub_stale_tasks.log" >> /tmp/crondump' %
              (dirname, dirname), user='www-data')
@@ -145,13 +158,20 @@ def setup_config_file(instance, setting):
     restart_uwsgi()
 
 
-def jsx():
-    local("cat ./jsx/maproulette.js | jsx >"
-          " ./maproulette/static/js/maproulette.js")
+def compile_jsx(instance=None):
+    if not instance:
+        # we are compiling locally
+        local("cat ./jsx/maproulette.js | jsx >"
+              " ./maproulette/static/js/maproulette.js")
+    else:
+        basedir = "/srv/www/%s" % instance
+        sudo("cat %s/htdocs/maproulette/jsx/maproulette.js "
+             "| jsx > %s/htdocs/maproulette/maproulette/static"
+             "/js/maproulette.js" % (basedir, basedir))
 
 
 def rsync(instance, reload_pip=False):
-    jsx()
+    compile_jsx()
     basedir = "/srv/www/%s" % instance
     target = basedir + '/htdocs/'
     rsync_project(target, delete="yes", exclude=".git")
@@ -213,6 +233,8 @@ def setup_system():
     setup_postgres_permissions()
     create_db_user()
     create_databases()
+    install_nodejs()
+    install_react_tools()
 
 
 def create_deployment(instance, setting="dev", branch=None):
@@ -225,8 +247,15 @@ def create_deployment(instance, setting="dev", branch=None):
     setup_cron(instance)
     setup_config_file(instance, setting)
     flask_manage(instance, command='create_db')
+    compile_jsx(instance)
     restart_uwsgi()
     restart_nginx()
+
+
+def update_application(instance):
+    git_pull(instance)
+    compile_jsx(instance)
+    restart_uwsgi()
 
 
 def deploy(instance, setting="dev", branch=None):
