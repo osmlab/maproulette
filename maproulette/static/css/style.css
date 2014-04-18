@@ -15,7 +15,7 @@ em {
 }
 
 /* the main MapRoulette control panel */
-div.controlpanel {
+div#controlpanel {
     border: 1px solid #aaa;
     z-index:15;
     position:absolute;
