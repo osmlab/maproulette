@@ -11,6 +11,17 @@ var Button = React.createClass({
     );
   }});
 
+var ActionButton = React.createClass({
+    render: function(){
+        var action = this.props.action;
+        return (
+            <div className="button"
+            onClick={function(){MRManager.nextTask(action)}}>
+            {this.props.children}
+            </div>)
+    }
+});
+
 var CancelButton = React.createClass({
   render: function(){
     return (
@@ -92,6 +103,19 @@ var ChallengeSelectionDialog = React.createClass({
         );
     }}
 );
+
+var DefaultDoneDialog = React.createClass({
+  render: function(){
+      return (
+          <div>
+          <p>This area is being loaded in your editor. Did you fix it?</p>
+          <ActionButton action="fixed">I fixed it!</ActionButton>
+          <ActionButton action="skipped">Too difficult/Couldn&#39;t see</ActionButton>
+          <ActionButton action="falsepositive">It was not an error</ActionButton>
+          <ActionButton action="alreadyfixed">Someone beat me to it</ActionButton>
+          </div>)
+  }
+});
 
 // Misc functions
 
@@ -202,41 +226,6 @@ var MRNotifier = function () {
         clear: clear,
         close: close
     }
-}();
-
-var DefaultDoneDialog = {
-    text: "This area is being loaded in your editor. Did you fix it?",
-    buttons: ""
-};
-
-var MRButtons = function () {
-    var buttonTypes = {
-        'fixed': 'I fixed it!',
-        'skipped': 'Too difficult / Couldn\'t see',
-        'falsepositive': 'It was not an error',
-        'alreadyfixed': 'Someone beat me to it'
-    };
-
-    var makeButton = function (buttonType) {
-        if (!(buttonType in buttonTypes)) {
-            return false
-        }
-        return '<div class=\'button\' onClick=MRManager.nextTask(\'' + buttontype + '\') id=\'' + buttonType + '\'>' + buttonTypes[buttonType] + '</div>';
-    };
-
-    var makeButtons = function () {
-        var buttonHTML = '';
-        for (key in buttonTypes) {
-            buttonHTML += '<div class=\'button\' onClick=MRManager.nextTask(\'' + key + '\') id=\'' + key + '\'>' + buttonTypes[key] + '</div>\n';
-        }
-        return buttonHTML;
-    };
-
-    return {
-        makeButton: makeButton,
-        makeButtons: makeButtons
-    };
-
 }();
 
 var MRHelpers = (function () {
@@ -683,24 +672,11 @@ var MRManager = (function () {
         };
 
         var presentDoneDialog = function () {
-            var d = DefaultDoneDialog;
-
-            // if there is no done dialog info, bail
-            // FIXME we should be reverting to a default
-            if (typeof d === 'undefined') {
-                return false
-            }
-            var dialogHTML = '<div class=\'text\'>' + d.text + '</div>';
-
-            if (typeof d.buttons === 'string' && d.buttons.length > 0) {
-                var buttons = d.buttons.split('|');
-                for (var i = 0; i < buttons.length; i++) {
-                    dialogHTML += MRButtons.makeButton(buttons[i]);
-                }
-            } else {
-                dialogHTML += MRButtons.makeButtons();
-            }
-            $('#dialog').html(dialogHTML).fadeIn();
+            // Right now we only support default tasks
+            React.renderComponent(
+                <DefaultDoneDialog />,
+                document.getElementById('dialog'));
+            $('#dialog').fadeIn();
         };
 
     var presentChallengeComplete = function(){
