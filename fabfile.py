@@ -79,6 +79,16 @@ def checkout_repo(instance, branch=None):
         sudo(cmd, user="www-data")
 
 
+def git_fetch_all(instance):
+    with cd("/srv/www/%s/htdocs/maproulette" % instance):
+        sudo('git fetch --all', user="www-data")
+
+
+def git_change_branch(instance, branch):
+    with cd("/srv/www/%s/htdocs/maproulette" % instance):
+        sudo('git checkout %s' % branch, user="www-data")
+
+
 def flask_manage(instance, command):
     dirname = "/srv/www/%s" % instance
     cmd = "export MAPROULETTE_SETTINGS=%s/config.py &&\
