@@ -349,9 +349,7 @@ class Task(db.Model):
 
     def update(self, new_values, geometries, commit=True):
         """This updates a task based on a dict with new values"""
-        app.logger.debug(new_values)
         for k, v in new_values.iteritems():
-            app.logger.debug('updating %s to %s' % (k, v))
             # if a status is set, append an action
             if k == 'status':
                 self.append_action(Action(v))

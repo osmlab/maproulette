@@ -571,11 +571,11 @@ class AdminApiUpdateTasks(Resource):
         # Get the posted data
         taskdata = json.loads(request.data)
 
-        app.logger.debug(taskdata)
-
         for task in taskdata:
             parse_task_json(task, slug, task['identifier'], commit=False)
-            db.session.commit()
+
+        # commit all dirty tasks at once.
+        db.session.commit()
 
 api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
 api.add_resource(AdminApiTaskStatuses,
