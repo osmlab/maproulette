@@ -27,6 +27,7 @@ div#controlpanel {
     background-color:#fff;
     -webkit-border-radius: 5px;
     border-radius: 5px;
+    diplay: none;
 }
 
 /* the notifications container */

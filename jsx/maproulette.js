@@ -22,6 +22,17 @@ var ActionButton = React.createClass({
     }
 });
 
+var TinyActionButton = React.createClass({
+    render: function(){
+        var action = this.props.action;
+        return (
+            <div className="button tiny"
+            onClick={function(){MRManager.nextTask(action)}}>
+            {this.props.children}
+            </div>)
+    }
+});
+
 var CancelButton = React.createClass({
   render: function(){
     return (
@@ -59,12 +70,17 @@ var DifficultyBadge = React.createClass({
 
 var ChallengeBox = React.createClass({
     render: function(){
-        var slug = this.props.challenge.slug;
         var pickMe = function(){
-            MRManager.userPickChallenge(slug);
-        };
+            c = this.props.challenge;
+            $('#dialog').fadeOut({
+                complete: function(){
+                    console.log("User picked challenge " + c.slug);
+                    MRManager.userPickChallenge(c);
+                }
+            });
+        }.bind(this);
         return(
-            <div className="challengeBox">
+            <div className="challengeBox" key={this.props.key}>
             <span className="title">{this.props.challenge.title}</span>
             <DifficultyBadge difficulty={this.props.challenge.difficulty} />
             <p>{this.props.challenge.blurb}</p>
@@ -92,7 +108,7 @@ var ChallengeSelectionDialog = React.createClass({
     },
     render: function(){
         var challengeBoxes = this.state.challenges.map(function(challenge){
-            return <ChallengeBox challenge={challenge} />;
+            return <ChallengeBox key={challenge.slug} challenge={challenge} />;
         });
         return (
             <div>
@@ -117,26 +133,100 @@ var DefaultDoneDialog = React.createClass({
   }
 });
 
+var UserOrLogin = React.createClass({
+    render: function(){
+        if (this.props.user != null) {
+            return (
+                <div id="user">
+                signed in as <a href="/me">{this.props.user.username}</a>.
+                <a href="/logout">sign out</a>
+                </div>)
+        }
+        else {
+            return (
+                <div>
+                not signed in. <a href="/signin">sign in on OSM</a>
+                </div>
+            )
+        }
+    }
+});
+
+
+var CPChallengeStats = React.createClass({
+    getInitialState: function(){
+        return {total: 'N/A', remaining: 'N/A'}
+    },
+    loadStatsFromServer: function(){
+        $.ajax({
+            url: "/api/stats/challenge/" + this.props.challenge.slug,
+            dataType: 'json',
+            success: function(data){
+                this.setState({
+                    total: data.total,
+                    remaining: data.unfixed});
+            }.bind(this)
+        });
+    },
+    componentWillMount: function(){
+        this.loadStatsFromServer();
+        // Every 60 seconds is plenty
+        setInterval(this.loadStatsFromServer, 60000);
+    },
+    render: function(){
+        return (
+            <div id="stats">
+            This challenge has {this.state.total} tasks, and we still need to
+            fix {this.state.remaining} of them
+            </div>
+        )
+    }
+});
+
+var ControlPanel = React.createClass({
+    componentWillMount: function(){
+        if (this.props.user != null) {
+            console.log("control panel username: " + this.props.user.username);
+        }
+        else {
+            console.log("no username passed to control panel")
+        }
+    },
+    render: function(){
+        return(
+            <div>
+            <div className="title">OpenStreetMap <em>MapRoulette</em></div>
+            <UserOrLogin user={this.props.user}/>
+            <div id="challenge_title">{this.props.challenge.title}</div>
+            <div id="challenge_blurb">{this.props.challenge.blurb}</div>
+            <TinyActionButton action={MRManager.presentChallengeHelp}>
+            More help for this challenge</TinyActionButton>
+            <TinyActionButton action={MRManager.presentChallengeSelectionDialog}>
+            Select a different challenge</TinyActionButton>
+            <TinyActionButton action={MRManager.presentChallengeStatsDialog}>
+            Challenge statistics</TinyActionButton>
+            <hr />
+            <CPChallengeStats challenge={this.props.challenge} />
+            <ActionButton action="falsepositive">
+            THIS IS NOT AN ERROR <span className="key">q</span></ActionButton>
+            <ActionButton action="skipped">
+            I&#39;M NOT SURE / SKIP <span className="key">w</span></ActionButton>
+            <Button onClick={MRManager.openTaskInId}>
+            EDIT IN iD <span className="key">e</span></Button>
+            <Button onClick={MRManager.openTaskInJosm}>
+            EDIT IN JOSM <span className="key">r</span></Button>
+            </div>
+        )
+    }
+});
+
+
 // Misc functions
 
 var signIn = function(){
   location.reload();
-  location.href="/signin"
+  location.href="/signin";
 }
-
-// Decorator to close the dialog box and run the specified function.
-// If it's a react component, unmounts it too
-var closeDialog = function(fun){
-    return function(){
-        $('#dialog').fadeOut({
-            complete: function(){
-                fun();
-                // If this is a react component, we don't need it anymore
-                React.unmountComponentAtNode(document.getElementById('dialog'));
-            }
-        });
-    }
-};
 
 // get URL parameters
 // http://stackoverflow.com/a/979995
@@ -316,11 +406,13 @@ var MRManager = (function () {
         } : {};
         var difficulty = parseInt(Q.difficulty);
         var taskLayer;
+        var controlpanel;
 
         // create a notifier
         notify = MRNotifier;
 
         // are we logged in?
+        user = null;
         this.loggedIn = false;
 
         var constructJosmUri = function () {
@@ -408,9 +500,19 @@ var MRManager = (function () {
          */
         var init = function (elem) {
 
+            // Check if we're logged in
+            $.ajax({
+                url: '/api/me',
+                async: false,
+                success: function(data){
+                    if (data.username != null){
+                        user = data;
+                    }
+                }.bind(this)
+            });
+
             // check if the map element exists.
             if (!document.getElementById(elem)) return false;
-
 
             // initialize the map
             map = new L.Map(elem, MRConfig.mapOptions);
@@ -458,9 +560,12 @@ var MRManager = (function () {
                 }
             });
 
-            if (this.loggedIn) {
+            if (user != null) {
                 // check if the user passed things
                 if (parseHash()) {
+                    controlpanel = React.renderComponent(
+                        <ControlPanel challenge={challenge} user={user} />,
+                        document.getElementById('controlpanel'));
                     readyToEdit();
                 } else {
                     selectChallenge();
@@ -510,31 +615,21 @@ var MRManager = (function () {
                 async: false,
                 success: function (data) {
                     challenge = data;
+                    // Update the sidebar
+                    if (controlpanel != null) {
+                        controlpanel.setProps({challenge: challenge});}
+                    else {
+                        sidebar = React.renderComponent(
+                            <ControlPanel challenge={challenge} user={user}/>,
+                            document.getElementById('controlpanel'));
+                        }
                     // set the challenge cookie
                     $.cookie('challenge', challenge.slug);
-                    // update the challenge detail UI elements
-                    $('#challenge_title').text(challenge.title);
-                    $('#challenge_blurb').text(challenge.blurb);
-                    // and move on to get the stats
-                    getChallengeStats();
-                    if (presentDialog) presentChallengeDialog();
-                },
+                     if (presentDialog) presentChallengeDialog();
+                    },
             });
         };
 
-
-        var getChallengeStats = function () {
-            // now get the challenge stats
-            // var endpoint = '/api/stats/challenge/' + challenge.slug;
-            // $.getJSON(endpoint, function (data) {
-            //     for (key in data) {
-            //         console.log('raw value: ' + data[key]);
-            //         var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
-            //         console.log('value for ' + key + ': ' + value);
-            //         $('#challenge_' + key).html(value).fadeIn();
-            //     };
-            // });
-        };
 
         var updateTask = function (action) {
             // if we don't have a task yet, return immediately
@@ -579,7 +674,6 @@ var MRManager = (function () {
                         success: function (data) {
                             task.features = data.features;
                             drawTask();
-                            getChallengeStats();
                             updateHash();
                         }
                     });
@@ -679,6 +773,16 @@ var MRManager = (function () {
             $('#dialog').fadeIn();
         };
 
+    var presentChallengeStatsDialog = function(){
+        // This is just a placeholder for now
+        React.renderComponent(
+            <div>
+            <p>Challenge Stats Coming Soon</p>
+            <Button onClick={function(){$('#dialog').fadeOut()}}>OK</Button>
+            </div>, document.getElementById('dialog'));
+        $('#dialog').fadeIn()
+    };
+
     var presentChallengeComplete = function(){
         React.renderComponent(
             <div>
@@ -698,13 +802,17 @@ var MRManager = (function () {
         };
 
     var presentChallengeHelp = function (){
+        var closeAndReady = function(){
+            $('#dialog').fadeOut({
+                complete: MRManager.readyToEdit()})
+        };
         React.renderComponent(
                 <div>
                 <h1>{challenge.title} Help</h1>
                 <div className="text">
                   {challenge.help}
                 </div>
-                <Button onClick={closeDialog(MRManager.readyToEdit)}>OK</Button>
+                <Button onClick={closeAndReady}>OK</Button>
                 </div>,
             document.getElementById('dialog'));
         $('#dialog').fadeIn();
@@ -719,7 +827,7 @@ var MRManager = (function () {
         </div>, document.getElementById('dialog'));
     $('#dialog').fadeIn();
   };
-    
+
 
     var presentChallengeDialog = function(){
         if (!challenge.slug){
@@ -745,8 +853,10 @@ var MRManager = (function () {
 
         var readyToEdit = function () {
             $('#dialog').fadeOut();
-            $('.controlpanel').fadeIn();
-            if (!task.identifier) nextTask();
+            $('#controlpanel').fadeIn();
+            if (!task.identifier) {
+                nextTask();
+            }
         };
 
         var geolocateUser = function () {
@@ -772,17 +882,21 @@ var MRManager = (function () {
             presentDoneDialog();
         };
 
-        var userPickChallenge = function (slug) {
-            slug = decodeURI(slug);
-            $('#dialog').fadeOut({
-                complete: function () {
-                    $('.controlpanel').fadeIn()
-                }
-            });
-            challenge.slug = slug;
-            selectChallenge(false);
-            task = {};
-            nextTask();
+        var userPickChallenge = function(chal) {
+            if (controlpanel != null) {
+                controlpanel.setProps({challenge: chal});
+                $('#controlpanel').fadeIn();
+            }
+            else {
+                controlpanel = React.renderComponent(
+                    <ControlPanel challenge={chal} user={user} />,
+                    document.getElementById('controlpanel'));
+                $('#controlpanel').fadeIn();
+            }
+            console.log("Setting cookie to " + chal.slug);
+            $.cookie('challenge', chal.slug);
+            task = {}
+            getTask();
         };
 
         var userPreferences = function () {
@@ -943,6 +1057,5 @@ var MRManager = (function () {
 
 // initialization
 function init(elemName) {
-    $('.controlpanel').fadeOut();
     MRManager.init(elemName);
 }
