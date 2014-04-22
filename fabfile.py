@@ -7,16 +7,8 @@ from fabric.operations import sudo, local
 pg_hba_fname = "/etc/postgresql/9.3/main/pg_hba.conf"
 
 
-def restart_nginx():
-    sudo('service nginx restart')
-
-
-def restart_uwsgi():
-    sudo('service uwsgi restart')
-
-
-def restart_postgres():
-    sudo('service postgresql restart')
+def service(service, command):
+    sudo('service %s %s' % (service, command))
 
 
 def update_packages():
@@ -155,7 +147,7 @@ def setup_config_file(instance, setting):
                         #"consumer_secret": ''
                     })
     sudo('chown www-data:www-data %s' % target)
-    restart_uwsgi()
+    service('uwsgi', 'restart')
 
 
 def compile_jsx(instance=None):
@@ -192,7 +184,7 @@ def setup_postgres_permissions():
         "host\s*all\s*all\s*127.0.0.1/32\s*md5",
         "host\tall\tall\t127.0.0.1/32\ttrust",
         use_sudo="yes")
-    restart_postgres()
+    service('postgresql', 'restart')
 
 
 def install_postgis():
@@ -249,15 +241,18 @@ def create_deployment(instance, setting="dev", branch=None):
     flask_manage(instance, command='create_db')
     flask_manage(instance, command='db init')  # initialize alembic
     compile_jsx(instance)
-    restart_uwsgi()
-    restart_nginx()
+    service('uwsgi', 'restart')
+    service('nginx', 'restart')
 
 
 def update_application(instance):
+    service('uwsgi', 'stop')
+    service('postgresql', 'stop')
     git_pull(instance)
+    service('postgresql', 'start')
     flask_manage(instance, command='db upgrade')
     compile_jsx(instance)
-    restart_uwsgi()
+    service('uwsgi', 'start')
 
 
 def deploy(instance, setting="dev", branch=None):
