@@ -166,9 +166,14 @@ def rsync(instance, reload_pip=False):
     compile_jsx()
     basedir = "/srv/www/%s" % instance
     target = basedir + '/htdocs/'
-    rsync_project(target, delete="yes", exclude=".git")
+    rsync_project(target, delete="yes", exclude=[".git", "sessiondata"])
     if reload_pip:
         install_python_dependencies()
+    service('uwsgi', 'restart')
+
+def reset_sessions(instance):
+    target = "/srv/www/%s/htdocs/maproulette/sessiondata" % instance
+    sudo("rm -rf %s" % target)
     service('uwsgi', 'restart')
 
 def git_pull(instance):
