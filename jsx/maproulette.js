@@ -702,7 +702,7 @@ var MRManager = (function () {
                 <div>
                 <h1>{challenge.title} Help</h1>
                 <div className="text">
-                  {challenge.help}
+                  {{__html: challenge.help}}
                 </div>
                 <Button onClick={closeDialog(MRManager.readyToEdit)}>OK</Button>
                 </div>,
@@ -719,7 +719,7 @@ var MRManager = (function () {
         </div>, document.getElementById('dialog'));
     $('#dialog').fadeIn();
   };
-    
+
 
     var presentChallengeDialog = function(){
         if (!challenge.slug){
