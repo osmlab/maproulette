@@ -169,7 +169,7 @@ def rsync(instance, reload_pip=False):
     rsync_project(target, delete="yes", exclude=".git")
     if reload_pip:
         install_python_dependencies()
-
+    service('uwsgi', 'restart')
 
 def git_pull(instance):
     sudo("cd /srv/www/%s/htdocs/maproulette && git pull" %
