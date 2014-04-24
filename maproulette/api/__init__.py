@@ -6,12 +6,11 @@ from flask import session, make_response, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
-    task_exists
+    parse_task_json
 from maproulette.models import User, Challenge, Task, TaskGeometry, Action, db
 from sqlalchemy.sql import func
 from geoalchemy2.functions import ST_Buffer
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import asShape
 import geojson
 import json
 import markdown
@@ -548,43 +547,8 @@ class AdminApiUpdateTask(Resource):
     def put(self, slug, identifier):
         """Create or update one task."""
 
-        task_geometries = []
-
-        # Get the posted data
-        taskdata = json.loads(request.data)
-
-        exists = task_exists(slug, identifier)
-
-        # abort if the taskdata does not contain geometries and it's a new task
-        if not 'geometries' in taskdata:
-            if not exists:
-                abort(400)
-        else:
-            # extract the geometries
-            geometries = taskdata.pop('geometries')
-            # parse the geometries
-            for feature in geometries['features']:
-                osmid = feature['properties'].get('osmid')
-                shape = asShape(feature['geometry'])
-                t = TaskGeometry(osmid, shape)
-                task_geometries.append(t)
-
-        # there's two possible scenarios:
-        # 1.    An existing task gets an update, in that case
-        #       we only need the identifier
-        # 2.    A new task is inserted, in this case we need at
-        #       least an identifier and encoded geometries.
-
-        # now we check if the task exists
-        if exists:
-            # if it does, update it
-            task = get_task_or_404(slug, identifier)
-            if not task.update(taskdata, task_geometries):
-                abort(400)
-        else:
-            # if it does not, create it
-            new_task = Task(slug, identifier)
-            new_task.update(taskdata, task_geometries)
+        # Parse the posted data
+        parse_task_json(json.loads(request.data), slug, identifier)
         return {}
 
     def delete(self, slug, identifier):
@@ -595,8 +559,28 @@ class AdminApiUpdateTask(Resource):
         db.session.add(task)
         db.session.commit()
 
+
+class AdminApiUpdateTasks(Resource):
+
+    """Bulk task creation / update endpoint"""
+
+    def put(self, slug):
+
+        app.logger.debug('putting multiple tasks')
+        app.logger.debug(len(request.data))
+        # Get the posted data
+        taskdata = json.loads(request.data)
+
+        for task in taskdata:
+            parse_task_json(task, slug, task['identifier'], commit=False)
+
+        # commit all dirty tasks at once.
+        db.session.commit()
+
 api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
 api.add_resource(AdminApiTaskStatuses,
+                 '/api/admin/challenge/<string:slug>/tasks')
+api.add_resource(AdminApiUpdateTasks,
                  '/api/admin/challenge/<string:slug>/tasks')
 api.add_resource(AdminApiUpdateTask,
                  '/api/admin/challenge/<string:slug>/task/<string:identifier>')

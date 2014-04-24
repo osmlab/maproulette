@@ -347,11 +347,9 @@ class Task(db.Model):
         # if action.status == 'fixed':
         #     self.validate_fixed()
 
-    def update(self, new_values, geometries):
+    def update(self, new_values, geometries, commit=True):
         """This updates a task based on a dict with new values"""
-        app.logger.debug(new_values)
         for k, v in new_values.iteritems():
-            app.logger.debug('updating %s to %s' % (k, v))
             # if a status is set, append an action
             if k == 'status':
                 self.append_action(Action(v))
@@ -365,7 +363,8 @@ class Task(db.Model):
         for geometry in geometries:
             self.geometries = geometries
         db.session.merge(self)
-        db.session.commit()
+        if commit:
+            db.session.commit()
         return True
 
     def validate_fixed(self):

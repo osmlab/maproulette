@@ -1,11 +1,11 @@
 """Some helper functions"""
 from flask import abort, session, request, make_response
-from maproulette.models import Challenge, Task
+from maproulette.models import Challenge, Task, TaskGeometry
 from maproulette.challengetypes import challenge_types
 from functools import wraps
 import json
 from maproulette import app
-from shapely.geometry import MultiPoint
+from shapely.geometry import MultiPoint, asShape
 from random import random
 
 
@@ -135,6 +135,46 @@ def get_random_task(challenge):
                               Task.random < rn).order_by(Task.random)
 
     return q.first() or None
+
+
+def parse_task_json(data, slug, identifier, commit=True):
+    """Parse task json coming in through the admin api"""
+
+    task_geometries = []
+
+    exists = task_exists(slug, identifier)
+
+    # abort if the taskdata does not contain geometries and it's a new task
+    if not 'geometries' in data:
+        if not exists:
+            abort(400)
+    else:
+        # extract the geometries
+        geometries = data.pop('geometries')
+        # parse the geometries
+        for feature in geometries['features']:
+            osmid = feature['properties'].get('osmid')
+            shape = asShape(feature['geometry'])
+            t = TaskGeometry(osmid, shape)
+            task_geometries.append(t)
+
+    # there's two possible scenarios:
+    # 1.    An existing task gets an update, in that case
+    #       we only need the identifier
+    # 2.    A new task is inserted, in this case we need at
+    #       least an identifier and encoded geometries.
+
+    # now we check if the task exists
+    if exists:
+        # if it does, update it
+        task = get_task_or_404(slug, identifier)
+        if not task.update(data, task_geometries, commit=commit):
+            abort(400)
+    else:
+        # if it does not, create it
+        new_task = Task(slug, identifier)
+        new_task.update(data, task_geometries, commit=commit)
+    return True
 
 
 def get_envelope(geoms):
