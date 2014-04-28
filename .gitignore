@@ -13,4 +13,4 @@ build/
 deploy_templates/*
 deploy_files/*
 examples/responses.json
-maproulette/static/js/maproulette.js
+maproulette/static/js/maproulette.jsexamples/testunit.py
