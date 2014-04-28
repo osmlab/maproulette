@@ -208,3 +208,23 @@ td.hidden {
 table.stats {
     padding: 4px;
 }
+
+/* react transitions */
+
+.dialog-enter {
+  opacity: 0.01;
+  transition: opacity .5s ease-in;
+}
+
+.dialog-enter.dialog-enter-active {
+  opacity: 1;
+}
+
+.dialog-leave {
+  opacity: 1;
+  transition: opacity .5s ease-in;
+}
+
+.dialog-leave.example-leave-active {
+  opacity: 0.01;
+}

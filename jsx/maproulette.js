@@ -1,5 +1,7 @@
 /** @jsx React.DOM */
 
+var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
+
 // React Components
 var Button = React.createClass({
   render: function(){
@@ -94,12 +96,23 @@ var ChallengeSelectionDialog = React.createClass({
         var challengeBoxes = this.state.challenges.map(function(challenge){
             return <ChallengeBox challenge={challenge} />;
         });
+        var selectArea = function(){
+            // make the dialog disappear
+            this.setState({display:none});
+            // add drawing function and event handler to the map
+
+            // put a clickable notification up - once the user clicks the notification, we grab the drawn area and add it to user settings
+
+        };
         return (
-            <div>
-            <h2>Pick a different challenge</h2>
-            {challengeBoxes}
-            <CancelButton onClick={MRManager.readyToEdit}>Nevermind</CancelButton>
-            </div>
+            <ReactCSSTransitionGroup transitionName="dialog">
+                <div>
+                    <h2>Pick a different challenge</h2>
+                        <Button onClick={selectArea}>I want to select an area to work in</Button>
+                        {challengeBoxes}
+                    <CancelButton onClick={MRManager.readyToEdit}>Nevermind</CancelButton>
+                </div>
+            </ReactCSSTransitionGroup>
         );
     }}
 );
