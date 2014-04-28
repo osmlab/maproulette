@@ -11,77 +11,10 @@ import geojson
 import json
 import argparse
 import logging
+from classmaprouletteloader import mapRouletteChallenge,mapRouletteTask
+from time import gmtime,strftime
 
-
-def is_running_instance(api_url):
-    try:
-        r = requests.get(base + 'ping')
-        return r.status_code == 200
-    except requests.exceptions.ConnectionError:
-        return False
-
-
-def create_challenge_if_not_exists(slug, title):
-    """This function creates the MR challenge if it does not already exist"""
-    r = requests.get(mr_api_getchallenge_endpoint.format(slug=slug))
-    if not r.status_code == 200:
-        print "creating challenge"
-        r = requests.put(
-            mr_api_createchallenge_endpoint.format(slug=slug),
-            data=json.dumps({"title": title, "active": True})
-        )
-    print 'challenge existed.'
-
-
-def generate_id(slug, osmid, payload):
-    # generate a unique identifier
-    digest = hashlib.md5(json.dumps(payload)).hexdigest()
-    return "{slug}-{osmid}-{digest}".format(slug=slug,
-                                            osmid=osmid,
-                                            digest=digest
-                                            )
-
-
-def get_instruction(node, instruction=None):
-    return node.get("instruction", None) or instruction or ''
-
-
-def get_payload(instruction, geom):
-    return json.dumps({"instruction": instruction,
-                       "geometries": geom})
-
-
-def prepare_task(node, args, osmid, geom):
-        instruction = get_instruction(node, args.challenge_instruction)
-
-        payload = get_payload(instruction=instruction,
-                              geom=geom
-                              )
-
-        identifier = generate_id(slug=args.challenge_slug,
-                                 osmid=osmid,
-                                 payload=payload
-                                 )
-        return identifier, payload
-
-
-def post_tasks(slug, tasks):
-    # and fire!
-    headers = {'content-type': 'application/json'}
-
-    s = requests.session()
-    rs = (grequests.put(
-        mr_api_addtask_endpoint.format(
-            slug=slug,
-            id=identifier),
-        session=s,
-        data=payload,
-        headers=headers) for identifier, payload in tasks)
-
-    return grequests.map(rs)
-
-
-def get_tasks_from_db(args):
+def get_tasks_from_db(args,inputMapRouletteChallenge):
     db_user = args.user
     if not args.user:
         db_user = getpass.getuser()
@@ -120,14 +53,12 @@ def get_tasks_from_db(args):
             }]
         }
 
-        yield prepare_task(node=node,
-                           args=args,
-                           osmid=osmid,
-                           geom=geom
-                           )
+        mr_challenge.addTask(mapRouletteTask(geom,osmid,mr_challenge.slug,mr_challenge.instruction)) 
 
+    return mr_challenge
 
-def get_tasks_from_json(args):
+def get_tasks_from_json(args,inputMapRouletteChallenge):
+    mr_challenge = inputMapRouletteChallenge
 
     with open(args.json_file, 'r') as infile:
         tasks = json.load(infile)
@@ -135,13 +66,9 @@ def get_tasks_from_json(args):
     for task in tasks:
         osmid = task['geometries']['features'][0]['properties']['osmid']
         geom = task['geometries']
+        mr_challenge.addTask(mapRouletteTask(geom,osmid,mr_challenge.slug,mr_challenge.instruction)) 
 
-        yield prepare_task(node=task,
-                           args=args,
-                           osmid=osmid,
-                           geom=geom
-                           )
-
+    return mr_challenge
 
 if __name__ == "__main__":
 
@@ -227,43 +154,36 @@ if __name__ == "__main__":
         rootlogger.setLevel(logging.DEBUG)
         requests_log.setLevel(logging.DEBUG)
 
+    #set slug and challenge title parameters
     slug = args.challenge_slug
-    # the MapROulette API endpoints
-    base = args.server + "api/"
-    # - for getting a challenge
-    mr_api_getchallenge_endpoint = base + "challenge/{slug}"
-    # - for creating a challenge
-    mr_api_createchallenge_endpoint = base + "admin/challenge/{slug}"
-    # - for creating a task
-    mr_api_addtask_endpoint = base + "admin/challenge/{slug}/task/{id}"
 
     challenge_title = args.challenge_title
     if not args.challenge_title:
         challenge_title = slug
 
-    # check if we got a running MR API instance.
-    if not args.dry and not is_running_instance(base):
+    #instatiate maproulette challenge loading object
+    mrChallengeLoader = mapRouletteChallenge(args.server,slug,challenge_title)
+
+    #maproulette challenge loading object checks for server existence
+    if not args.dry and not mrChallengeLoader.serverExists:
         print 'There is no running MapRoulette API instance at {}'.format(base)
         print 'You can supply a MR server URL with the --server option.'
         exit(0)
 
-    # if the challenge does not exist, create it.
-    if not args.dry:
-        create_challenge_if_not_exists(slug, challenge_title)
+    #maproulette challenge loading object checks if challenge exists, if not it creates a new one
+    mrChallengeLoader.initChallenge()
 
-    tasks = []
+    #adds tasks to task payload, by data source
     if 'query' in args:
-        tasks = get_tasks_from_db(args)
+        mrChallengeLoader = get_tasks_from_db(args,mrChallengeLoader)
 
     if 'json_file' in args:
-        tasks = get_tasks_from_json(args)
+        mrChallengeLoader = get_tasks_from_json(args,mrChallengeLoader)
 
-    responses = []
-    if not args.dry or args.force_post:
-        responses = post_tasks(slug, tasks)
+    bulkTaskUploadResponse = mrChallengeLoader.uploadTasks
+    with open(args.output, 'a+') as outfile:
+        outfile.write(strftime('%Y-%m-%d %H:%M:%S', gmtime())+','+str(bulkTaskUploadResponse.json()['status'])+','+str(bulkTaskUploadResponse.json()['message']))
 
-    for r in responses:
-        with open(args.output, 'a+') as outfile:
-            outfile.write(str(r.json())+'\n')
+    outfile.close()
 
     print '\ndone.'
