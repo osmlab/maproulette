@@ -13,5 +13,8 @@ build/
 deploy_templates/*
 deploy_files/*
 examples/responses.json
+<<<<<<< HEAD
 maproulette/static/js/maproulette.js
 maproulette/static/js/.module-cache/
+
+
