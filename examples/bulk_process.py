@@ -180,7 +180,7 @@ if __name__ == "__main__":
     if 'json_file' in args:
         mrChallengeLoader = get_tasks_from_json(args,mrChallengeLoader)
 
-    bulkTaskUploadResponse = mrChallengeLoader.uploadTasks
+    bulkTaskUploadResponse = mrChallengeLoader.uploadTasks()
     with open(args.output, 'a+') as outfile:
         outfile.write(strftime('%Y-%m-%d %H:%M:%S', gmtime())+','+str(bulkTaskUploadResponse.json()['status'])+','+str(bulkTaskUploadResponse.json()['message']))
 
