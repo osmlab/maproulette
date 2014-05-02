@@ -23,6 +23,14 @@ def reboot_server():
     sudo('reboot')
 
 
+def _is_ubuntu_1404():
+    result = run('uname -a | grep -q Ubuntu', quiet=True).succeeded and\
+        run('lsb_release -r | grep -q 14.04', quiet=True).succeeded
+    if result:
+        print "This is Ubuntu 14.04."
+    return result
+
+
 def install_packages():
     packages = ["software-properties-common",
                 "python-software-properties",
@@ -181,10 +189,12 @@ def rsync(instance, reload_pip=False):
         install_python_dependencies()
     service('uwsgi', 'restart')
 
+
 def reset_sessions(instance):
     target = "/srv/www/%s/htdocs/maproulette/sessiondata" % instance
     sudo("rm -rf %s" % target)
     service('uwsgi', 'restart')
+
 
 def git_pull(instance):
     sudo("cd /srv/www/%s/htdocs/maproulette && git pull" %
@@ -205,14 +215,18 @@ def setup_postgres_permissions():
 def install_postgis():
     # from
     # http://trac.osgeo.org/postgis/wiki/UsersWikiPostGIS21UbuntuPGSQL93Apt
-    append("/etc/apt/sources.list", "deb http://apt.postgresql.org/"
-           "pub/repos/apt/ precise-pgdg main", use_sudo=True)
-    run("wget --quiet -O - http://apt.postgresql.org/pub/"
-        "repos/apt/ACCC4CF8.asc | sudo apt-key add -")
-    update_packages()
-    postgres_packages = ["Postgresql-9.3-postgis",
-                         "postgresql-contrib",
-                         "postgresql-server-dev-9.3"]
+    if not _is_ubuntu_1404():
+        append("/etc/apt/sources.list", "deb http://apt.postgresql.org/"
+               "pub/repos/apt/ precise-pgdg main", use_sudo=True)
+        run("wget --quiet -O - http://apt.postgresql.org/pub/"
+            "repos/apt/ACCC4CF8.asc | sudo apt-key add -")
+        update_packages()
+        postgres_packages = ["Postgresql-9.3-postgis",
+                             "postgresql-contrib",
+                             "postgresql-server-dev-9.3"]
+    else:
+        postgres_packages = ["postgresql-9.3-postgis-2.1",
+                             "postgresql-server-dev-9.3"]
     sudo("sudo apt-get -q install %s" % (' '.join(postgres_packages)))
 
 

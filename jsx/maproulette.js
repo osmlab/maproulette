@@ -96,19 +96,11 @@ var ChallengeSelectionDialog = React.createClass({
         var challengeBoxes = this.state.challenges.map(function(challenge){
             return <ChallengeBox challenge={challenge} />;
         });
-        var selectArea = function(){
-            // make the dialog disappear
-            this.setState({display:none});
-            // add drawing function and event handler to the map
-
-            // put a clickable notification up - once the user clicks the notification, we grab the drawn area and add it to user settings
-
-        };
         return (
             <ReactCSSTransitionGroup transitionName="dialog">
                 <div>
                     <h2>Pick a different challenge</h2>
-                        <Button onClick={selectArea}>I want to select an area to work in</Button>
+                        <Button onClick={closeDialog(MRManager.userPickEditLocation)}>I want to select an area to work in</Button>
                         {challengeBoxes}
                     <CancelButton onClick={MRManager.readyToEdit}>Nevermind</CancelButton>
                 </div>
@@ -303,7 +295,8 @@ var MRConfig = (function () {
         // the default map options
         mapOptions: {
             center: new L.LatLng(40, -90),
-            zoom: 4
+            zoom: 4,
+            keyboard: false
         },
 
         // default tile URL
@@ -318,7 +311,9 @@ var MRConfig = (function () {
 }());
 
 var MRManager = (function () {
+        var EDITRADIUS = 10000 // meters, for setting editing radius
         var map;
+        var editArea;
         var challenges = [];
         var challenge = {};
         var task = {};
@@ -328,7 +323,14 @@ var MRManager = (function () {
             'lat': parseFloat(Q.lat)
         } : {};
         var difficulty = parseInt(Q.difficulty);
-        var taskLayer;
+        var taskLayer = new L.geoJson(null, {
+            onEachFeature: function (feature, layer) {
+                if (feature.properties && feature.properties.text) {
+                    layer.bindPopup(feature.properties.text);
+                    return layer.openPopup();
+                }
+            }
+        });
 
         // create a notifier
         notify = MRNotifier;
@@ -431,16 +433,6 @@ var MRManager = (function () {
             // and the tile layer
             var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
                 attribution: MRConfig.tileAttrib
-            });
-
-            // and the GeoJSON layer
-            taskLayer = new L.geoJson(null, {
-                onEachFeature: function (feature, layer) {
-                    if (feature.properties && feature.properties.text) {
-                        layer.bindPopup(feature.properties.text);
-                        return layer.openPopup();
-                    }
-                }
             });
 
             // Add both the tile layer and the task layer to the map
@@ -798,6 +790,46 @@ var MRManager = (function () {
             nextTask();
         };
 
+        var userPickEditLocation = function () {
+            notify.play('Click on the map to let MapRoulette know where you want to edit. Once you are done, click this notification to confirm your location.<br />You can use the +/- on your keyboard to increase the radius of your area.', {
+                killer: true,
+                timeout: false,
+                callback: {
+                    afterClose: MRManager.confirmPickingLocation 
+                },
+            });
+            // remove geoJSON layer
+            map.removeLayer(taskLayer);
+            // set zoom level
+            if (map.getZoom() > 10) map.setZoom(10, true);
+            // add area on click
+            map.on('click', MRManager.isPickingLocation);
+            // add handlers for increasing radius
+            $(document).bind('keypress.plusminus', function (e) {
+                if (map.hasLayer(editArea)) {
+                    if (editArea.getRadius() < 50000 && e.which == 43) editArea.setRadius(editArea.getRadius() + 1000); // plus
+                    if (editArea.getRadius() > 0 && e.which == 45) editArea.setRadius(editArea.getRadius() - 1000); // minus
+                }
+            });
+        }
+
+        var isPickingLocation = function (e) {
+            //map.removeLayer(editArea);
+            if (map.hasLayer(editArea)) {
+                map.removeLayer(editArea);
+            };
+            editArea = new L.Circle(e.latlng, EDITRADIUS)
+            editArea.addTo(map);
+        }
+
+        var confirmPickingLocation = function() {
+            notify.play('You have set your preferred editing location.', {killer: true})
+            map.addLayer(taskLayer);
+            map.off('click', MRHelpers.isPickingLocation);
+            $(document).unbind('keypress.plusminus', false);
+            setTimeout(MRManager.presentChallengeSelectionDialog(), 4000);
+        }
+
         var userPreferences = function () {
             //FIXME implement
         };
@@ -934,7 +966,7 @@ var MRManager = (function () {
                 }
                 return false;
             }
-        };
+        }
 
         return {
             init: init,
@@ -944,6 +976,9 @@ var MRManager = (function () {
             geolocateUser: geolocateUser,
             userPreferences: userPreferences,
             userPickChallenge: userPickChallenge,
+            userPickEditLocation: userPickEditLocation,
+            isPickingLocation: isPickingLocation,
+            confirmPickingLocation: confirmPickingLocation,
             readyToEdit: readyToEdit,
             presentChallengeSelectionDialog: presentChallengeSelectionDialog,
             presentChallengeHelp: presentChallengeHelp,
