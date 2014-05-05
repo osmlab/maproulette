@@ -6,14 +6,11 @@ from flask import session, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
-    parse_task_json
+    parse_task_json, refine_with_user_area
 from maproulette.models import User, Challenge, Task, Action, db
 from sqlalchemy.sql import func
-from sqlalchemy.sql.expression import cast
-from geoalchemy2.functions import ST_Buffer, ST_DWithin
-from geoalchemy2.shape import to_shape, from_shape
-from geoalchemy2.types import Geography
-from shapely.geometry import Point
+from geoalchemy2.functions import ST_Buffer
+from geoalchemy2.shape import to_shape
 import geojson
 import json
 import markdown
@@ -76,16 +73,6 @@ action_fields = {
 api = Api(app)
 
 # override the default JSON representation to support the geo objects
-
-
-def refine_with_user_area(query):
-    if 'lon' and 'lat' and 'radius' in session:
-        return query.filter(ST_DWithin(
-            cast(Task.location, Geography),
-            cast(from_shape(Point(session["lon"], session["lat"])), Geography),
-            session["radius"]))
-    else:
-        return query
 
 
 class ApiPing(Resource):
