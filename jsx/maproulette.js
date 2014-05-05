@@ -832,7 +832,10 @@ var MRManager = (function () {
         };
 
         var userPickEditLocation = function () {
-            notify.play('Click on the map to let MapRoulette know where you want to edit. Once you are done, click this notification to confirm your location.<br />You can use the +/- on your keyboard to increase the radius of your area.', {
+            notify.play('Click on the map to let MapRoulette know where you want to edit.<br />' + 
+                'You can use the +/- on your keyboard to increase the radius of your area.<br /><br />' + 
+                'When you are satisfied with your selection, <b>Click this notification to confirm your selection</b>.<br />' + 
+                'To unset your editing area, or cancel, click this dialog without making a selection.', {
                 killer: true,
                 timeout: false,
                 callback: {
