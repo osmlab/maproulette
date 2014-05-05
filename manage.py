@@ -145,13 +145,16 @@ def clean_stale_tasks():
 @manager.command
 def populate_task_location():
     """This command populates the new location field for each task"""
-    counter = 0
-    from maproulette.models import db, Task
-    for task in db.session.query(Task):
-        task.set_location()
-        counter += 1
-    db.session.commit()
-    print 'done. Location for %i tasks set' % counter
+    from maproulette.models import db, Task, Challenge
+    for challenge in db.session.query(Challenge):
+        counter = 0
+        for task in db.session.query(Task).filter_by(
+                challenge_slug=challenge.slug):
+            task.set_location()
+            counter += 1
+        db.session.commit()
+        print 'done. Location for %i tasks in challenge %s set' %\
+            (counter, challenge.title)
 
 
 if __name__ == "__main__":
