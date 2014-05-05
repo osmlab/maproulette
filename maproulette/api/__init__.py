@@ -78,10 +78,6 @@ api = Api(app)
 # override the default JSON representation to support the geo objects
 
 
-def user_has_defined_area():
-    return 'lon' and 'lat' and 'radius' in session
-
-
 def refine_with_user_area(query):
     if 'lon' and 'lat' and 'radius' in session:
         return query.filter(ST_DWithin(
