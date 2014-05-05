@@ -149,7 +149,7 @@ def populate_task_location():
         task.set_location()
         counter += 1
     db.session.commit()
-    print 'done. %i tasks made available' % counter
+    print 'done. Location for %i tasks set' % counter
 
 
 if __name__ == "__main__":
