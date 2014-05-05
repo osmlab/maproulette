@@ -152,7 +152,7 @@ div#challenge_blurb {
 }
 
 /* the little stats section */
-div#stats {
+div.smallmsg {
     font-size: x-small;
     color: rgb(100,100,100);
 }

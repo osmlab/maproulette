@@ -562,6 +562,7 @@ var MRManager = (function () {
                     $('#challenge_title').text(challenge.title);
                     $('#challenge_blurb').text(challenge.blurb);
                     // and move on to get the stats
+
                     getChallengeStats();
                     if (presentDialog) presentChallengeDialog();
                 },
@@ -871,43 +872,58 @@ var MRManager = (function () {
         }
 
         var confirmPickingLocation = function() {
+            var data = {};
             if (!editArea) {
-                $.ajax({
-                    url: "/api/me",
-                    type: "PUT",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        "lon" : null,
-                        "lat" : null,
-                        "radius" : null 
-                    })
-                });
+                data ={
+                    "lon" : null,
+                    "lat" : null,
+                    "radius" : null 
+                };
+                $('#msg_editarea').hide();
                 notify.play('You cleared your designated editing area.', {killer: true});
             } else {
-                $.ajax({
-                    url: "/api/me",
-                    type: "PUT",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        "lon" : editArea.getLatLng().lng,
-                        "lat" : editArea.getLatLng().lat,
-                        "radius" : editArea.getRadius() 
-                    })
-                });
+                data = {
+                    "lon" : editArea.getLatLng().lng,
+                    "lat" : editArea.getLatLng().lat,
+                    "radius" : editArea.getRadius() 
+                };
+                $('#msg_editarea').show();
                 notify.play('You have set your preferred editing location.', {killer: true})
                 console.log(editArea.toGeoJSON());
             };
+            storeServerSettings(data);
             if(map.hasLayer(editArea)) map.removeLayer(editArea);
             editArea = null;
             map.addLayer(taskLayer);
             map.off('click', MRHelpers.isPickingLocation);
             $(document).unbind('keypress.plusminus', false);
+            getChallengeStats();
             setTimeout(MRManager.presentChallengeSelectionDialog(), 4000);
         }
 
-        var userPreferences = function () {
-            //FIXME implement
-        };
+        var getServerSettings = function(keys) {
+            // This gets the server stored session settings for the given array of keys from /api/me
+            // untested and not used yet anywhere
+            $.getJSON('/api/me', function(data) {
+                var out = {};
+                for (var i = 0; i < keys.length; i++) {
+                    if (keys[i] in data && data[keys[i]] != null) {
+                        out[keys[i]] = data[keys[i]];
+                    }
+                };
+                return out;
+            });
+        }
+
+        var storeServerSettings = function(data) {
+            // This stores a dict of settings on the server
+            $.ajax({
+                url: "/api/me",
+                type: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data)
+            });
+        }
 
         var registerHotkeys = function () {
             $(document).bind('keypress', 'q', function () {
@@ -1049,7 +1065,6 @@ var MRManager = (function () {
             openTaskInId: openTaskInId,
             openTaskInJosm: openTaskInJosm,
             geolocateUser: geolocateUser,
-            userPreferences: userPreferences,
             userPickChallenge: userPickChallenge,
             userPickEditLocation: userPickEditLocation,
             isPickingLocation: isPickingLocation,
@@ -1060,6 +1075,8 @@ var MRManager = (function () {
             registerHotkeys: registerHotkeys,
             displayUserStats: displayUserStats,
             displayAllChallengesStats: displayAllChallengesStats,
+            getServerSettings: getServerSettings,
+            storeServerSettings: storeServerSettings
         };
     }
     ());
