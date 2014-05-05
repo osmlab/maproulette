@@ -1040,20 +1040,6 @@ var MRManager = (function () {
             }
         };
 
-        var getUserSetting = function (key) {
-            var value;
-            $.ajax({
-                url: '/api/me',
-                async: false,
-                success: function (data) {
-                    if (key in data) {
-                        value = data[key];
-                    }
-                }
-            });
-            return value;
-        }
-
         return {
             init: init,
             nextTask: nextTask,
