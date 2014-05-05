@@ -13,6 +13,16 @@ var Button = React.createClass({
     );
   }});
 
+var AreaSelectButton = React.createClass({
+  render: function(){
+    return (
+      <div className="button"
+           onClick={this.props.onClick}>
+        {this.props.userHasArea ? 'I want to clear my editing area or select a new one' : 'I want to select an area to work in'}
+      </div>
+    );
+  }});
+
 var ActionButton = React.createClass({
     render: function(){
         var action = this.props.action;
@@ -60,6 +70,27 @@ var DifficultyBadge = React.createClass({
 });
 
 var ChallengeBox = React.createClass({
+
+    getInitialState: function () {
+        return {
+            stats: {"total": 0, "unfixed": 0}
+        }
+    },
+
+    componentWillMount: function () {
+        $.ajax({
+            url: "/api/stats/challenge/" + this.props.challenge.slug,
+            dataType: 'json',
+            success: function(data) {
+                console.log(data);
+                this.setState({"stats": data})
+                if (this.state.stats.total == 0) {
+                    this.getDOMNode().style.display = "none";
+                };
+            }.bind(this)
+        })
+    },
+
     render: function(){
         var slug = this.props.challenge.slug;
         var pickMe = function(){
@@ -70,6 +101,7 @@ var ChallengeBox = React.createClass({
             <span className="title">{this.props.challenge.title}</span>
             <DifficultyBadge difficulty={this.props.challenge.difficulty} />
             <p>{this.props.challenge.blurb}</p>
+            <p>total tasks: {this.state.stats.total}, available: {this.state.stats.unfixed}</p>
             <Button onClick={pickMe}>Work on this challenge</Button>
             </div>
         );
@@ -78,7 +110,9 @@ var ChallengeBox = React.createClass({
 
 var ChallengeSelectionDialog = React.createClass({
     getInitialState: function() {
-        return {challenges: []};
+        return {
+            challenges: [],
+            usersettings: {}};
         },
     componentWillMount: function(){
         $.ajax({
@@ -91,6 +125,13 @@ var ChallengeSelectionDialog = React.createClass({
                 this.setState({challenges: data});
             }.bind(this)
         })
+        $.ajax({
+            url: "/api/me",
+            dataType: 'json',
+            success: function(data) {
+                this.setState({usersettings: data});
+            }.bind(this)
+        })
     },
     render: function(){
         var challengeBoxes = this.state.challenges.map(function(challenge){
@@ -100,7 +141,7 @@ var ChallengeSelectionDialog = React.createClass({
             <ReactCSSTransitionGroup transitionName="dialog">
                 <div>
                     <h2>Pick a different challenge</h2>
-                        <Button onClick={closeDialog(MRManager.userPickEditLocation)}>I want to select an area to work in</Button>
+                        <AreaSelectButton userHasArea={this.state.usersettings['lon'] != null} onClick={closeDialog(MRManager.userPickEditLocation)}></AreaSelectButton>
                         {challengeBoxes}
                     <CancelButton onClick={MRManager.readyToEdit}>Nevermind</CancelButton>
                 </div>
@@ -311,9 +352,9 @@ var MRConfig = (function () {
 }());
 
 var MRManager = (function () {
-        var EDITRADIUS = 10000 // meters, for setting editing radius
         var map;
         var editArea;
+        var MAX_EDIT_RADIUS = 512000 // 512 km
         var challenges = [];
         var challenge = {};
         var task = {};
@@ -807,23 +848,54 @@ var MRManager = (function () {
             // add handlers for increasing radius
             $(document).bind('keypress.plusminus', function (e) {
                 if (map.hasLayer(editArea)) {
-                    if (editArea.getRadius() < 50000 && e.which == 43) editArea.setRadius(editArea.getRadius() + 1000); // plus
-                    if (editArea.getRadius() > 0 && e.which == 45) editArea.setRadius(editArea.getRadius() - 1000); // minus
+                    if (editArea.getRadius() < MAX_EDIT_RADIUS && e.which == 43) { // plus
+                        editArea.setRadius(editArea.getRadius() + (100 * 18 - Math.max(9, map.getZoom()))); // zoom dependent increase
+                    } else if (editArea.getRadius() > 0 && e.which == 45) { // minus
+                        editArea.setRadius(editArea.getRadius() - (100 * 18 - Math.max(9, map.getZoom()))); // zoom dependent decrease
+                    }
                 }
             });
         }
 
         var isPickingLocation = function (e) {
-            //map.removeLayer(editArea);
+            var zoomDependentEditRadius = 100 * Math.pow(2, 18 - Math.max(6, map.getZoom()));
             if (map.hasLayer(editArea)) {
+                zoomDependentEditRadius = editArea.getRadius();
                 map.removeLayer(editArea);
             };
-            editArea = new L.Circle(e.latlng, EDITRADIUS)
+            editArea = new L.Circle(e.latlng, zoomDependentEditRadius)
             editArea.addTo(map);
         }
 
         var confirmPickingLocation = function() {
-            notify.play('You have set your preferred editing location.', {killer: true})
+            if (!editArea) {
+                $.ajax({
+                    url: "/api/me",
+                    type: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        "lon" : null,
+                        "lat" : null,
+                        "radius" : null 
+                    })
+                });
+                notify.play('You cleared your designated editing area.', {killer: true});
+            } else {
+                $.ajax({
+                    url: "/api/me",
+                    type: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        "lon" : editArea.getLatLng().lng,
+                        "lat" : editArea.getLatLng().lat,
+                        "radius" : editArea.getRadius() 
+                    })
+                });
+                notify.play('You have set your preferred editing location.', {killer: true})
+                console.log(editArea.toGeoJSON());
+            };
+            if(map.hasLayer(editArea)) map.removeLayer(editArea);
+            editArea = null;
             map.addLayer(taskLayer);
             map.off('click', MRHelpers.isPickingLocation);
             $(document).unbind('keypress.plusminus', false);
@@ -966,6 +1038,20 @@ var MRManager = (function () {
                 }
                 return false;
             }
+        };
+
+        var getUserSetting = function (key) {
+            var value;
+            $.ajax({
+                url: '/api/me',
+                async: false,
+                success: function (data) {
+                    if (key in data) {
+                        value = data[key];
+                    }
+                }
+            });
+            return value;
         }
 
         return {

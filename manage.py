@@ -104,8 +104,9 @@ def create_testdata(challenges=10, tasks=100):
             # add the first point and the linestring to the task's geometries
             task.geometries.append(TaskGeometry(osmids[0], p1))
             task.geometries.append(TaskGeometry(osmids[1], l1))
-            # and add the first point as the task's location
-            task.location = p1
+            # because we are not using the API, we need to call set_location
+            # explicitly to set the task's location
+            task.set_location()
             # generate random string for the instruction
             task.instruction = task_instruction_text
             # add the task to the session
@@ -130,7 +131,7 @@ def clean_stale_tasks():
     for task in db.session.query(Task).filter(
         Task.status.in_(['assigned', 'editing'])).join(
         Task.actions).group_by(
-        Task.id).having(max(Action.timestamp) < stale_threshold).all():
+            Task.id).having(max(Action.timestamp) < stale_threshold).all():
         task.append_action(Action("available"))
         db.session.add(task)
         print "setting task %s to available" % (task.identifier)
