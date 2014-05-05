@@ -250,13 +250,19 @@ class ApiStatsChallenge(ProtectedResource):
 
     def get(self, slug):
         """Return statistics for the challenge identified by 'slug'"""
+        # get the challenge
         challenge = get_challenge_or_404(slug, True)
+
+        # query the number of tasks
         query = db.session.query(Task).filter_by(challenge_slug=challenge.slug)
+        # refine with the user defined editing area
         query = refine_with_user_area(query)
+        # emit count
         total = query.count()
-        unfixed = challenge.approx_tasks_available
-        # if user selected area, then also return the number of tasks
-        # within that area
+
+        # get the approximate number of available tasks
+        unfixed = query.filter(Task.status.in_(
+            ['available', 'created', 'skipped'])).count()
 
         return {'total': total, 'unfixed': unfixed}
 
