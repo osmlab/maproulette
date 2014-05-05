@@ -309,7 +309,7 @@ class Task(db.Model):
         # then, set the location to a representative point
         # (cheaper than centroid)
         self.location = from_shape(MultiPoint(
-            coordinates).representative_point())
+            coordinates).representative_point(), srid=4326)
 
 
 class TaskGeometry(db.Model):
