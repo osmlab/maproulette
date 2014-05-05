@@ -103,7 +103,9 @@ def create_testdata(challenges=10, tasks=100):
             osmids = [random.randrange(1000000, 1000000000) for _ in range(2)]
             # add the first point and the linestring to the task's geometries
             task.geometries.append(TaskGeometry(osmids[0], p1))
-            task.geometries.append(TaskGeometry(osmids[1], l1))
+            # set a linestring for every other challenge
+            if not j % 2:
+                task.geometries.append(TaskGeometry(osmids[1], l1))
             # because we are not using the API, we need to call set_location
             # explicitly to set the task's location
             task.set_location()
