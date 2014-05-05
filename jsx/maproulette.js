@@ -570,16 +570,16 @@ var MRManager = (function () {
 
 
         var getChallengeStats = function () {
-            // now get the challenge stats
-            // var endpoint = '/api/stats/challenge/' + challenge.slug;
-            // $.getJSON(endpoint, function (data) {
-            //     for (key in data) {
-            //         console.log('raw value: ' + data[key]);
-            //         var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
-            //         console.log('value for ' + key + ': ' + value);
-            //         $('#challenge_' + key).html(value).fadeIn();
-            //     };
-            // });
+            //now get the challenge stats
+            var endpoint = '/api/stats/challenge/' + challenge.slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    console.log('raw value: ' + data[key]);
+                    var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
+                    console.log('value for ' + key + ': ' + value);
+                    $('#challenge_' + key).html(value).fadeIn();
+                };
+            });
         };
 
         var updateTask = function (action) {
