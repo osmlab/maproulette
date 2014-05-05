@@ -84,7 +84,7 @@ var ChallengeBox = React.createClass({
             success: function(data) {
                 console.log(data);
                 this.setState({"stats": data})
-                if (this.state.stats.total == 0) {
+                if (this.state.stats.total == 0 || this.state.stats.unfixed == 0) {
                     this.getDOMNode().style.display = "none";
                 };
             }.bind(this)
