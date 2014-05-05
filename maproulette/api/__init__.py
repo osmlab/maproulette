@@ -6,7 +6,8 @@ from flask import session, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
-    parse_task_json, refine_with_user_area
+    parse_task_json, refine_with_user_area, user_area_is_defined,\
+    send_email
 from maproulette.models import User, Challenge, Task, Action, db
 from sqlalchemy.sql import func
 from geoalchemy2.functions import ST_Buffer
@@ -14,7 +15,6 @@ from geoalchemy2.shape import to_shape
 import geojson
 import json
 import markdown
-import requests
 
 
 class ProtectedResource(Resource):
@@ -361,23 +361,22 @@ class ApiChallengeTask(ProtectedResource):
             # If no tasks are found with this method, then this challenge
             # is complete
         if task is None:
-            # Send a mail to the challenge admin
-            requests.post(
-                "https://api.mailgun.net/v2/maproulette.org/messages",
-                auth=("api", app.config["MAILGUN_API_KEY"]),
-                data={"from": "MapRoulette <admin@maproulette.org>",
-                      "to": ["maproulette@maproulette.org"],
-                      "subject":
-                      "Challenge {} is complete".format(challenge.slug),
-                      "text":
-                      "{challenge} has no remaining tasks"
-                      " on server {server}".format(
-                          challenge=challenge.title,
-                          server=url_for('index', _external=True))})
-            # Deactivate the challenge
-            challenge.active = False
-            db.session.add(challenge)
-            db.session.commit()
+            if not user_area_is_defined():
+                # send email and deactivate challenge only when
+                # there are no more tasks for the entire challenge,
+                # not if the user has defined an area to work on.
+                subject = "Challenge {} is complete".format(challenge.slug)
+                body = "{challenge} has no remaining tasks"
+                " on server {server}".format(
+                    challenge=challenge.title,
+                    server=url_for('index', _external=True))
+                send_email("maproulette@maproulette.org", subject, body)
+
+                # Deactivate the challenge
+                challenge.active = False
+                db.session.add(challenge)
+                db.session.commit()
+
             # Is this the right error?
             return osmerror("ChallengeComplete",
                             "Challenge {} is complete".format(challenge.title))

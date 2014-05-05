@@ -11,6 +11,7 @@ from sqlalchemy.sql.expression import cast
 from geoalchemy2.functions import ST_DWithin
 from geoalchemy2.shape import from_shape
 from geoalchemy2.types import Geography
+import requests
 
 
 def signed_in():
@@ -188,6 +189,10 @@ def get_envelope(geoms):
     return MultiPoint(geoms).envelope
 
 
+def user_area_is_defined():
+    return 'lon' and 'lat' and 'radius' in session
+
+
 def refine_with_user_area(query):
     """Takes a query and refines it with a spatial constraint
     based on user setting"""
@@ -198,6 +203,16 @@ def refine_with_user_area(query):
             session["radius"]))
     else:
         return query
+
+
+def send_email(to, subject, text):
+    requests.post(
+        "https://api.mailgun.net/v2/maproulette.org/messages",
+        auth=("api", app.config["MAILGUN_API_KEY"]),
+        data={"from": "MapRoulette <admin@maproulette.org>",
+              "to": list(to),
+              "subject": subject,
+              "text": text})
 
 
 class GeoPoint(object):
