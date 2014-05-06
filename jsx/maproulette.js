@@ -852,9 +852,9 @@ var MRManager = (function () {
             // add handlers for increasing radius
             $(document).bind('keypress.plusminus', function (e) {
                 if (map.hasLayer(editArea)) {
-                    if (editArea.getRadius() < MAX_EDIT_RADIUS && e.which == 43) { // plus
+                    if (editArea.getRadius() < MAX_EDIT_RADIUS && (e.which == 43 || e.which == 61) { // plus
                         editArea.setRadius(editArea.getRadius() + (100 * 18 - Math.max(9, map.getZoom()))); // zoom dependent increase
-                    } else if (editArea.getRadius() > 0 && e.which == 45) { // minus
+                    } else if (editArea.getRadius() > 0 && (e.which == 45 || e.which == 95) { // minus
                         editArea.setRadius(editArea.getRadius() - (100 * 18 - Math.max(9, map.getZoom()))); // zoom dependent decrease
                     }
                 }
