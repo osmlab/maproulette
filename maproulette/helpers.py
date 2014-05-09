@@ -5,8 +5,13 @@ from maproulette.challengetypes import challenge_types
 from functools import wraps
 import json
 from maproulette import app
-from shapely.geometry import MultiPoint, asShape
+from shapely.geometry import MultiPoint, asShape, Point
 from random import random
+from sqlalchemy.sql.expression import cast
+from geoalchemy2.functions import ST_DWithin
+from geoalchemy2.shape import from_shape
+from geoalchemy2.types import Geography
+import requests
 
 
 def signed_in():
@@ -122,6 +127,7 @@ def get_random_task(challenge):
                               'skipped',
                               'created']),
                           Task.random >= rn).order_by(Task.random)
+    q = refine_with_user_area(q)
     if q.first() is None:
         # we may not have gotten one if there is no task with
         # Task.random <= the random value. chance of this gets
@@ -133,7 +139,7 @@ def get_random_task(challenge):
                                   'skipped',
                                   'created']),
                               Task.random < rn).order_by(Task.random)
-
+    q = refine_with_user_area(q)
     return q.first() or None
 
 
@@ -181,6 +187,32 @@ def get_envelope(geoms):
     """returns the spatial envelope of a list of coordinate pairs
     in the form [(lon, lat), ...]"""
     return MultiPoint(geoms).envelope
+
+
+def user_area_is_defined():
+    return 'lon' and 'lat' and 'radius' in session
+
+
+def refine_with_user_area(query):
+    """Takes a query and refines it with a spatial constraint
+    based on user setting"""
+    if 'lon' and 'lat' and 'radius' in session:
+        return query.filter(ST_DWithin(
+            cast(Task.location, Geography),
+            cast(from_shape(Point(session["lon"], session["lat"])), Geography),
+            session["radius"]))
+    else:
+        return query
+
+
+def send_email(to, subject, text):
+    requests.post(
+        "https://api.mailgun.net/v2/maproulette.org/messages",
+        auth=("api", app.config["MAILGUN_API_KEY"]),
+        data={"from": "MapRoulette <admin@maproulette.org>",
+              "to": list(to),
+              "subject": subject,
+              "text": text})
 
 
 class GeoPoint(object):

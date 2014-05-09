@@ -1,5 +1,6 @@
 Flask>=0.10.1
-Flask-RESTful>=0.2.0
+# Flask-RESTful>=0.2.0
+-e git://github.com/twilio/flask-restful.git#egg=flask-restful
 Flask-KVSession>=0.4
 Flask-OAuthlib>=0.4.2
 Flask-SQLAlchemy>=1.0

@@ -1,6 +1,6 @@
   # """This file contains the SQLAlchemy ORM models"""
 
-from sqlalchemy import create_engine, and_, or_
+from sqlalchemy import create_engine
 from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.ext.declarative import declarative_base
@@ -10,8 +10,7 @@ from geoalchemy2.shape import from_shape, to_shape
 import random
 from datetime import datetime
 from maproulette import app
-from flask import session
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point, MultiPoint
 import pytz
 
 # set up the ORM engine and database object
@@ -183,17 +182,6 @@ class Challenge(db.Model):
 
     polygon = synonym('geom', descriptor=polygon)
 
-    @property
-    def approx_tasks_available(self):
-        """Return the approximate number of tasks
-        available for this challenge."""
-
-        return len(
-            [t for t in self.tasks if t.status in [
-                'created',
-                'skipped',
-                'available']])
-
     @hybrid_property
     def islocal(self):
         """Returns the localness of a challenge (is it small)"""
@@ -229,6 +217,8 @@ class Task(db.Model):
         nullable=False)
     manifest = db.Column(
         db.String)  # not used for now
+    location = db.Column(
+        Geometry)
     geometries = db.relationship(
         "TaskGeometry",
         cascade='all,delete-orphan',
@@ -272,81 +262,6 @@ class Task(db.Model):
             statuses = [statuses]
         return cls.status.in_(statuses)
 
-    @hybrid_property
-    def is_available(self):
-        return self.has_status([
-            'available',
-            'created',
-            'skipped']) or (self.has_status([
-            'assigned',
-            'editing']) and datetime.utcnow() -
-            app.config['TASK_EXPIRATION_THRESHOLD'] >
-            self.actions[-1].timestamp)
-
-    # with statuses as (select distinct on (task_id) timestamp,
-    # status, task_id from actions order by task_id, id desc) select id,
-    # challenge_slug from tasks join statuses c on (id = task_id)
-    # where c.status in ('available','skipped','created') or (c.status in
-    # ('editing','assigned') and now() - c.timestamp > '1 hour');
-
-    @is_available.expression
-    def is_available(cls):
-        # the common table expression
-        current_actions = db.session.query(Action).distinct(
-            Action.task_id).order_by(Action.task_id).order_by(
-            Action.id.desc()).cte(
-            name="current_actions")
-        # before this time, a challenge is available even if it's
-        # 'assigned' or 'editing'
-        available_time = datetime.utcnow() -\
-            app.config['TASK_EXPIRATION_THRESHOLD']
-        res = cls.id.in_(
-            db.session.query(Task.id).join(current_actions).filter(
-                or_(
-                    current_actions.c.status.in_([
-                        'available',
-                        'skipped',
-                        'created']),
-                    and_(
-                        current_actions.c.status.in_([
-                            'editing',
-                            'assigned']),
-                        available_time >
-                        current_actions.c.timestamp))
-            ))
-        return res
-
-    @property
-    def location(self):
-        """Returns the location for this task as a Shapely geometry.
-        This is meant to give the client a quick hint about where the
-        task is located without having to transfer and decode the entire
-        task geometry. In reality what we do is transmit the first
-        geometry we find for the task. This is then parsed into a single
-        representative lon/lat in the API by getting the first coordinate
-        of the geometry retrieved here. See also the PointField class in
-        the API code."""
-
-        if not hasattr(self, 'geometries') or len(self.geometries) == 0:
-            return 'POINT(0 0)'
-        else:
-            g = self.geometries[0].geom
-            return to_shape(g)
-
-    @location.setter
-    def location(self, shape):
-        """Set the location for this task from a Shapely object"""
-
-        self.geom = from_shape(shape)
-
-    def append_action(self, action):
-        self.actions.append(action)
-        # duplicate the action status string in the tasks table to save lookups
-        self.status = action.status
-        db.session.commit()
-        # if action.status == 'fixed':
-        #     self.validate_fixed()
-
     def update(self, new_values, geometries, commit=True):
         """This updates a task based on a dict with new values"""
         for k, v in new_values.iteritems():
@@ -362,64 +277,40 @@ class Task(db.Model):
 
         for geometry in geometries:
             self.geometries = geometries
+
+        # set the location for this task, as a representative point of the
+        # combined geometries.
+        self.set_location()
+
         db.session.merge(self)
         if commit:
             db.session.commit()
         return True
 
-    def validate_fixed(self):
-        from maproulette.oauth import get_latest_changeset
-        from maproulette.helpers import get_envelope
-        import iso8601
+    @property
+    def is_within(self, lon, lat, radius):
+        return self.location.intersects(Point(lon, lat).buffer(radius))
 
-        intersecting = False
-        timeframe = False
+    def append_action(self, action):
+        self.actions.append(action)
+        # duplicate the action status string in the tasks table to save lookups
+        self.status = action.status
+        db.session.commit()
 
-        # get the latest changeset
-        latest_changeset = get_latest_changeset(session.get('osm_id'))
-
-        # check if the changeset bounding box covers the task geometries
-        sw = (float(latest_changeset.get('min_lon')),
-              float(latest_changeset.get('min_lat')))
-        ne = (float(latest_changeset.get('max_lon')),
-              float(latest_changeset.get('max_lat')))
-        envelope = get_envelope([ne, sw])
-        app.logger.debug(envelope)
-        for geom in [to_shape(taskgeom.geom)
-                     for taskgeom in self.geometries]:
-            if geom.intersects(envelope):
-                intersecting = True
-                break
-
-        app.logger.debug('intersecting: %s ' % (intersecting,))
-
-        # check if the timestamp is between assigned and fixed
-        assigned_action = Action.query.filter_by(
-            task_id=self.id).filter_by(
-            user_id=session.get('osm_id')).filter_by(
-            status='assigned').first()
-
-        # get assigned time in UTC
-        assigned_timestamp = assigned_action.timestamp
-        assigned_timestamp = assigned_timestamp.replace(tzinfo=pytz.utc)
-
-        # get the timestamp when the changeset was closed in UTC
-        changeset_closed_timestamp = iso8601.parse_date(
-            latest_changeset.get('closed_at')).replace(tzinfo=pytz.utc)
-
-        app.logger.debug(assigned_timestamp)
-        app.logger.debug(changeset_closed_timestamp)
-        app.logger.debug(datetime.now(pytz.utc))
-
-        timeframe = assigned_timestamp <\
-            changeset_closed_timestamp <\
-            datetime.now(pytz.utc) + app.config['MAX_CHANGESET_OFFSET']
-
-        if intersecting and timeframe:
-            app.logger.debug('validated')
-            self.append_action(Action('validated', session.get('osm_id')))
-        else:
-            app.logger.debug('could not validate')
+    def set_location(self):
+        """Set the location of a task as a cheaply calculated
+        representative point of the combined geometries."""
+        # set the location field, which is a representative point
+        # for the task's geometries
+        # first, get all individual coordinates for the geometries
+        coordinates = []
+        for geometry in self.geometries:
+            coordinates.extend(list(to_shape(geometry.geom).coords))
+        # then, set the location to a representative point
+        # (cheaper than centroid)
+        if len(coordinates) > 0:
+            self.location = from_shape(MultiPoint(
+                coordinates).representative_point(), srid=4326)
 
 
 class TaskGeometry(db.Model):

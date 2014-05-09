@@ -103,9 +103,12 @@ def create_testdata(challenges=10, tasks=100):
             osmids = [random.randrange(1000000, 1000000000) for _ in range(2)]
             # add the first point and the linestring to the task's geometries
             task.geometries.append(TaskGeometry(osmids[0], p1))
-            task.geometries.append(TaskGeometry(osmids[1], l1))
-            # and add the first point as the task's location
-            task.location = p1
+            # set a linestring for every other challenge
+            if not j % 2:
+                task.geometries.append(TaskGeometry(osmids[1], l1))
+            # because we are not using the API, we need to call set_location
+            # explicitly to set the task's location
+            task.set_location()
             # generate random string for the instruction
             task.instruction = task_instruction_text
             # add the task to the session
@@ -130,13 +133,28 @@ def clean_stale_tasks():
     for task in db.session.query(Task).filter(
         Task.status.in_(['assigned', 'editing'])).join(
         Task.actions).group_by(
-        Task.id).having(max(Action.timestamp) < stale_threshold).all():
+            Task.id).having(max(Action.timestamp) < stale_threshold).all():
         task.append_action(Action("available"))
         db.session.add(task)
         print "setting task %s to available" % (task.identifier)
         counter += 1
     db.session.commit()
     print 'done. %i tasks made available' % counter
+
+
+@manager.command
+def populate_task_location():
+    """This command populates the new location field for each task"""
+    from maproulette.models import db, Task, Challenge
+    for challenge in db.session.query(Challenge):
+        counter = 0
+        for task in db.session.query(Task).filter_by(
+                challenge_slug=challenge.slug):
+            task.set_location()
+            counter += 1
+        db.session.commit()
+        print 'done. Location for %i tasks in challenge %s set' %\
+            (counter, challenge.title)
 
 
 if __name__ == "__main__":
