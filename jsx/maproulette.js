@@ -1,5 +1,7 @@
 /** @jsx React.DOM */
 
+var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
+
 // React Components
 var Button = React.createClass({
   render: function(){
@@ -7,6 +9,16 @@ var Button = React.createClass({
       <div className="button"
            onClick={this.props.onClick}>
         {this.props.children}
+      </div>
+    );
+  }});
+
+var AreaSelectButton = React.createClass({
+  render: function(){
+    return (
+      <div className="button"
+           onClick={this.props.onClick}>
+        {this.props.userHasArea ? 'I want to clear my editing area or select a new one' : 'I want to select an area to work in'}
       </div>
     );
   }});
@@ -58,6 +70,27 @@ var DifficultyBadge = React.createClass({
 });
 
 var ChallengeBox = React.createClass({
+
+    getInitialState: function () {
+        return {
+            stats: {"total": 0, "unfixed": 0}
+        }
+    },
+
+    componentWillMount: function () {
+        $.ajax({
+            url: "/api/stats/challenge/" + this.props.challenge.slug,
+            dataType: 'json',
+            success: function(data) {
+                console.log(data);
+                this.setState({"stats": data})
+                if (this.state.stats.total == 0 || this.state.stats.unfixed == 0) {
+                    this.getDOMNode().style.display = "none";
+                };
+            }.bind(this)
+        })
+    },
+
     render: function(){
         var slug = this.props.challenge.slug;
         var pickMe = function(){
@@ -68,6 +101,7 @@ var ChallengeBox = React.createClass({
             <span className="title">{this.props.challenge.title}</span>
             <DifficultyBadge difficulty={this.props.challenge.difficulty} />
             <p>{this.props.challenge.blurb}</p>
+            <p>total tasks: {this.state.stats.total}, available: {this.state.stats.unfixed}</p>
             <Button onClick={pickMe}>Work on this challenge</Button>
             </div>
         );
@@ -76,7 +110,9 @@ var ChallengeBox = React.createClass({
 
 var ChallengeSelectionDialog = React.createClass({
     getInitialState: function() {
-        return {challenges: []};
+        return {
+            challenges: [],
+            usersettings: {}};
         },
     componentWillMount: function(){
         $.ajax({
@@ -89,17 +125,27 @@ var ChallengeSelectionDialog = React.createClass({
                 this.setState({challenges: data});
             }.bind(this)
         })
+        $.ajax({
+            url: "/api/me",
+            dataType: 'json',
+            success: function(data) {
+                this.setState({usersettings: data});
+            }.bind(this)
+        })
     },
     render: function(){
         var challengeBoxes = this.state.challenges.map(function(challenge){
             return <ChallengeBox challenge={challenge} />;
         });
         return (
-            <div>
-            <h2>Pick a different challenge</h2>
-            {challengeBoxes}
-            <CancelButton onClick={MRManager.readyToEdit}>Nevermind</CancelButton>
-            </div>
+            <ReactCSSTransitionGroup transitionName="dialog">
+                <div>
+                    <h2>Pick a different challenge</h2>
+                        <AreaSelectButton userHasArea={this.state.usersettings['lon'] != null} onClick={closeDialog(MRManager.userPickEditLocation)}></AreaSelectButton>
+                        {challengeBoxes}
+                    <CancelButton onClick={MRManager.readyToEdit}>Nevermind</CancelButton>
+                </div>
+            </ReactCSSTransitionGroup>
         );
     }}
 );
@@ -290,7 +336,8 @@ var MRConfig = (function () {
         // the default map options
         mapOptions: {
             center: new L.LatLng(40, -90),
-            zoom: 4
+            zoom: 4,
+            keyboard: false
         },
 
         // default tile URL
@@ -306,6 +353,8 @@ var MRConfig = (function () {
 
 var MRManager = (function () {
         var map;
+        var editArea;
+        var MAX_EDIT_RADIUS = 512000 // 512 km
         var challenges = [];
         var challenge = {};
         var task = {};
@@ -315,7 +364,14 @@ var MRManager = (function () {
             'lat': parseFloat(Q.lat)
         } : {};
         var difficulty = parseInt(Q.difficulty);
-        var taskLayer;
+        var taskLayer = new L.geoJson(null, {
+            onEachFeature: function (feature, layer) {
+                if (feature.properties && feature.properties.text) {
+                    layer.bindPopup(feature.properties.text);
+                    return layer.openPopup();
+                }
+            }
+        });
 
         // create a notifier
         notify = MRNotifier;
@@ -420,16 +476,6 @@ var MRManager = (function () {
                 attribution: MRConfig.tileAttrib
             });
 
-            // and the GeoJSON layer
-            taskLayer = new L.geoJson(null, {
-                onEachFeature: function (feature, layer) {
-                    if (feature.properties && feature.properties.text) {
-                        layer.bindPopup(feature.properties.text);
-                        return layer.openPopup();
-                    }
-                }
-            });
-
             // Add both the tile layer and the task layer to the map
             map.addLayer(tileLayer);
             map.addLayer(taskLayer);
@@ -516,6 +562,7 @@ var MRManager = (function () {
                     $('#challenge_title').text(challenge.title);
                     $('#challenge_blurb').text(challenge.blurb);
                     // and move on to get the stats
+
                     getChallengeStats();
                     if (presentDialog) presentChallengeDialog();
                 },
@@ -524,16 +571,16 @@ var MRManager = (function () {
 
 
         var getChallengeStats = function () {
-            // now get the challenge stats
-            // var endpoint = '/api/stats/challenge/' + challenge.slug;
-            // $.getJSON(endpoint, function (data) {
-            //     for (key in data) {
-            //         console.log('raw value: ' + data[key]);
-            //         var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
-            //         console.log('value for ' + key + ': ' + value);
-            //         $('#challenge_' + key).html(value).fadeIn();
-            //     };
-            // });
+            //now get the challenge stats
+            var endpoint = '/api/stats/challenge/' + challenge.slug;
+            $.getJSON(endpoint, function (data) {
+                for (key in data) {
+                    console.log('raw value: ' + data[key]);
+                    var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
+                    console.log('value for ' + key + ': ' + value);
+                    $('#challenge_' + key).html(value).fadeIn();
+                };
+            });
         };
 
         var updateTask = function (action) {
@@ -785,9 +832,98 @@ var MRManager = (function () {
             nextTask();
         };
 
-        var userPreferences = function () {
-            //FIXME implement
-        };
+        var userPickEditLocation = function () {
+            notify.play('Click on the map to let MapRoulette know where you want to edit.<br />' + 
+                'You can use the +/- on your keyboard to increase the radius of your area.<br /><br />' + 
+                'When you are satisfied with your selection, <b>Click this notification to confirm your selection</b>.<br />' + 
+                'To unset your editing area, or cancel, click this dialog without making a selection.', {
+                killer: true,
+                timeout: false,
+                callback: {
+                    afterClose: MRManager.confirmPickingLocation 
+                },
+            });
+            // remove geoJSON layer
+            map.removeLayer(taskLayer);
+            // set zoom level
+            if (map.getZoom() > 10) map.setZoom(10, true);
+            // add area on click
+            map.on('click', MRManager.isPickingLocation);
+            // add handlers for increasing radius
+            $(document).bind('keypress.plusminus', function (e) {
+                if (map.hasLayer(editArea)) {
+                    if (editArea.getRadius() < MAX_EDIT_RADIUS && (e.which == 43 || e.which == 61)) { // plus
+                        editArea.setRadius(editArea.getRadius() + (100 * 18 - Math.max(9, map.getZoom()))); // zoom dependent increase
+                    } else if (editArea.getRadius() > 0 && (e.which == 45 || e.which == 95)) { // minus
+                        editArea.setRadius(editArea.getRadius() - (100 * 18 - Math.max(9, map.getZoom()))); // zoom dependent decrease
+                    }
+                }
+            });
+        }
+
+        var isPickingLocation = function (e) {
+            var zoomDependentEditRadius = 100 * Math.pow(2, 18 - Math.max(6, map.getZoom()));
+            if (map.hasLayer(editArea)) {
+                zoomDependentEditRadius = editArea.getRadius();
+                map.removeLayer(editArea);
+            };
+            editArea = new L.Circle(e.latlng, zoomDependentEditRadius)
+            editArea.addTo(map);
+        }
+
+        var confirmPickingLocation = function() {
+            var data = {};
+            if (!editArea) {
+                data ={
+                    "lon" : null,
+                    "lat" : null,
+                    "radius" : null 
+                };
+                $('#msg_editarea').hide();
+                notify.play('You cleared your designated editing area.', {killer: true});
+            } else {
+                data = {
+                    "lon" : editArea.getLatLng().lng,
+                    "lat" : editArea.getLatLng().lat,
+                    "radius" : editArea.getRadius() 
+                };
+                $('#msg_editarea').show();
+                notify.play('You have set your preferred editing location.', {killer: true})
+                console.log(editArea.toGeoJSON());
+            };
+            storeServerSettings(data);
+            if(map.hasLayer(editArea)) map.removeLayer(editArea);
+            editArea = null;
+            map.addLayer(taskLayer);
+            map.off('click', MRHelpers.isPickingLocation);
+            $(document).unbind('keypress.plusminus', false);
+            getChallengeStats();
+            setTimeout(MRManager.presentChallengeSelectionDialog(), 4000);
+        }
+
+        var getServerSettings = function(keys) {
+            // This gets the server stored session settings for the given array of keys from /api/me
+            // untested and not used yet anywhere
+            $.getJSON('/api/me', function(data) {
+                var out = {};
+                for (var i = 0; i < keys.length; i++) {
+                    if (keys[i] in data && data[keys[i]] != null) {
+                        out[keys[i]] = data[keys[i]];
+                    }
+                };
+                return out;
+            });
+        }
+
+        var storeServerSettings = function(data) {
+            // This stores a dict of settings on the server
+            $.ajax({
+                url: "/api/me",
+                type: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data)
+            });
+        }
 
         var registerHotkeys = function () {
             $(document).bind('keypress', 'q', function () {
@@ -929,14 +1065,18 @@ var MRManager = (function () {
             openTaskInId: openTaskInId,
             openTaskInJosm: openTaskInJosm,
             geolocateUser: geolocateUser,
-            userPreferences: userPreferences,
             userPickChallenge: userPickChallenge,
+            userPickEditLocation: userPickEditLocation,
+            isPickingLocation: isPickingLocation,
+            confirmPickingLocation: confirmPickingLocation,
             readyToEdit: readyToEdit,
             presentChallengeSelectionDialog: presentChallengeSelectionDialog,
             presentChallengeHelp: presentChallengeHelp,
             registerHotkeys: registerHotkeys,
             displayUserStats: displayUserStats,
             displayAllChallengesStats: displayAllChallengesStats,
+            getServerSettings: getServerSettings,
+            storeServerSettings: storeServerSettings
         };
     }
     ());

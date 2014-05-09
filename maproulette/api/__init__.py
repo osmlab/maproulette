@@ -2,19 +2,19 @@ from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import Raw
-from flask import session, make_response, request, abort, url_for
+from flask import session, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
-    parse_task_json
-from maproulette.models import User, Challenge, Task, TaskGeometry, Action, db
+    parse_task_json, refine_with_user_area, user_area_is_defined,\
+    send_email
+from maproulette.models import User, Challenge, Task, Action, db
 from sqlalchemy.sql import func
 from geoalchemy2.functions import ST_Buffer
-from shapely.geometry.base import BaseGeometry
+from geoalchemy2.shape import to_shape
 import geojson
 import json
 import markdown
-import requests
 
 
 class ProtectedResource(Resource):
@@ -28,13 +28,7 @@ class PointField(Raw):
     """An encoded point"""
 
     def format(self, geometry):
-        # if we get a linestring, take the first point,
-        # else, just get the point.
-        if hasattr(geometry, 'coords'):
-            point = geometry.coords[0]
-            return '%f|%f' % point
-        else:
-            return '0|0'  # this should not happen
+        return '%f|%f' % to_shape(geometry).coords[0]
 
 
 class MarkdownField(Raw):
@@ -63,7 +57,10 @@ task_fields = {
 
 me_fields = {
     'username': fields.String(attribute='display_name'),
-    'osm_id': fields.String()
+    'osm_id': fields.String,
+    'lat': fields.Float,
+    'lon': fields.Float,
+    'radius': fields.Integer
 }
 
 action_fields = {
@@ -73,38 +70,9 @@ action_fields = {
     'user': fields.String(attribute='user_id')
 }
 
-
 api = Api(app)
 
 # override the default JSON representation to support the geo objects
-
-
-@api.representation('application/json')
-def output_json(data, code, headers=None):
-    """Automatic JSON / GeoJSON output"""
-    # return empty result if data contains nothing
-    if not data:
-        resp = make_response(geojson.dumps({}), code)
-    # if this is a Shapely object, dump it as geojson
-    elif isinstance(data, BaseGeometry):
-        resp = make_response(geojson.dumps(data), code)
-    # if this is a list of task geometries, we need to unpack it
-    elif not isinstance(data, dict) and isinstance(data[0], TaskGeometry):
-        # unpack the geometries FIXME can this be done in the model?
-        geometries = [geojson.Feature(
-            geometry=g.geometry,
-            properties={
-                'selected': True,
-                'osmid': g.osmid}) for g in data]
-        resp = make_response(
-            geojson.dumps(geojson.FeatureCollection(geometries)),
-            code)
-    # otherwise perform default json representation
-    else:
-        resp = make_response(json.dumps(data), code)
-    # finish and return the response object
-    resp.headers.extend(headers or {})
-    return resp
 
 
 class ApiPing(Resource):
@@ -112,10 +80,10 @@ class ApiPing(Resource):
     """a simple ping endpoint"""
 
     def get(self):
-        return "I am alive"
+        return ["I am alive"]
 
 
-class ApiMe(ProtectedResource):
+class ApiStatsMe(ProtectedResource):
 
     def get(self):
         me = {}
@@ -171,7 +139,7 @@ class ApiChallengeList(ProtectedResource):
     """Challenge list endpoint"""
 
     @marshal_with(challenge_summary)
-    def get(self):
+    def get(self, **kwargs):
         """returns a list of challenges.
         Optional URL parameters are:
         difficulty: the desired difficulty to filter on
@@ -180,14 +148,19 @@ class ApiChallengeList(ProtectedResource):
         challenges whose bounding polygons contain this point)
         example: /api/challenges?lon=-100.22&lat=40.45&difficulty=2
         """
+
         # initialize the parser
         parser = reqparse.RequestParser()
         parser.add_argument('difficulty', type=int, choices=["1", "2", "3"],
-                            help='difficulty cannot be parsed')
+                            help='difficulty is not 1, 2, 3')
         parser.add_argument('lon', type=float,
-                            help="lon cannot be parsed")
+                            help="lon is not a float")
         parser.add_argument('lat', type=float,
-                            help="lat cannot be parsed")
+                            help="lat is not a float")
+        parser.add_argument('radius', type=int,
+                            help="radius is not an int")
+        parser.add_argument('include_inactive', type=bool, default=False,
+                            help="include_inactive it not bool")
         args = parser.parse_args()
 
         difficulty = None
@@ -196,15 +169,11 @@ class ApiChallengeList(ProtectedResource):
         # Try to get difficulty from argument, or users preference
         difficulty = args['difficulty']
 
-        # for local challenges, first look at lon / lat passed in
-        if args.lon is not None and args.lat is not None:
-            contains = 'POINT(%s %s)' % (args.lon, args.lat)
-        # if there is none, look at the user's home location from OSM
-        # elif 'home_location' in session:
-        #    contains = 'POINT(%s %s)' % tuple(session.get('home_location'))
-
         # get the list of challenges meeting the criteria
-        query = db.session.query(Challenge).filter_by(active=True)
+        query = db.session.query(Challenge)
+
+        if not args.include_inactive:
+            query = query.filter_by(active=True)
 
         if difficulty is not None:
             query = query.filter_by(difficulty=difficulty)
@@ -234,6 +203,18 @@ class ApiSelfInfo(ProtectedResource):
         """Return information about the logged in user"""
         return marshal(session, me_fields)
 
+    def put(self):
+        """User setting information about themselves"""
+        try:
+            payload = json.loads(request.data)
+        except Exception:
+            abort(400)
+        [session.pop(k, None) for k, v in payload.iteritems() if v is None]
+        for k, v in payload.iteritems():
+            if v is not None:
+                session[k] = v
+        return {}
+
 
 class ApiChallengePolygon(ProtectedResource):
 
@@ -252,9 +233,20 @@ class ApiStatsChallenge(ProtectedResource):
 
     def get(self, slug):
         """Return statistics for the challenge identified by 'slug'"""
+        # get the challenge
         challenge = get_challenge_or_404(slug, True)
-        total = len(challenge.tasks)
-        unfixed = challenge.approx_tasks_available
+
+        # query the number of tasks
+        query = db.session.query(Task).filter_by(challenge_slug=challenge.slug)
+        # refine with the user defined editing area
+        query = refine_with_user_area(query)
+        # emit count
+        total = query.count()
+
+        # get the approximate number of available tasks
+        unfixed = query.filter(Task.status.in_(
+            ['available', 'created', 'skipped'])).count()
+
         return {'total': total, 'unfixed': unfixed}
 
 
@@ -369,23 +361,22 @@ class ApiChallengeTask(ProtectedResource):
             # If no tasks are found with this method, then this challenge
             # is complete
         if task is None:
-            # Send a mail to the challenge admin
-            requests.post(
-                "https://api.mailgun.net/v2/maproulette.org/messages",
-                auth=("api", app.config["MAILGUN_API_KEY"]),
-                data={"from": "MapRoulette <admin@maproulette.org>",
-                      "to": ["maproulette@maproulette.org"],
-                      "subject":
-                      "Challenge {} is complete".format(challenge.slug),
-                      "text":
-                      "{challenge} has no remaining tasks"
-                      " on server {server}".format(
-                          challenge=challenge.title,
-                          server=url_for('index', _external=True))})
-            # Deactivate the challenge
-            challenge.active = False
-            db.session.add(challenge)
-            db.session.commit()
+            if not user_area_is_defined():
+                # send email and deactivate challenge only when
+                # there are no more tasks for the entire challenge,
+                # not if the user has defined an area to work on.
+                subject = "Challenge {} is complete".format(challenge.slug)
+                body = "{challenge} has no remaining tasks"
+                " on server {server}".format(
+                    challenge=challenge.title,
+                    server=url_for('index', _external=True))
+                send_email("maproulette@maproulette.org", subject, body)
+
+                # Deactivate the challenge
+                challenge.active = False
+                db.session.add(challenge)
+                db.session.commit()
+
             # Is this the right error?
             return osmerror("ChallengeComplete",
                             "Challenge {} is complete".format(challenge.title))
@@ -448,7 +439,13 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         """Returns the geometries for the task identified by
         'identifier' from the challenge identified by 'slug'"""
         task = get_task_or_404(slug, identifier)
-        return task.geometries
+        geometries = [geojson.Feature(
+            geometry=g.geometry,
+            properties={
+                'selected': True,
+                'osmid': g.osmid}) for g in task.geometries]
+        return geojson.FeatureCollection(geometries)
+
 
 # Add all resources to the RESTful API
 api.add_resource(ApiPing,
@@ -469,7 +466,7 @@ api.add_resource(ApiStatsChallenges,
 api.add_resource(ApiStatsUser,
                  '/api/stats/users')
 # stats about the signed in user
-api.add_resource(ApiMe,
+api.add_resource(ApiStatsMe,
                  '/api/stats/me')
 # task endpoints
 api.add_resource(ApiChallengeTask,
@@ -520,12 +517,14 @@ class AdminApiChallenge(Resource):
             payload.get('difficulty'))
         db.session.add(c)
         db.session.commit()
+        return {}
 
     def delete(self, slug):
         """delete a challenge"""
         challenge = get_challenge_or_404(slug)
         db.session.delete(challenge)
         db.session.commit()
+        return {}, 204
 
 
 class AdminApiTaskStatuses(Resource):
@@ -549,7 +548,7 @@ class AdminApiUpdateTask(Resource):
 
         # Parse the posted data
         parse_task_json(json.loads(request.data), slug, identifier)
-        return {}
+        return {}, 201
 
     def delete(self, slug, identifier):
         """Delete a task"""
@@ -558,6 +557,7 @@ class AdminApiUpdateTask(Resource):
         task.append_action(Action('deleted'))
         db.session.add(task)
         db.session.commit()
+        return {}, 204
 
 
 class AdminApiUpdateTasks(Resource):
