@@ -152,6 +152,9 @@ def populate_task_location():
                 challenge_slug=challenge.slug):
             task.set_location()
             counter += 1
+            # commit every 1000
+            if not counter % 1000:
+                db.session.commit()
         db.session.commit()
         print 'done. Location for %i tasks in challenge %s set' %\
             (counter, challenge.title)
