@@ -59,7 +59,7 @@ class mapRouletteChallenge(object):
         #converts dict payload to JSON. Then uploads tasks to MapRoulette Server.
         headers = {'content-type': 'application/json'}
         requestData = json.dumps(self.payload)
-        taskUploadRequest = requests.post(self.api_addbulktask_endpoint,data=requestData,headers=headers)  
+        taskUploadRequest = requests.put(self.api_addbulktask_endpoint.format(slug=self.slug),data=requestData,headers=headers)  
         return taskUploadRequest
 
 class mapRouletteTask(object):
@@ -77,7 +77,7 @@ class mapRouletteTask(object):
 
     def createPayload(self):
         #creates initial payload dict
-        self.payload = {'instruction':self.instruction,'geom':self.geom}
+        self.payload = {'instruction':self.instruction,'geometries':self.geom}
 
         #generates unique identifier and updates task payload (dict)
         digest = hashlib.md5(json.dumps(self.payload)).hexdigest()
