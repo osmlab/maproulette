@@ -576,6 +576,7 @@ class AdminApiUpdateTasks(Resource):
 
         # commit all dirty tasks at once.
         db.session.commit()
+        return {}, 200
 
 api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
 api.add_resource(AdminApiTaskStatuses,
