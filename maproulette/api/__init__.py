@@ -8,8 +8,7 @@ from maproulette.helpers import get_random_task,\
     require_signedin, osmerror, challenge_exists,\
     parse_task_json, refine_with_user_area, user_area_is_defined,\
     send_email
-from maproulette.models import User, Challenge, Task, Action, db
-from sqlalchemy.sql import func
+from maproulette.models import Challenge, Task, Action, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
 import geojson
@@ -206,9 +205,13 @@ class ApiStatsChallenge(ProtectedResource):
 
         return {'total': total, 'unfixed': unfixed}
 
+
 class ApiStats(ProtectedResource):
 
     """Overall Statistics, optionally per user or per time slice"""
+
+    def get(self):
+        pass
 
 
 class ApiChallengeTask(ProtectedResource):
