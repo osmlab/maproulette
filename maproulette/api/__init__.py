@@ -83,49 +83,6 @@ class ApiPing(Resource):
         return ["I am alive"]
 
 
-class ApiStatsMe(ProtectedResource):
-
-    def get(self):
-        me = {}
-        challenges = {}
-        # select min(a.timestamp) firsttime, count(1), a.status, c.slug from
-        # actions a, tasks t, challenges c where a.task_id = t.id and
-        # t.challenge_slug = c.slug and a.user_id = 437
-        # group by a.status, c.slug;
-        for firstaction, lastaction, status,\
-            status_count, challenge_slug, challenge_title\
-            in db.session.query(
-                func.min(Action.timestamp),
-                func.max(Action.timestamp),
-                Action.status,
-                func.count(Action.id),
-                Challenge.slug,
-                Challenge.title).select_from(Action).filter(
-                Action.user_id == session.get('osm_id')).join(
-                Task, Challenge).group_by(
-                Action.status,
-                Challenge.slug,
-                Challenge.title).order_by(
-                Challenge.title,
-                Action.status):
-            if challenge_slug in challenges.keys():
-                challenges[challenge_slug]['statuses'].update({
-                    status: {'first': str(firstaction),
-                             'last': str(lastaction),
-                             'count': status_count}
-                })
-            else:
-                challenges[challenge_slug] = {
-                    'title': challenge_title,
-                    'statuses': {
-                        status: {'first': str(firstaction),
-                                 'last': str(lastaction),
-                                 'count': status_count}}
-                }
-        me['challenges'] = challenges
-        return me
-
-
 class ApiGetAChallenge(ProtectedResource):
 
     @marshal_with(challenge_summary)
@@ -249,84 +206,9 @@ class ApiStatsChallenge(ProtectedResource):
 
         return {'total': total, 'unfixed': unfixed}
 
+class ApiStats(ProtectedResource):
 
-class ApiStatsChallengeUsers(ProtectedResource):
-
-    """Challenge User Statistics endpoint"""
-
-    def get(self, slug):
-        # what we want is
-        # * number of unique users participating
-        # * number of things fixed per user
-        statuses = {}
-
-        # select count(1), u.display_name, a.status from
-        # challenges c, users u, tasks t, actions a where
-        # c.slug = t.challenge_slug and a.user_id = u.id and
-        # a.task_id = t.id and c.slug = 'test10' group by a.status,
-        # u.display_name;
-        for cnt, display_name, status in db.session.query(
-            func.count(User.id),
-            User.display_name,
-            Action.status).select_from(Action).filter(
-            Challenge.slug == slug).join(
-            Task, Challenge).group_by(
-            Action.status,
-            User.display_name).order_by(
-                User.display_name,
-                Action.status):
-            if status in statuses:
-                statuses[status].update({
-                    display_name: cnt
-                })
-            else:
-                statuses[status] = {
-                    display_name: cnt
-                }
-        return statuses
-
-
-class ApiStatsUser(ProtectedResource):
-
-    """summary statistics for all users"""
-
-    def get(self):
-        pass
-
-
-class ApiStatsChallenges(ProtectedResource):
-
-    """summary statistics for all challenges"""
-
-    def get(self):
-        challenges = {}
-        # select count(t.id), t.status, c.slug, c.title from
-        # actions a, tasks t, challenges c where a.task_id = t.id and
-        # t.challenge_slug = c.slug group by t.status, c.slug, c.title;
-        q = db.session.query(
-            func.count(Task.id),
-            Challenge.slug,
-            Challenge.title,
-            Task.status).select_from(Task).join(
-            Challenge).group_by(
-            Task.status,
-            Challenge.slug,
-            Challenge.title).order_by(
-            Challenge.title,
-            Task.status)
-        for status_count,\
-            challenge_slug,\
-            challenge_title,\
-                status in q:
-                if challenge_slug in challenges.keys():
-                    challenges[challenge_slug]['statuses'].update({
-                        status: status_count})
-                else:
-                    challenges[challenge_slug] = {
-                        'title': challenge_title,
-                        'statuses': {status: status_count}
-                    }
-        return challenges
+    """Overall Statistics, optionally per user or per time slice"""
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -455,19 +337,10 @@ api.add_resource(ApiSelfInfo,
 # statistics endpoints
 # basic stats for one challenge
 api.add_resource(ApiStatsChallenge,
-                 '/api/stats/challenge/<string:slug>')
-# detailed user breakdown for one challenge
-api.add_resource(ApiStatsChallengeUsers,
-                 '/api/stats/challenge/<string:slug>/users')
-# summary stats for all challenges
-api.add_resource(ApiStatsChallenges,
-                 '/api/stats/challenges')
-# summary stats for all users
-api.add_resource(ApiStatsUser,
-                 '/api/stats/users')
-# stats about the signed in user
-api.add_resource(ApiStatsMe,
-                 '/api/stats/me')
+                 '/api/challenge/<string:slug>/stats')
+api.add_resource(ApiStats,
+                 '/api/stats')
+
 # task endpoints
 api.add_resource(ApiChallengeTask,
                  '/api/challenge/<slug>/task')
