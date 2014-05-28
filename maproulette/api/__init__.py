@@ -11,6 +11,7 @@ from maproulette.helpers import get_random_task,\
 from maproulette.models import Challenge, Task, Action, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
+from sqlalchemy import func
 import geojson
 import json
 import markdown
@@ -208,10 +209,57 @@ class ApiStatsChallenge(ProtectedResource):
 
 class ApiStats(ProtectedResource):
 
-    """Overall Statistics, optionally per user or per time slice"""
+    """Overall Statistics, optionally per user, challenge and time slice"""
 
     def get(self):
-        pass
+        from dateutil import parser as dateparser
+        from datetime import datetime
+        parser = reqparse.RequestParser()
+        parser.add_argument('challenge_slug', type=str,
+                            help='challenge slug')
+        parser.add_argument('user_id', type=int,
+                            help='user id')
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+        args = parser.parse_args()
+
+        print args
+
+        # base CTE and query
+        latest_cte = db.session.query(
+            Action.id,
+            Action.task_id,
+            Action.timestamp,
+            Action.user_id,
+            Action.status,
+            Task.challenge_slug).join(
+            Task).distinct(
+            Action.task_id).order_by(
+            Action.task_id.desc()).cte(name='latest')
+
+        stats_query = db.session.query(
+            latest_cte.c.status,
+            func.count(latest_cte.c.id)).group_by(
+            latest_cte.c.status)
+
+        if args['challenge_slug'] is not None:
+            stats_query = stats_query.filter(
+                latest_cte.c.challenge_slug == args['challenge_slug'])
+        if args['user_id'] is not None:
+            stats_query = stats_query.filter(
+                latest_cte.c.user_id == args['user_id'])
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
+            else:
+                end = dateparser.parse(args['end'])
+            stats_query = stats_query.filter(
+                latest_cte.c.timestamp.between(start, end))
+
+        return dict(stats_query.all())
 
 
 class ApiChallengeTask(ProtectedResource):
