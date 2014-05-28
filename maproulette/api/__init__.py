@@ -7,8 +7,8 @@ from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
     parse_task_json, refine_with_user_area, user_area_is_defined,\
-    send_email
-from maproulette.models import Challenge, Task, Action, db
+    send_email, dict_from_tuples
+from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func
@@ -209,23 +209,23 @@ class ApiStatsChallenge(ProtectedResource):
 
 class ApiStats(ProtectedResource):
 
-    """Overall Statistics, optionally per user, challenge and time slice"""
+    """Statistics Endpoint"""
 
-    def get(self):
+    def get(self, challenge_slug=None, user_id=None):
         from dateutil import parser as dateparser
         from datetime import datetime
         parser = reqparse.RequestParser()
-        parser.add_argument('challenge_slug', type=str,
-                            help='challenge slug')
-        parser.add_argument('user_id', type=int,
-                            help='user id')
         parser.add_argument('start', type=str,
                             help='start datetime yyyymmddhhmm')
         parser.add_argument('end', type=str,
                             help='end datetime yyyymmddhhmm')
-        args = parser.parse_args()
 
+        args = parser.parse_args()
         print args
+        print challenge_slug
+        print user_id
+        print request.path
+        breakdown = None
 
         # base CTE and query
         latest_cte = db.session.query(
@@ -234,8 +234,9 @@ class ApiStats(ProtectedResource):
             Action.timestamp,
             Action.user_id,
             Action.status,
-            Task.challenge_slug).join(
-            Task).distinct(
+            Task.challenge_slug,
+            User.display_name).join(
+            Task, User).distinct(
             Action.task_id).order_by(
             Action.task_id.desc()).cte(name='latest')
 
@@ -244,12 +245,32 @@ class ApiStats(ProtectedResource):
             func.count(latest_cte.c.id)).group_by(
             latest_cte.c.status)
 
-        if args['challenge_slug'] is not None:
-            stats_query = stats_query.filter(
-                latest_cte.c.challenge_slug == args['challenge_slug'])
-        if args['user_id'] is not None:
-            stats_query = stats_query.filter(
-                latest_cte.c.user_id == args['user_id'])
+        if challenge_slug is not None:
+            if request.path.endswith('/users'):
+                print "users breakdown"
+                breakdown = 'users'
+                stats_query = db.session.query(
+                    latest_cte.c.display_name,
+                    latest_cte.c.status,
+                    func.count(latest_cte.c.id)).group_by(
+                    latest_cte.c.status,
+                    latest_cte.c.display_name)
+            else:
+                stats_query = stats_query.filter(
+                    latest_cte.c.challenge_slug == challenge_slug)
+        if user_id is not None:
+            if request.path.endswith('/challenges'):
+                print "challenges breakdown"
+                breakdown = 'challenges'
+                stats_query = db.session.query(
+                    latest_cte.c.challenge_slug,
+                    latest_cte.c.status,
+                    func.count(latest_cte.c.id)).group_by(
+                    latest_cte.c.status,
+                    latest_cte.c.challenge_slug)
+            else:
+                stats_query = stats_query.filter(
+                    latest_cte.c.user_id == user_id)
         if args['start'] is not None:
             start = dateparser.parse(args['start'])
             if args['end'] is None:
@@ -259,7 +280,27 @@ class ApiStats(ProtectedResource):
             stats_query = stats_query.filter(
                 latest_cte.c.timestamp.between(start, end))
 
-        return dict(stats_query.all())
+            # if args['breakdown'] == 'users':
+            #     print "user id 0"
+
+        if breakdown is not None:
+            return dict_from_tuples(stats_query.all())
+        else:
+            return dict(stats_query.all())
+
+
+class ApiStatsUserHistory(ProtectedResource):
+
+    """Day to day history for a user"""
+
+    def get(self, user_id):
+        user_history_stats = db.session.query(
+            func.date_trunc('day', Action.timestamp).label('day'),
+            Action.status,
+            func.count(Action.id)).filter_by(user_id=user_id).group_by(
+            'day', Action.status).all()
+        print user_history_stats
+        return dict_from_tuples(user_history_stats)
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -385,13 +426,15 @@ api.add_resource(ApiPing,
                  '/api/ping')
 api.add_resource(ApiSelfInfo,
                  '/api/me')
-# statistics endpoints
-# basic stats for one challenge
-api.add_resource(ApiStatsChallenge,
-                 '/api/challenge/<string:slug>/stats')
+# statistics endpoint
 api.add_resource(ApiStats,
-                 '/api/stats')
-
+                 '/api/stats',
+                 '/api/stats/challenge/<string:challenge_slug>',
+                 '/api/stats/challenge/<string:challenge_slug>/users',
+                 '/api/stats/user/<int:user_id>',
+                 '/api/stats/user/<int:user_id>/challenges')
+api.add_resource(ApiStatsUserHistory,
+                 '/api/stats/user/<int:user_id>/history')
 # task endpoints
 api.add_resource(ApiChallengeTask,
                  '/api/challenge/<slug>/task')

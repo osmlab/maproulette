@@ -134,7 +134,7 @@ def create_testdata(challenges=10, tasks=100, users=10):
             task.instruction = task_instruction_text
             # set a status
             action = Action(random.choice(statuses),
-                            user_id=random.choice(range(users)))
+                            user_id=random.choice(range(int(users))))
             task.append_action(action)
             # add the task to the session
             db.session.add(task)

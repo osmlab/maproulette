@@ -12,6 +12,7 @@ from geoalchemy2.functions import ST_DWithin
 from geoalchemy2.shape import from_shape
 from geoalchemy2.types import Geography
 import requests
+import datetime
 
 
 def signed_in():
@@ -213,6 +214,18 @@ def send_email(to, subject, text):
               "to": list(to),
               "subject": subject,
               "text": text})
+
+
+def dict_from_tuples(tuples):
+    # returns a nested dict for a tuple with three fields.
+    # results are grouped by the first field
+    result = []
+    for group in sorted(set([t[0] for t in tuples])):
+        result.append(
+            {group.isoformat()
+             if isinstance(group, datetime.datetime)
+             else group: [{t[1]:t[2]} for t in tuples if t[0] == group]})
+    return result
 
 
 class GeoPoint(object):
