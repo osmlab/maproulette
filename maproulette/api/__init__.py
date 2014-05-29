@@ -184,7 +184,7 @@ class ApiChallengePolygon(ProtectedResource):
         return challenge.polygon
 
 
-class ApiStatsChallenge(ProtectedResource):
+class ApiChallengeSummaryStats(ProtectedResource):
 
     """Challenge Statistics endpoint"""
 
@@ -472,6 +472,8 @@ api.add_resource(ApiStatsChallengeHistory,
                  '/api/stats/challenge/<string:challenge_slug>/history')
 api.add_resource(ApiStatsUserHistory,
                  '/api/stats/user/<int:user_id>/history')
+api.add_resource(ApiChallengeSummaryStats,
+                 '/api/stats/challenge/<string:challenge_slug>/summary')
 # task endpoints
 api.add_resource(ApiChallengeTask,
                  '/api/challenge/<slug>/task')

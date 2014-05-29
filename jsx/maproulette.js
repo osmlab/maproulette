@@ -79,7 +79,7 @@ var ChallengeBox = React.createClass({
 
     componentWillMount: function () {
         $.ajax({
-            url: "/api/challenge/" + this.props.challenge.slug + "/stats",
+            url: "/api/stats/challenge/" + this.props.challenge.slug + "/summary",
             dataType: 'json',
             success: function(data) {
                 console.log(data);
@@ -572,7 +572,7 @@ var MRManager = (function () {
 
         var getChallengeStats = function () {
             //now get the challenge stats
-            var endpoint = '/api/challenge/' + challenge.slug + "/stats";
+            var endpoint = '/api/stats/challenge/' + challenge.slug + "/summary";
             $.getJSON(endpoint, function (data) {
                 for (key in data) {
                     console.log('raw value: ' + data[key]);
