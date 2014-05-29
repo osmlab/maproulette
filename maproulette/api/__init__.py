@@ -221,6 +221,7 @@ class ApiStats(ProtectedResource):
                             help='end datetime yyyymmddhhmm')
 
         args = parser.parse_args()
+
         breakdown = None
 
         # base CTE and query
@@ -238,7 +239,7 @@ class ApiStats(ProtectedResource):
             Action.task_id.desc()).cte(name='latest')
 
         # the base query gets a count on the base CTE grouped by status,
-        # optionally broken down by users
+        # optionally broken down by users or challenges
         if request.path.endswith('/users'):
             breakdown = 'users'
             stats_query = db.session.query(
@@ -281,6 +282,7 @@ class ApiStats(ProtectedResource):
             stats_query = stats_query.filter(
                 latest_cte.c.timestamp.between(start, end))
 
+        print str(stats_query)
         if breakdown is not None:
             # if this is a breakdown by a secondary variable, the
             # query will have returned three columns and we need to
@@ -295,12 +297,33 @@ class ApiStatsHistory(ProtectedResource):
     """Day to day history overall"""
 
     def get(self):
-        history_stats_query = db.session.query(
+        from dateutil import parser as dateparser
+        from datetime import datetime
+        parser = reqparse.RequestParser()
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+
+        args = parser.parse_args()
+
+        query = db.session.query(
             func.date_trunc('day', Action.timestamp).label('day'),
             Action.status,
             func.count(Action.id)).group_by(
             'day', Action.status)
-        return dict_from_tuples(history_stats_query.all())
+
+        # time slicing filters
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
+            else:
+                end = dateparser.parse(args['end'])
+            query = query.filter(
+                Action.timestamp.between(start, end))
+
+        return dict_from_tuples(query.all())
 
 
 class ApiStatsChallengeHistory(ProtectedResource):
@@ -308,13 +331,34 @@ class ApiStatsChallengeHistory(ProtectedResource):
     """Day to day history for a challenge"""
 
     def get(self, challenge_slug):
-        challenge_history_stats_query = db.session.query(
+        from dateutil import parser as dateparser
+        from datetime import datetime
+        parser = reqparse.RequestParser()
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+
+        args = parser.parse_args()
+
+        query = db.session.query(
             func.date_trunc('day', Action.timestamp).label('day'),
             Action.status,
             func.count(Action.id)).join(Task).filter_by(
             challenge_slug=challenge_slug).group_by(
             'day', Action.status)
-        return dict_from_tuples(challenge_history_stats_query.all())
+
+        # time slicing filters
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
+            else:
+                end = dateparser.parse(args['end'])
+            query = query.filter(
+                Action.timestamp.between(start, end))
+
+        return dict_from_tuples(query.all())
 
 
 class ApiStatsUserHistory(ProtectedResource):
@@ -322,12 +366,33 @@ class ApiStatsUserHistory(ProtectedResource):
     """Day to day history for a user"""
 
     def get(self, user_id):
-        user_history_stats_query = db.session.query(
+        from dateutil import parser as dateparser
+        from datetime import datetime
+        parser = reqparse.RequestParser()
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+
+        args = parser.parse_args()
+
+        query = db.session.query(
             func.date_trunc('day', Action.timestamp).label('day'),
             Action.status,
             func.count(Action.id)).filter_by(user_id=user_id).group_by(
             'day', Action.status)
-        return dict_from_tuples(user_history_stats_query.all())
+
+        # time slicing filters
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
+            else:
+                end = dateparser.parse(args['end'])
+            query = query.filter(
+                Action.timestamp.between(start, end))
+
+        return dict_from_tuples(query.all())
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -457,6 +522,7 @@ api.add_resource(ApiSelfInfo,
 api.add_resource(ApiStats,
                  '/api/stats',
                  '/api/stats/users',
+                 '/api/stats/challenges',
                  '/api/stats/challenge/<string:challenge_slug>',
                  '/api/stats/challenge/<string:challenge_slug>/users',
                  '/api/stats/user/<int:user_id>',
