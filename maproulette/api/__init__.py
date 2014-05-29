@@ -221,10 +221,6 @@ class ApiStats(ProtectedResource):
                             help='end datetime yyyymmddhhmm')
 
         args = parser.parse_args()
-        print args
-        print challenge_slug
-        print user_id
-        print request.path
         breakdown = None
 
         # base CTE and query
@@ -237,7 +233,7 @@ class ApiStats(ProtectedResource):
             Action.status,
             Task.challenge_slug,
             User.display_name).join(
-            Task, User).distinct(
+            Task).outerjoin(User).distinct(
             Action.task_id).order_by(
             Action.task_id.desc()).cte(name='latest')
 
@@ -299,12 +295,12 @@ class ApiStatsHistory(ProtectedResource):
     """Day to day history overall"""
 
     def get(self):
-        history_stats = db.session.query(
+        history_stats_query = db.session.query(
             func.date_trunc('day', Action.timestamp).label('day'),
             Action.status,
             func.count(Action.id)).group_by(
-            'day', Action.status).all()
-        return dict_from_tuples(history_stats)
+            'day', Action.status)
+        return dict_from_tuples(history_stats.all())
 
 
 class ApiStatsChallengeHistory(ProtectedResource):
@@ -312,13 +308,13 @@ class ApiStatsChallengeHistory(ProtectedResource):
     """Day to day history for a challenge"""
 
     def get(self, challenge_slug):
-        challenge_history_stats = db.session.query(
+        challenge_history_stats_query = db.session.query(
             func.date_trunc('day', Action.timestamp).label('day'),
             Action.status,
             func.count(Action.id)).join(Task).filter_by(
-            challenge_slug=Task.challenge_slug).group_by(
-            'day', Action.status).all()
-        return dict_from_tuples(challenge_history_stats)
+            challenge_slug=challenge_slug).group_by(
+            'day', Action.status)
+        return dict_from_tuples(challenge_history_stats_query.all())
 
 
 class ApiStatsUserHistory(ProtectedResource):
@@ -326,13 +322,12 @@ class ApiStatsUserHistory(ProtectedResource):
     """Day to day history for a user"""
 
     def get(self, user_id):
-        user_history_stats = db.session.query(
+        user_history_stats_query = db.session.query(
             func.date_trunc('day', Action.timestamp).label('day'),
             Action.status,
             func.count(Action.id)).filter_by(user_id=user_id).group_by(
-            'day', Action.status).all()
-        print user_history_stats
-        return dict_from_tuples(user_history_stats)
+            'day', Action.status)
+        return dict_from_tuples(user_history_stats_query.all())
 
 
 class ApiChallengeTask(ProtectedResource):
