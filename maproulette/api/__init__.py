@@ -188,10 +188,10 @@ class ApiChallengeSummaryStats(ProtectedResource):
 
     """Challenge Statistics endpoint"""
 
-    def get(self, slug):
+    def get(self, challenge_slug):
         """Return statistics for the challenge identified by 'slug'"""
         # get the challenge
-        challenge = get_challenge_or_404(slug, True)
+        challenge = get_challenge_or_404(challenge_slug, True)
 
         # query the number of tasks
         query = db.session.query(Task).filter_by(challenge_slug=challenge.slug)
