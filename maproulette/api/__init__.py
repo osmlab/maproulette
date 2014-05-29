@@ -300,7 +300,7 @@ class ApiStatsHistory(ProtectedResource):
             Action.status,
             func.count(Action.id)).group_by(
             'day', Action.status)
-        return dict_from_tuples(history_stats.all())
+        return dict_from_tuples(history_stats_query.all())
 
 
 class ApiStatsChallengeHistory(ProtectedResource):
