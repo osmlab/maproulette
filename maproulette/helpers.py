@@ -221,10 +221,15 @@ def dict_from_tuples(tuples):
     # results are grouped by the first field
     result = []
     for group in sorted(set([t[0] for t in tuples])):
-        result.append(
-            {group.isoformat()
-             if isinstance(group, datetime.datetime)
-             else group: [{t[1]:t[2]} for t in tuples if t[0] == group]})
+        values = {}
+        if isinstance(group, datetime.datetime):
+            key = group.isoformat()
+        else:
+            key = group
+        for t in tuples:
+            if t[0] == group:
+                values[t[1]] = t[2]
+        result.append({key: values})
     return result
 
 

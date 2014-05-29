@@ -228,6 +228,7 @@ class ApiStats(ProtectedResource):
         breakdown = None
 
         # base CTE and query
+        # the base CTE gets the set of latest actions for any task
         latest_cte = db.session.query(
             Action.id,
             Action.task_id,
@@ -240,37 +241,41 @@ class ApiStats(ProtectedResource):
             Action.task_id).order_by(
             Action.task_id.desc()).cte(name='latest')
 
-        stats_query = db.session.query(
-            latest_cte.c.status,
-            func.count(latest_cte.c.id)).group_by(
-            latest_cte.c.status)
+        # the base query gets a count on the base CTE grouped by status,
+        # optionally broken down by users
+        if request.path.endswith('/users'):
+            breakdown = 'users'
+            stats_query = db.session.query(
+                latest_cte.c.display_name,
+                latest_cte.c.status,
+                func.count(latest_cte.c.id)).group_by(
+                latest_cte.c.status,
+                latest_cte.c.display_name)
+        elif request.path.endswith('/challenges'):
+            breakdown = 'challenges'
+            stats_query = db.session.query(
+                latest_cte.c.challenge_slug,
+                latest_cte.c.status,
+                func.count(latest_cte.c.id)).group_by(
+                latest_cte.c.status,
+                latest_cte.c.challenge_slug)
+        else:
+            stats_query = db.session.query(
+                latest_cte.c.status,
+                func.count(latest_cte.c.id)).group_by(
+                latest_cte.c.status)
 
+        # stats for a specific challenge
         if challenge_slug is not None:
-            if request.path.endswith('/users'):
-                print "users breakdown"
-                breakdown = 'users'
-                stats_query = db.session.query(
-                    latest_cte.c.display_name,
-                    latest_cte.c.status,
-                    func.count(latest_cte.c.id)).group_by(
-                    latest_cte.c.status,
-                    latest_cte.c.display_name)
-            else:
-                stats_query = stats_query.filter(
-                    latest_cte.c.challenge_slug == challenge_slug)
+            stats_query = stats_query.filter(
+                latest_cte.c.challenge_slug == challenge_slug)
+
+        # stats for a specific user
         if user_id is not None:
-            if request.path.endswith('/challenges'):
-                print "challenges breakdown"
-                breakdown = 'challenges'
-                stats_query = db.session.query(
-                    latest_cte.c.challenge_slug,
-                    latest_cte.c.status,
-                    func.count(latest_cte.c.id)).group_by(
-                    latest_cte.c.status,
-                    latest_cte.c.challenge_slug)
-            else:
-                stats_query = stats_query.filter(
-                    latest_cte.c.user_id == user_id)
+            stats_query = stats_query.filter(
+                latest_cte.c.user_id == user_id)
+
+        # time slicing filters
         if args['start'] is not None:
             start = dateparser.parse(args['start'])
             if args['end'] is None:
@@ -280,13 +285,40 @@ class ApiStats(ProtectedResource):
             stats_query = stats_query.filter(
                 latest_cte.c.timestamp.between(start, end))
 
-            # if args['breakdown'] == 'users':
-            #     print "user id 0"
-
         if breakdown is not None:
+            # if this is a breakdown by a secondary variable, the
+            # query will have returned three columns and we need to
+            # build a nested dictionary.
             return dict_from_tuples(stats_query.all())
         else:
             return dict(stats_query.all())
+
+
+class ApiStatsHistory(ProtectedResource):
+
+    """Day to day history overall"""
+
+    def get(self):
+        history_stats = db.session.query(
+            func.date_trunc('day', Action.timestamp).label('day'),
+            Action.status,
+            func.count(Action.id)).group_by(
+            'day', Action.status).all()
+        return dict_from_tuples(history_stats)
+
+
+class ApiStatsChallengeHistory(ProtectedResource):
+
+    """Day to day history for a challenge"""
+
+    def get(self, challenge_slug):
+        challenge_history_stats = db.session.query(
+            func.date_trunc('day', Action.timestamp).label('day'),
+            Action.status,
+            func.count(Action.id)).join(Task).filter_by(
+            challenge_slug=Task.challenge_slug).group_by(
+            'day', Action.status).all()
+        return dict_from_tuples(challenge_history_stats)
 
 
 class ApiStatsUserHistory(ProtectedResource):
@@ -429,10 +461,15 @@ api.add_resource(ApiSelfInfo,
 # statistics endpoint
 api.add_resource(ApiStats,
                  '/api/stats',
+                 '/api/stats/users',
                  '/api/stats/challenge/<string:challenge_slug>',
                  '/api/stats/challenge/<string:challenge_slug>/users',
                  '/api/stats/user/<int:user_id>',
                  '/api/stats/user/<int:user_id>/challenges')
+api.add_resource(ApiStatsHistory,
+                 '/api/stats/history')
+api.add_resource(ApiStatsChallengeHistory,
+                 '/api/stats/challenge/<string:challenge_slug>/history')
 api.add_resource(ApiStatsUserHistory,
                  '/api/stats/user/<int:user_id>/history')
 # task endpoints
