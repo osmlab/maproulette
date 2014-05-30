@@ -228,9 +228,11 @@ def dict_from_tuples(tuples):
         for t in tuples:
             if t[1] == group:
                 data[t[0]] = t[2]
+        if isinstance(t[0], datetime):
+            data = pad_dates(first_date, data)
         result.append({
             "key": group,
-            "values": pad_dates(first_date, data)})
+            "values": data})
     return result
 
 
