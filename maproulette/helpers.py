@@ -222,12 +222,10 @@ def dict_from_tuples(tuples):
     result = []
     for group in sorted(set([t[1] for t in tuples])):
         group = parse_time(group)
-        data = []
+        data = {}
         for t in tuples:
             if t[1] == group:
-                data.append({
-                    "x": parse_time(t[0]),
-                    "y": t[2]})
+                data[parse_time(t[0])] = t[2]
         result.append({
             "key": group,
             "values": data})
