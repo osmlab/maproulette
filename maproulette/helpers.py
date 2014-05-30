@@ -219,14 +219,14 @@ def send_email(to, subject, text):
 def dict_from_tuples(tuples):
     # returns a nested dict for a tuple with three fields.
     # results are grouped by the first field
-    result = {}
+    result = []
     for group in sorted(set([t[1] for t in tuples])):
         group = parse_time(group)
         data = []
         for t in tuples:
             if t[1] == group:
                 data.append({parse_time(t[0]): t[2]})
-        result[group] = data
+        result.append({group: data})
     return result
 
 
