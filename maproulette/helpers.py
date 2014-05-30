@@ -225,7 +225,9 @@ def dict_from_tuples(tuples):
         data = []
         for t in tuples:
             if t[1] == group:
-                data.append({parse_time(t[0]): t[2]})
+                data.append({
+                    "x": parse_time(t[0]),
+                    "y": t[2]})
         result.append({
             "key": group,
             "values": data})
