@@ -219,18 +219,25 @@ def send_email(to, subject, text):
 def dict_from_tuples(tuples):
     # returns a nested dict for a tuple with three fields.
     # results are grouped by the first field
-    result = []
-    for group in sorted(set([t[0] for t in tuples])):
-        values = {}
-        if isinstance(group, datetime.datetime):
-            key = group.isoformat()
-        else:
-            key = group
+    result = {}
+    for group in sorted(set([t[1] for t in tuples])):
+        group = unix_time(group)
         for t in tuples:
-            if t[0] == group:
-                values[t[1]] = t[2]
-        result.append({key: values})
+            data = []
+            if t[1] == group:
+                data.append({unix_time(t[0]): t[2]})
+        result[group] = data
     return result
+
+
+# time in seconds from epoch
+def unix_time(key):
+    if isinstance(key, datetime.datetime):
+        epoch = datetime.datetime.utcfromtimestamp(0)
+        delta = key - epoch
+        return delta.total_seconds()
+    else:
+        return key
 
 
 class GeoPoint(object):
