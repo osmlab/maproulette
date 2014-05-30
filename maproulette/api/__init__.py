@@ -7,7 +7,7 @@ from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
     parse_task_json, refine_with_user_area, user_area_is_defined,\
-    send_email, dict_from_tuples
+    send_email, as_stats_dict
 from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
@@ -286,12 +286,11 @@ class ApiStats(ProtectedResource):
             stats_query = stats_query.filter(
                 latest_cte.c.timestamp.between(start, end))
 
-        print str(stats_query)
         if breakdown is not None:
             # if this is a breakdown by a secondary variable, the
             # query will have returned three columns and we need to
             # build a nested dictionary.
-            return dict_from_tuples(stats_query.all(), start, end)
+            return as_stats_dict(stats_query.all(), start, end)
         else:
             return dict(stats_query.all())
 
@@ -331,7 +330,7 @@ class ApiStatsHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return dict_from_tuples(query.all(), start, end)
+        return as_stats_dict(query.all(), start, end)
 
 
 class ApiStatsChallengeHistory(ProtectedResource):
@@ -370,7 +369,7 @@ class ApiStatsChallengeHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return dict_from_tuples(query.all(), start, end)
+        return as_stats_dict(query.all(), start, end)
 
 
 class ApiStatsUserHistory(ProtectedResource):
@@ -408,7 +407,7 @@ class ApiStatsUserHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return dict_from_tuples(query.all(), start, end)
+        return as_stats_dict(query.all(), start, end)
 
 
 class ApiChallengeTask(ProtectedResource):

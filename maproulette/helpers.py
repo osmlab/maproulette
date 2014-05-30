@@ -216,33 +216,44 @@ def send_email(to, subject, text):
               "text": text})
 
 
-def dict_from_tuples(tuples, first_date, last_date):
-    # returns a nested dict for a tuple with three fields.
-    # results are grouped by the first field
-    # dates are padded with zeroes as well
+def as_stats_dict(tuples, start=None, end=None):
+    # this parses three-field statistics query result in the form
+    # [('status', datetime(2012, 05, 01, 12, 00), 12), ...]
+    # into a dictionary that can easily be parsed by the charting client:
+    # [{'key': 'status', values: {'date': value, ...}}, ...]
+    # it takes into account the passed-in time slicing parameters and
+    # pads the date range with missing values.
     result = []
     if len(tuples) == 0:
         return {}
-    first_date = min(first_date, min([t[0] for t in tuples]))
-    last_date = max(last_date, max([t[0] for t in tuples]))
     for group in sorted(set([t[1] for t in tuples])):
         data = {}
         for t in tuples:
             if t[1] == group:
                 data[t[0]] = t[2]
         if isinstance(t[0], datetime):
-            data = pad_dates(first_date, last_date, data)
+            start_in_data = min([t[0] for t in tuples])
+            end_in_data = max([t[0] for t in tuples])
+            if start is not None:
+                start = min(start_in_data, start)
+            else:
+                start = start_in_data
+            if end is not None:
+                end = max(end_in_data, end)
+            else:
+                end = end_in_data
+            data = pad_dates(start, end, data)
         result.append({
             "key": group,
             "values": data})
     return result
 
 
-def pad_dates(first_date, last_date, data):
+def pad_dates(start, end, data):
     result = {}
     for date in (
-        first_date + timedelta(n) for n in range(
-            (last_date - first_date).days)):
+        start + timedelta(n) for n in range(
+            (end - start).days)):
             if date not in data.keys():
                 result[parse_time(date)] = 0
             else:
