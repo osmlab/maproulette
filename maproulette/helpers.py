@@ -12,7 +12,7 @@ from geoalchemy2.functions import ST_DWithin
 from geoalchemy2.shape import from_shape
 from geoalchemy2.types import Geography
 import requests
-import datetime
+from datetime import datetime, timedelta
 
 
 def signed_in():
@@ -219,24 +219,38 @@ def send_email(to, subject, text):
 def dict_from_tuples(tuples):
     # returns a nested dict for a tuple with three fields.
     # results are grouped by the first field
+    # dates are padded with zeroes as well
     result = []
+    first_date = min([t[0] for t in tuples])
+    print first_date
     for group in sorted(set([t[1] for t in tuples])):
-        group = parse_time(group)
         data = {}
         for t in tuples:
             if t[1] == group:
-                data[parse_time(t[0])] = t[2]
+                data[t[0]] = t[2]
         result.append({
             "key": group,
-            "values": data})
+            "values": pad_dates(first_date, data)})
+    return result
+
+
+def pad_dates(first_date, data):
+    result = {}
+    for date in (
+        first_date + timedelta(n) for n in range(
+            (datetime.now() - first_date).days)):
+            if date not in data.keys():
+                result[parse_time(date)] = 0
+            else:
+                result[parse_time(date)] = data[date]
     return result
 
 
 # time in seconds from epoch
 def parse_time(key, unix_time=False):
-    if isinstance(key, datetime.datetime):
+    if isinstance(key, datetime):
         if unix_time:
-            epoch = datetime.datetime.utcfromtimestamp(0)
+            epoch = datetime.utcfromtimestamp(0)
             delta = key - epoch
             return delta.total_seconds()
         else:
