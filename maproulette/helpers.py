@@ -216,31 +216,33 @@ def send_email(to, subject, text):
               "text": text})
 
 
-def dict_from_tuples(tuples):
+def dict_from_tuples(tuples, first_date, last_date):
     # returns a nested dict for a tuple with three fields.
     # results are grouped by the first field
     # dates are padded with zeroes as well
     result = []
-    first_date = min([t[0] for t in tuples])
-    print first_date
+    if len(tuples) == 0:
+        return {}
+    first_date = min(first_date, min([t[0] for t in tuples]))
+    last_date = max(last_date, max([t[0] for t in tuples]))
     for group in sorted(set([t[1] for t in tuples])):
         data = {}
         for t in tuples:
             if t[1] == group:
                 data[t[0]] = t[2]
         if isinstance(t[0], datetime):
-            data = pad_dates(first_date, data)
+            data = pad_dates(first_date, last_date, data)
         result.append({
             "key": group,
             "values": data})
     return result
 
 
-def pad_dates(first_date, data):
+def pad_dates(first_date, last_date, data):
     result = {}
     for date in (
         first_date + timedelta(n) for n in range(
-            (datetime.now() - first_date).days)):
+            (last_date - first_date).days)):
             if date not in data.keys():
                 result[parse_time(date)] = 0
             else:

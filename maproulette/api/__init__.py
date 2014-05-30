@@ -214,6 +214,10 @@ class ApiStats(ProtectedResource):
     def get(self, challenge_slug=None, user_id=None):
         from dateutil import parser as dateparser
         from datetime import datetime
+
+        start = None
+        end = None
+
         parser = reqparse.RequestParser()
         parser.add_argument('start', type=str,
                             help='start datetime yyyymmddhhmm')
@@ -287,7 +291,7 @@ class ApiStats(ProtectedResource):
             # if this is a breakdown by a secondary variable, the
             # query will have returned three columns and we need to
             # build a nested dictionary.
-            return dict_from_tuples(stats_query.all())
+            return dict_from_tuples(stats_query.all(), start, end)
         else:
             return dict(stats_query.all())
 
@@ -297,6 +301,10 @@ class ApiStatsHistory(ProtectedResource):
     """Day to day history overall"""
 
     def get(self):
+
+        start = None
+        end = None
+
         from dateutil import parser as dateparser
         from datetime import datetime
         parser = reqparse.RequestParser()
@@ -323,7 +331,7 @@ class ApiStatsHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return dict_from_tuples(query.all())
+        return dict_from_tuples(query.all(), start, end)
 
 
 class ApiStatsChallengeHistory(ProtectedResource):
@@ -331,6 +339,10 @@ class ApiStatsChallengeHistory(ProtectedResource):
     """Day to day history for a challenge"""
 
     def get(self, challenge_slug):
+
+        start = None
+        end = None
+
         from dateutil import parser as dateparser
         from datetime import datetime
         parser = reqparse.RequestParser()
@@ -358,7 +370,7 @@ class ApiStatsChallengeHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return dict_from_tuples(query.all())
+        return dict_from_tuples(query.all(), start, end)
 
 
 class ApiStatsUserHistory(ProtectedResource):
@@ -366,6 +378,10 @@ class ApiStatsUserHistory(ProtectedResource):
     """Day to day history for a user"""
 
     def get(self, user_id):
+
+        start = None
+        end = None
+
         from dateutil import parser as dateparser
         from datetime import datetime
         parser = reqparse.RequestParser()
@@ -392,7 +408,7 @@ class ApiStatsUserHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return dict_from_tuples(query.all())
+        return dict_from_tuples(query.all(), start, end)
 
 
 class ApiChallengeTask(ProtectedResource):
