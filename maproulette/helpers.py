@@ -221,21 +221,24 @@ def dict_from_tuples(tuples):
     # results are grouped by the first field
     result = {}
     for group in sorted(set([t[1] for t in tuples])):
-        group = unix_time(group)
+        group = parse_time(group)
+        data = []
         for t in tuples:
-            data = []
             if t[1] == group:
-                data.append({unix_time(t[0]): t[2]})
+                data.append({parse_time(t[0]): t[2]})
         result[group] = data
     return result
 
 
 # time in seconds from epoch
-def unix_time(key):
+def parse_time(key, unix_time=False):
     if isinstance(key, datetime.datetime):
-        epoch = datetime.datetime.utcfromtimestamp(0)
-        delta = key - epoch
-        return delta.total_seconds()
+        if unix_time:
+            epoch = datetime.datetime.utcfromtimestamp(0)
+            delta = key - epoch
+            return delta.total_seconds()
+        else:
+            return key.isoformat()
     else:
         return key
 
