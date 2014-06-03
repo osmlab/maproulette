@@ -224,13 +224,11 @@ def as_stats_dict(tuples, order=[0, 1, 2], start=None, end=None):
     # it takes into account the passed-in time slicing parameters and
     # pads the date range with missing values.
     result = []
-    app.logger.debug(tuples)
     if len(tuples) == 0:
         return {}
     for group in sorted(set([t[order[0]] for t in tuples])):
         data = {}
         for t in tuples:
-            app.logger.debug(t)
             if t[order[0]] == group:
                 data[t[order[1]]] = t[order[2]]
         if isinstance(t[order[1]], datetime):
@@ -248,19 +246,17 @@ def as_stats_dict(tuples, order=[0, 1, 2], start=None, end=None):
         result.append({
             "key": group,
             "values": data})
-        app.logger.debug(result)
     return result
 
 
 def pad_dates(start, end, data):
     result = {}
-    for date in (
-        start + timedelta(n) for n in range(
-            (end - start).days)):
-            if date not in data.keys():
-                result[parse_time(date)] = 0
-            else:
-                result[parse_time(date)] = data[date]
+    days = (end - start).days if (end - start).days > 0 else 1
+    for date in (start + timedelta(n) for n in range(days)):
+        if date not in data.keys():
+            result[parse_time(date)] = 0
+        else:
+            result[parse_time(date)] = data[date]
     return result
 
 
