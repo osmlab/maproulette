@@ -19,7 +19,9 @@ TEASER = False
 # the text that should go into the teaser
 TEASER_TEXT = 'New MapRoulette Challenges coming SOON!'
 
+from logging import loglevel
 LOGFILE = '/srv/www/{{instance}}/log/maproulette.log'
+LOGLEVEL = loglevel.DEBUG
 
 # by default, disable Flask debug and testing modes
 DEBUG = True
