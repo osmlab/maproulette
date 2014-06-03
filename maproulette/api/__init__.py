@@ -70,6 +70,11 @@ action_fields = {
     'user': fields.String(attribute='user_id')
 }
 
+user_summary = {
+    'id': fields.Integer,
+    'display_name': fields.String
+}
+
 api = Api(app)
 
 # override the default JSON representation to support the geo objects
@@ -290,7 +295,7 @@ class ApiStats(ProtectedResource):
             # if this is a breakdown by a secondary variable, the
             # query will have returned three columns and we need to
             # build a nested dictionary.
-            return as_stats_dict(stats_query.all(), start, end)
+            return as_stats_dict(stats_query.all(), start=start, end=end)
         else:
             return dict(stats_query.all())
 
@@ -330,7 +335,11 @@ class ApiStatsHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return as_stats_dict(query.all(), start, end)
+        return as_stats_dict(
+            query.all(),
+            order=[1, 0, 2],
+            start=start,
+            end=end)
 
 
 class ApiStatsChallengeHistory(ProtectedResource):
@@ -369,7 +378,11 @@ class ApiStatsChallengeHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return as_stats_dict(query.all(), start, end)
+        return as_stats_dict(
+            query.all(),
+            order=[1, 0, 2],
+            start=start,
+            end=end)
 
 
 class ApiStatsUserHistory(ProtectedResource):
@@ -407,7 +420,11 @@ class ApiStatsUserHistory(ProtectedResource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
-        return as_stats_dict(query.all(), start, end)
+        return as_stats_dict(
+            query.all(),
+            order=[1, 0, 2],
+            start=start,
+            end=end)
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -528,6 +545,16 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return geojson.FeatureCollection(geometries)
 
 
+class ApiUsers(ProtectedResource):
+
+    """Users list endpont"""
+
+    @marshal_with(user_summary)
+    def get(self):
+        """Returns a list of users"""
+        users = db.session.query(User).all()
+        return users
+
 # Add all resources to the RESTful API
 api.add_resource(ApiPing,
                  '/api/ping')
@@ -568,6 +595,10 @@ api.add_resource(ApiChallengeDetail,
                  '/api/challenge/<string:slug>')
 api.add_resource(ApiChallengePolygon,
                  '/api/challenge/<string:slug>/polygon')
+# users list
+api.add_resource(ApiUsers,
+                 '/api/users')
+
 
 #
 # The Admin API ################

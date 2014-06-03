@@ -216,7 +216,7 @@ def send_email(to, subject, text):
               "text": text})
 
 
-def as_stats_dict(tuples, start=None, end=None):
+def as_stats_dict(tuples, order=[0, 1, 2], start=None, end=None):
     # this parses three-field statistics query result in the form
     # [('status', datetime(2012, 05, 01, 12, 00), 12), ...]
     # into a dictionary that can easily be parsed by the charting client:
@@ -226,14 +226,14 @@ def as_stats_dict(tuples, start=None, end=None):
     result = []
     if len(tuples) == 0:
         return {}
-    for group in sorted(set([t[1] for t in tuples])):
+    for group in sorted(set([t[order[0]] for t in tuples])):
         data = {}
         for t in tuples:
-            if t[1] == group:
-                data[t[0]] = t[2]
-        if isinstance(t[0], datetime):
-            start_in_data = min([t[0] for t in tuples])
-            end_in_data = max([t[0] for t in tuples])
+            if t[order[0]] == group:
+                data[t[order[1]]] = t[order[2]]
+        if isinstance(t[order[1]], datetime):
+            start_in_data = min([t[order[1]] for t in tuples])
+            end_in_data = max([t[order[1]] for t in tuples])
             if start is not None:
                 start = min(start_in_data, start)
             else:
