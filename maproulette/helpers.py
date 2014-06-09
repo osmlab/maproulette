@@ -12,6 +12,7 @@ from geoalchemy2.functions import ST_DWithin
 from geoalchemy2.shape import from_shape
 from geoalchemy2.types import Geography
 import requests
+from datetime import datetime, timedelta
 
 
 def signed_in():
@@ -213,6 +214,63 @@ def send_email(to, subject, text):
               "to": list(to),
               "subject": subject,
               "text": text})
+
+
+def as_stats_dict(tuples, order=[0, 1, 2], start=None, end=None):
+    # this parses three-field statistics query result in the form
+    # [('status', datetime(2012, 05, 01, 12, 00), 12), ...]
+    # into a dictionary that can easily be parsed by the charting client:
+    # [{'key': 'status', values: {'date': value, ...}}, ...]
+    # it takes into account the passed-in time slicing parameters and
+    # pads the date range with missing values.
+    result = []
+    if len(tuples) == 0:
+        return {}
+    for group in sorted(set([t[order[0]] for t in tuples])):
+        data = {}
+        for t in tuples:
+            if t[order[0]] == group:
+                data[t[order[1]]] = t[order[2]]
+        if isinstance(t[order[1]], datetime):
+            start_in_data = min([t[order[1]] for t in tuples])
+            end_in_data = max([t[order[1]] for t in tuples])
+            if start is not None:
+                start = min(start_in_data, start)
+            else:
+                start = start_in_data
+            if end is not None:
+                end = max(end_in_data, end)
+            else:
+                end = end_in_data
+            data = pad_dates(start, end, data)
+        result.append({
+            "key": group,
+            "values": data})
+    return result
+
+
+def pad_dates(start, end, data):
+    result = {}
+    days = (end - start).days if (end - start).days > 0 else 1
+    for date in (start + timedelta(n) for n in range(days)):
+        if date not in data.keys():
+            result[parse_time(date)] = 0
+        else:
+            result[parse_time(date)] = data[date]
+    return result
+
+
+# time in seconds from epoch
+def parse_time(key, unix_time=False):
+    if isinstance(key, datetime):
+        if unix_time:
+            epoch = datetime.utcfromtimestamp(0)
+            delta = key - epoch
+            return delta.total_seconds()
+        else:
+            return key.isoformat()
+    else:
+        return key
 
 
 class GeoPoint(object):

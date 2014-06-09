@@ -7,11 +7,11 @@ from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
     parse_task_json, refine_with_user_area, user_area_is_defined,\
-    send_email
-from maproulette.models import User, Challenge, Task, Action, db
-from sqlalchemy.sql import func
+    send_email, as_stats_dict
+from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
+from sqlalchemy import func
 import geojson
 import json
 import markdown
@@ -70,6 +70,11 @@ action_fields = {
     'user': fields.String(attribute='user_id')
 }
 
+user_summary = {
+    'id': fields.Integer,
+    'display_name': fields.String
+}
+
 api = Api(app)
 
 # override the default JSON representation to support the geo objects
@@ -81,49 +86,6 @@ class ApiPing(Resource):
 
     def get(self):
         return ["I am alive"]
-
-
-class ApiStatsMe(ProtectedResource):
-
-    def get(self):
-        me = {}
-        challenges = {}
-        # select min(a.timestamp) firsttime, count(1), a.status, c.slug from
-        # actions a, tasks t, challenges c where a.task_id = t.id and
-        # t.challenge_slug = c.slug and a.user_id = 437
-        # group by a.status, c.slug;
-        for firstaction, lastaction, status,\
-            status_count, challenge_slug, challenge_title\
-            in db.session.query(
-                func.min(Action.timestamp),
-                func.max(Action.timestamp),
-                Action.status,
-                func.count(Action.id),
-                Challenge.slug,
-                Challenge.title).select_from(Action).filter(
-                Action.user_id == session.get('osm_id')).join(
-                Task, Challenge).group_by(
-                Action.status,
-                Challenge.slug,
-                Challenge.title).order_by(
-                Challenge.title,
-                Action.status):
-            if challenge_slug in challenges.keys():
-                challenges[challenge_slug]['statuses'].update({
-                    status: {'first': str(firstaction),
-                             'last': str(lastaction),
-                             'count': status_count}
-                })
-            else:
-                challenges[challenge_slug] = {
-                    'title': challenge_title,
-                    'statuses': {
-                        status: {'first': str(firstaction),
-                                 'last': str(lastaction),
-                                 'count': status_count}}
-                }
-        me['challenges'] = challenges
-        return me
 
 
 class ApiGetAChallenge(ProtectedResource):
@@ -227,14 +189,14 @@ class ApiChallengePolygon(ProtectedResource):
         return challenge.polygon
 
 
-class ApiStatsChallenge(ProtectedResource):
+class ApiChallengeSummaryStats(ProtectedResource):
 
     """Challenge Statistics endpoint"""
 
-    def get(self, slug):
+    def get(self, challenge_slug):
         """Return statistics for the challenge identified by 'slug'"""
         # get the challenge
-        challenge = get_challenge_or_404(slug, True)
+        challenge = get_challenge_or_404(challenge_slug, True)
 
         # query the number of tasks
         query = db.session.query(Task).filter_by(challenge_slug=challenge.slug)
@@ -250,83 +212,219 @@ class ApiStatsChallenge(ProtectedResource):
         return {'total': total, 'unfixed': unfixed}
 
 
-class ApiStatsChallengeUsers(ProtectedResource):
+class ApiStats(ProtectedResource):
 
-    """Challenge User Statistics endpoint"""
+    """Statistics Endpoint"""
 
-    def get(self, slug):
-        # what we want is
-        # * number of unique users participating
-        # * number of things fixed per user
-        statuses = {}
+    def get(self, challenge_slug=None, user_id=None):
+        from dateutil import parser as dateparser
+        from datetime import datetime
 
-        # select count(1), u.display_name, a.status from
-        # challenges c, users u, tasks t, actions a where
-        # c.slug = t.challenge_slug and a.user_id = u.id and
-        # a.task_id = t.id and c.slug = 'test10' group by a.status,
-        # u.display_name;
-        for cnt, display_name, status in db.session.query(
-            func.count(User.id),
-            User.display_name,
-            Action.status).select_from(Action).filter(
-            Challenge.slug == slug).join(
-            Task, Challenge).group_by(
+        start = None
+        end = None
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+
+        args = parser.parse_args()
+
+        breakdown = None
+
+        # base CTE and query
+        # the base CTE gets the set of latest actions for any task
+        latest_cte = db.session.query(
+            Action.id,
+            Action.task_id,
+            Action.timestamp,
+            Action.user_id,
             Action.status,
-            User.display_name).order_by(
-                User.display_name,
-                Action.status):
-            if status in statuses:
-                statuses[status].update({
-                    display_name: cnt
-                })
+            Task.challenge_slug,
+            User.display_name).join(
+            Task).outerjoin(User).distinct(
+            Action.task_id).order_by(
+            Action.task_id.desc()).cte(name='latest')
+
+        # the base query gets a count on the base CTE grouped by status,
+        # optionally broken down by users or challenges
+        if request.path.endswith('/users'):
+            breakdown = 'users'
+            stats_query = db.session.query(
+                latest_cte.c.display_name,
+                latest_cte.c.status,
+                func.count(latest_cte.c.id)).group_by(
+                latest_cte.c.status,
+                latest_cte.c.display_name)
+        elif request.path.endswith('/challenges'):
+            breakdown = 'challenges'
+            stats_query = db.session.query(
+                latest_cte.c.challenge_slug,
+                latest_cte.c.status,
+                func.count(latest_cte.c.id)).group_by(
+                latest_cte.c.status,
+                latest_cte.c.challenge_slug)
+        else:
+            stats_query = db.session.query(
+                latest_cte.c.status,
+                func.count(latest_cte.c.id)).group_by(
+                latest_cte.c.status)
+
+        # stats for a specific challenge
+        if challenge_slug is not None:
+            stats_query = stats_query.filter(
+                latest_cte.c.challenge_slug == challenge_slug)
+
+        # stats for a specific user
+        if user_id is not None:
+            stats_query = stats_query.filter(
+                latest_cte.c.user_id == user_id)
+
+        # time slicing filters
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
             else:
-                statuses[status] = {
-                    display_name: cnt
-                }
-        return statuses
+                end = dateparser.parse(args['end'])
+            stats_query = stats_query.filter(
+                latest_cte.c.timestamp.between(start, end))
+
+        if breakdown is not None:
+            # if this is a breakdown by a secondary variable, the
+            # query will have returned three columns and we need to
+            # build a nested dictionary.
+            return as_stats_dict(stats_query.all(), start=start, end=end)
+        else:
+            return dict(stats_query.all())
 
 
-class ApiStatsUser(ProtectedResource):
+class ApiStatsHistory(ProtectedResource):
 
-    """summary statistics for all users"""
+    """Day to day history overall"""
 
     def get(self):
-        pass
+
+        start = None
+        end = None
+
+        from dateutil import parser as dateparser
+        from datetime import datetime
+        parser = reqparse.RequestParser()
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+
+        args = parser.parse_args()
+
+        query = db.session.query(
+            func.date_trunc('day', Action.timestamp).label('day'),
+            Action.status,
+            func.count(Action.id)).group_by(
+            'day', Action.status)
+
+        # time slicing filters
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
+            else:
+                end = dateparser.parse(args['end'])
+            query = query.filter(
+                Action.timestamp.between(start, end))
+
+        return as_stats_dict(
+            query.all(),
+            order=[1, 0, 2],
+            start=start,
+            end=end)
 
 
-class ApiStatsChallenges(ProtectedResource):
+class ApiStatsChallengeHistory(ProtectedResource):
 
-    """summary statistics for all challenges"""
+    """Day to day history for a challenge"""
 
-    def get(self):
-        challenges = {}
-        # select count(t.id), t.status, c.slug, c.title from
-        # actions a, tasks t, challenges c where a.task_id = t.id and
-        # t.challenge_slug = c.slug group by t.status, c.slug, c.title;
-        q = db.session.query(
-            func.count(Task.id),
-            Challenge.slug,
-            Challenge.title,
-            Task.status).select_from(Task).join(
-            Challenge).group_by(
-            Task.status,
-            Challenge.slug,
-            Challenge.title).order_by(
-            Challenge.title,
-            Task.status)
-        for status_count,\
-            challenge_slug,\
-            challenge_title,\
-                status in q:
-                if challenge_slug in challenges.keys():
-                    challenges[challenge_slug]['statuses'].update({
-                        status: status_count})
-                else:
-                    challenges[challenge_slug] = {
-                        'title': challenge_title,
-                        'statuses': {status: status_count}
-                    }
-        return challenges
+    def get(self, challenge_slug):
+
+        start = None
+        end = None
+
+        from dateutil import parser as dateparser
+        from datetime import datetime
+        parser = reqparse.RequestParser()
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+
+        args = parser.parse_args()
+
+        query = db.session.query(
+            func.date_trunc('day', Action.timestamp).label('day'),
+            Action.status,
+            func.count(Action.id)).join(Task).filter_by(
+            challenge_slug=challenge_slug).group_by(
+            'day', Action.status)
+
+        # time slicing filters
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
+            else:
+                end = dateparser.parse(args['end'])
+            query = query.filter(
+                Action.timestamp.between(start, end))
+
+        return as_stats_dict(
+            query.all(),
+            order=[1, 0, 2],
+            start=start,
+            end=end)
+
+
+class ApiStatsUserHistory(ProtectedResource):
+
+    """Day to day history for a user"""
+
+    def get(self, user_id):
+
+        start = None
+        end = None
+
+        from dateutil import parser as dateparser
+        from datetime import datetime
+        parser = reqparse.RequestParser()
+        parser.add_argument('start', type=str,
+                            help='start datetime yyyymmddhhmm')
+        parser.add_argument('end', type=str,
+                            help='end datetime yyyymmddhhmm')
+
+        args = parser.parse_args()
+
+        query = db.session.query(
+            func.date_trunc('day', Action.timestamp).label('day'),
+            Action.status,
+            func.count(Action.id)).filter_by(user_id=user_id).group_by(
+            'day', Action.status)
+
+        # time slicing filters
+        if args['start'] is not None:
+            start = dateparser.parse(args['start'])
+            if args['end'] is None:
+                end = datetime.utcnow()
+            else:
+                end = dateparser.parse(args['end'])
+            query = query.filter(
+                Action.timestamp.between(start, end))
+
+        return as_stats_dict(
+            query.all(),
+            order=[1, 0, 2],
+            start=start,
+            end=end)
 
 
 class ApiChallengeTask(ProtectedResource):
@@ -447,27 +545,38 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return geojson.FeatureCollection(geometries)
 
 
+class ApiUsers(ProtectedResource):
+
+    """Users list endpont"""
+
+    @marshal_with(user_summary)
+    def get(self):
+        """Returns a list of users"""
+        users = db.session.query(User).all()
+        return users
+
 # Add all resources to the RESTful API
 api.add_resource(ApiPing,
                  '/api/ping')
 api.add_resource(ApiSelfInfo,
                  '/api/me')
-# statistics endpoints
-# basic stats for one challenge
-api.add_resource(ApiStatsChallenge,
-                 '/api/stats/challenge/<string:slug>')
-# detailed user breakdown for one challenge
-api.add_resource(ApiStatsChallengeUsers,
-                 '/api/stats/challenge/<string:slug>/users')
-# summary stats for all challenges
-api.add_resource(ApiStatsChallenges,
-                 '/api/stats/challenges')
-# summary stats for all users
-api.add_resource(ApiStatsUser,
-                 '/api/stats/users')
-# stats about the signed in user
-api.add_resource(ApiStatsMe,
-                 '/api/stats/me')
+# statistics endpoint
+api.add_resource(ApiStats,
+                 '/api/stats',
+                 '/api/stats/users',
+                 '/api/stats/challenges',
+                 '/api/stats/challenge/<string:challenge_slug>',
+                 '/api/stats/challenge/<string:challenge_slug>/users',
+                 '/api/stats/user/<int:user_id>',
+                 '/api/stats/user/<int:user_id>/challenges')
+api.add_resource(ApiStatsHistory,
+                 '/api/stats/history')
+api.add_resource(ApiStatsChallengeHistory,
+                 '/api/stats/challenge/<string:challenge_slug>/history')
+api.add_resource(ApiStatsUserHistory,
+                 '/api/stats/user/<int:user_id>/history')
+api.add_resource(ApiChallengeSummaryStats,
+                 '/api/stats/challenge/<string:challenge_slug>/summary')
 # task endpoints
 api.add_resource(ApiChallengeTask,
                  '/api/challenge/<slug>/task')
@@ -486,6 +595,10 @@ api.add_resource(ApiChallengeDetail,
                  '/api/challenge/<string:slug>')
 api.add_resource(ApiChallengePolygon,
                  '/api/challenge/<string:slug>/polygon')
+# users list
+api.add_resource(ApiUsers,
+                 '/api/users')
+
 
 #
 # The Admin API ################

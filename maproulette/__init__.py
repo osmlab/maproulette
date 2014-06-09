@@ -22,7 +22,7 @@ if not app.debug:
     import logging
     logging.basicConfig(
         filename=app.config['LOGFILE'],
-        level=logging.WARN)
+        level=app.config['LOGLEVEL'])
 
 from maproulette import models, views, oauth, api
 

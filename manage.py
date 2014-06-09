@@ -37,22 +37,43 @@ def create_db():
 
 
 @manager.command
-def create_testdata(challenges=10, tasks=100):
+def create_testdata(challenges=10, tasks=100, users=10):
     """Creates test data in the database"""
     import uuid
     import random
-    from maproulette.models import db, Challenge, Task, TaskGeometry, Action
+    from maproulette.models import db, User, Challenge, Task, TaskGeometry, Action
     from shapely.geometry import Point, LineString, box
-    # the gettysburg address
+
+    # statuses to use
+    statuses = ['available',
+                'skipped',
+                'fixed',
+                'deleted',
+                'alreadyfixed',
+                'falsepositive']
+
+    # challenge default strings
     challenge_help_test = "Sample challenge *help* text"
     challenge_instruction_test = "Challenge instruction text"
     task_instruction_text = "Task instruction text"
+
     # delete old tasks and challenges
     db.session.query(TaskGeometry).delete()
     db.session.query(Action).delete()
     db.session.query(Task).delete()
     db.session.query(Challenge).delete()
+    db.session.query(User).delete()
     db.session.commit()
+
+    # create users
+    for uid in range(int(users)):
+        user = User()
+        user.id = uid
+        user.display_name = 'Test User {uid}'.format(uid=uid)
+        db.session.add(user)
+    db.session.commit()
+
+    # create ten challenges
     for i in range(1, int(challenges) + 1):
         print "Generating Test Challenge #%d" % i
         minx = -120
@@ -111,6 +132,10 @@ def create_testdata(challenges=10, tasks=100):
             task.set_location()
             # generate random string for the instruction
             task.instruction = task_instruction_text
+            # set a status
+            action = Action(random.choice(statuses),
+                            user_id=random.choice(range(int(users))))
+            task.append_action(action)
             # add the task to the session
             db.session.add(task)
 

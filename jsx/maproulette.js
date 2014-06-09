@@ -79,7 +79,7 @@ var ChallengeBox = React.createClass({
 
     componentWillMount: function () {
         $.ajax({
-            url: "/api/stats/challenge/" + this.props.challenge.slug,
+            url: "/api/stats/challenge/" + this.props.challenge.slug + "/summary",
             dataType: 'json',
             success: function(data) {
                 console.log(data);
@@ -572,7 +572,7 @@ var MRManager = (function () {
 
         var getChallengeStats = function () {
             //now get the challenge stats
-            var endpoint = '/api/stats/challenge/' + challenge.slug;
+            var endpoint = '/api/stats/challenge/' + challenge.slug + "/summary";
             $.getJSON(endpoint, function (data) {
                 for (key in data) {
                     console.log('raw value: ' + data[key]);
@@ -944,81 +944,6 @@ var MRManager = (function () {
 
         }
 
-        var displayUserStats = function (elem) {
-            // Display the user stats table
-            var endpoint = '/api/stats/me';
-            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
-            var first = moment();
-            var last = moment().year(1900);
-            $.getJSON(endpoint, function (data) {
-                for (c in data.challenges) {
-                    var challenge = data.challenges[c];
-                    var fixed = 0;
-                    var othercount = 0;
-                    var rowHTML = "";
-                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + c + "'>" + challenge.title + "</a><td>";
-                    for (s in challenge.statuses) {
-                        var status = challenge.statuses[s];
-                        var cnt = status['count'];
-                        if (s === "fixed") {
-                            rowHTML += "hurrah, you fixed " + cnt + " thing" + (cnt == 1 ? "" : "s") + " out of the ";
-                            fixed = cnt;
-                        } else {
-                            othercount += cnt;
-                        };
-                        if (status['first'] != undefined) {
-                            var thisFirst = moment(status['first']);
-                            first = (thisFirst.isBefore(first) ? thisFirst : first);
-                        }
-                        if (status['last'] != undefined) {
-                            var thisLast = moment(status['last']);
-                            last = (thisLast.isAfter(last) ? thisLast : last);
-                        }
-                    }
-                    var fixrate = fixed / (othercount + fixed);
-                    if (fixed) rowHTML += othercount + " you looked at!";
-                    else rowHTML += "meh, you looked at " + othercount + " thing" + (cnt == 1 ? "" : "s") + " but didn't fix anything..";
-
-                    rowHTML += "<br />you started with this challenge " + first.fromNow() + " and worked on it last " + last.fromNow() + ".";
-                    rowHTML += "<td class=hidden>" + fixrate;
-                    tableHTML += rowHTML;
-                }
-                tableHTML += "</tbody></table>";
-            }).complete(function () {
-                $("#" + elem).html(tableHTML);
-            });
-        }
-
-        var displayAllChallengesStats = function (elem) {
-            // Display the challenge summary stats as a table.
-            var endpoint = '/api/stats/challenges';
-            var tableHTML = "<table class=stats><thead><th><th><th></thead><tbody>";
-            $.getJSON(endpoint, function (data) {
-                for (slug in data) {
-                    var challenge = data[slug]
-                    var first = moment();
-                    var last = moment().year(1900);
-                    var title = challenge['title'];
-                    var total = 0;
-                    var fixed = 0;
-                    var statuses = challenge['statuses'];
-                    for (status in statuses) {
-                        var n = statuses[status];
-                        total += n
-                        fixed += ["falsepositive",
-                            "fixed", "validated"
-                        ].indexOf(status) > -1 ? n : 0;
-                    }
-                    tableHTML += "<tr><td class='challengetitle'><a href='/challenge/" + slug + "'>" + title + "</a>\
-                    <td><a href='http://maproulette.org/#c=" + slug + "'>Work on this challenge</a></td>\
-                    <td>" + fixed + " out of " + total + " tasks fixed (" + Math.round(100 * (fixed / total)) + "%)";
-                }
-                tableHTML += "</tbody></table>";
-            }).complete(function () {
-                $("#" + elem).html(tableHTML);
-            });
-        }
-
         var updateHash = function () {
             location.hash = 't=' + challenge.slug + '/' + task.identifier;
         }
@@ -1073,8 +998,6 @@ var MRManager = (function () {
             presentChallengeSelectionDialog: presentChallengeSelectionDialog,
             presentChallengeHelp: presentChallengeHelp,
             registerHotkeys: registerHotkeys,
-            displayUserStats: displayUserStats,
-            displayAllChallengesStats: displayAllChallengesStats,
             getServerSettings: getServerSettings,
             storeServerSettings: storeServerSettings
         };
