@@ -572,7 +572,7 @@ var MRManager = (function () {
 
         var getChallengeStats = function () {
             //now get the challenge stats
-            var endpoint = '/api/stats/challenge/' + challenge.slug + "/summary";
+            var endpoint = '/api/challenge/' + challenge.slug + "/summary";
             $.getJSON(endpoint, function (data) {
                 for (key in data) {
                     console.log('raw value: ' + data[key]);
