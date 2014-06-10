@@ -189,7 +189,7 @@ class ApiChallengePolygon(ProtectedResource):
         return challenge.polygon
 
 
-class ApiChallengeSummaryStats(ProtectedResource):
+class ApiChallengeSummaryStats(Resource):
 
     """Challenge Statistics endpoint"""
 
@@ -212,7 +212,7 @@ class ApiChallengeSummaryStats(ProtectedResource):
         return {'total': total, 'unfixed': unfixed}
 
 
-class ApiStats(ProtectedResource):
+class ApiStats(Resource):
 
     """Statistics Endpoint"""
 
@@ -300,7 +300,7 @@ class ApiStats(ProtectedResource):
             return dict(stats_query.all())
 
 
-class ApiStatsHistory(ProtectedResource):
+class ApiStatsHistory(Resource):
 
     """Day to day history overall"""
 
@@ -342,7 +342,7 @@ class ApiStatsHistory(ProtectedResource):
             end=end)
 
 
-class ApiStatsChallengeHistory(ProtectedResource):
+class ApiStatsChallengeHistory(Resource):
 
     """Day to day history for a challenge"""
 
@@ -385,7 +385,7 @@ class ApiStatsChallengeHistory(ProtectedResource):
             end=end)
 
 
-class ApiStatsUserHistory(ProtectedResource):
+class ApiStatsUserHistory(Resource):
 
     """Day to day history for a user"""
 
