@@ -71,3 +71,7 @@ OSM = {
 
 # The MailGun API KEY
 MAILGUN_API_KEY = 'REPLACE WITH YOUR MAILGUN API KEY'
+
+# IP Whitelist for external API calls
+# (/api/admin/*, /api/stats*, /api/users, /api/challenges)
+IP_WHITELIST = [ ]

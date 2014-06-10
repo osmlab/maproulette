@@ -7,7 +7,7 @@ from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
     parse_task_json, refine_with_user_area, user_area_is_defined,\
-    send_email, as_stats_dict
+    send_email, as_stats_dict, local_or_whitelist_only
 from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
@@ -21,6 +21,13 @@ class ProtectedResource(Resource):
 
     """A Resource that requires the caller to be authenticated against OSM"""
     method_decorators = [require_signedin]
+
+
+class LocalOrWhitelistResource(Resource):
+
+    """A Resource that requires the caller to be localhost or in a whitelist
+    defined in the application config"""
+    method_decorators = [local_or_whitelist_only]
 
 
 class PointField(Raw):
@@ -96,7 +103,7 @@ class ApiGetAChallenge(ProtectedResource):
         return get_challenge_or_404(app.config["DEFAULT_CHALLENGE"])
 
 
-class ApiChallengeList(ProtectedResource):
+class ApiChallengeList(LocalOrWhitelistResource):
 
     """Challenge list endpoint"""
 
@@ -545,7 +552,7 @@ class ApiChallengeTaskGeometries(ProtectedResource):
         return geojson.FeatureCollection(geometries)
 
 
-class ApiUsers(ProtectedResource):
+class ApiUsers(LocalOrWhitelistResource):
 
     """Users list endpont"""
 

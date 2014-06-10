@@ -3,7 +3,7 @@ from flask.ext.restful import Resource, Api, fields, marshal_with
 from maproulette import app
 from maproulette.helpers import GeoPoint, JsonData
 from maproulette.models import Challenge, Task, Action, db
-from flask.helpers import localonly
+from flask.helpers import local_or_whitelist_only
 
 challenge_fields = {'id': fields.String(attribute='slug'),
                     'title': fields.String,
@@ -22,7 +22,7 @@ task_fields = {'id': fields.String(attribute='identifier'),
 
 
 class AdminChallengeApi(Resource):
-    method_decorators = [localonly]
+    method_decorators = [local_or_whitelist_only]
 
     @marshal_with(challenge_fields)
     def get(self, challenge_slug):
@@ -56,7 +56,7 @@ class AdminChallengeApi(Resource):
 
 
 class AdminTasksApi(Resource):
-    method_decorators = [localonly]
+    method_decorators = [local_or_whitelist_only]
 
     def post(self, challenge_slug):
         challenge = get_challenge_or_404(challenge_slug,
@@ -65,7 +65,7 @@ class AdminTasksApi(Resource):
 
 
 class AdminTasksApi(Resource):
-    method_decorators = [localonly]
+    method_decorators = [local_or_whitelist_only]
 
     def post(self, challenge_slug):
         challenge = get_challenge_or_404(challenge_slug, instance_type=False,
@@ -97,7 +97,7 @@ class AdminTasksApi(Resource):
 
 
 class AdminTaskApi(Resource):
-    method_decorators = [localonly]
+    method_decorators = [local_or_whitelist_only]
 
     @marshal_with(task_fields)
     def get(self, challenge_slug, task_id):

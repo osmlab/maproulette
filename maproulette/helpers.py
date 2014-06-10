@@ -101,19 +101,20 @@ def require_signedin(f):
     return decorated_function
 
 
-def localonly(f):
-    """Restricts the view to only localhost. If there is a proxy, it
-    will handle that too"""
+def local_or_whitelist_only(f):
+    """Restricts the view to only localhost or a whitelist defined in
+    the app configuration. If there is a proxy, it will handle that too"""
 
     @wraps(f)
-    def decorated_function(*args, **hwargs):
-        # FIXME request is not defined here
+    def decorated_function(*args, **kwargs):
         if not request.headers.getlist("X-Forwarded-For"):
             ip = request.remote_addr
         else:
             ip = request.headers.getlist("X-Forwarded-For")[0]
-        if not ip == "127.0.0.1":
-            abort(404)
+        if not ip == "127.0.0.1" and ip not in app.config["IP_WHITELIST"]:
+            abort(401)
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def get_random_task(challenge):
