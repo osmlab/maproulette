@@ -6,17 +6,17 @@ server {
     location / {
 
         # allow CORS requests from other maproulette.org domains
-        if ($http_origin ~* (https?://.*\.maproulette\.org(:[0-9]+)?)) {
+        if ($http_origin ~* (https?://.*(maproulette\.org|amazonaws\.com)(:[0-9]+)?)) {
             set $cors "true";
         }
 
-        # only allow CORS requests to the stats endpoints
-        set $statsurl "false";
-        if ($request_filename ~* (\/api\/stats)) {
-            set $statsurl "${cors}true";
+        # disallow direct access to /api/stats
+        if ($request_filename ~* \/api\/stats) {
+                set $statsurl "${cors}true";
         }
+
         if ($statsurl = "true") {
-            return 403;
+                return 403;
         }
 
         if ($request_method = 'OPTIONS') {
