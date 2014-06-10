@@ -112,7 +112,7 @@ def local_or_whitelist_only(f):
         else:
             ip = request.headers.getlist("X-Forwarded-For")[0]
         if not ip == "127.0.0.1" and ip not in app.config["IP_WHITELIST"]:
-            abort(401)
+            abort(403)
         return f(*args, **kwargs)
     return decorated_function
 
