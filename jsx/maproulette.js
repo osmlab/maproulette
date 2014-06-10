@@ -79,7 +79,7 @@ var ChallengeBox = React.createClass({
 
     componentWillMount: function () {
         $.ajax({
-            url: "/api/stats/challenge/" + this.props.challenge.slug + "/summary",
+            url: "/api/challenge/" + this.props.challenge.slug + "/summary",
             dataType: 'json',
             success: function(data) {
                 console.log(data);

@@ -577,7 +577,7 @@ api.add_resource(ApiStatsChallengeHistory,
 api.add_resource(ApiStatsUserHistory,
                  '/api/stats/user/<int:user_id>/history')
 api.add_resource(ApiChallengeSummaryStats,
-                 '/api/stats/challenge/<string:challenge_slug>/summary')
+                 '/api/challenge/<string:challenge_slug>/summary')
 # task endpoints
 api.add_resource(ApiChallengeTask,
                  '/api/challenge/<slug>/task')
