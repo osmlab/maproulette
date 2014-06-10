@@ -252,7 +252,8 @@ class ApiStats(Resource):
             User.display_name).join(
             Task).outerjoin(User).distinct(
             Action.task_id).order_by(
-            Action.task_id.desc()).cte(name='latest')
+            Action.task_id,
+            Action.id.desc()).cte(name='latest')
 
         # the base query gets a count on the base CTE grouped by status,
         # optionally broken down by users or challenges
