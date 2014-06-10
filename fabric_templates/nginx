@@ -3,7 +3,54 @@ server {
     server_tokens off;
     server_name {{instance}};
 
-     location / {
+    location / {
+
+        # allow CORS requests from other maproulette.org domains
+        if ($http_origin ~* (https?://.*\.maproulette\.org(:[0-9]+)?)) {
+            set $cors "true";
+        }
+
+        # only allow CORS requests to the stats endpoints
+        set $statsurl "false";
+        if ($request_filename ~* (\/api\/stats)) {
+            set $statsurl "${cors}true";
+        }
+        if ($statsurl = "true") {
+            return 403;
+        }
+
+        if ($request_method = 'OPTIONS') {
+            set $cors "${cors}options";
+        }
+
+        if ($request_method = 'GET') {
+            set $cors "${cors}get";
+        }
+        if ($request_method = 'POST') {
+            set $cors "${cors}post";
+        }
+
+        if ($cors = "trueget") {
+            add_header 'Access-Control-Allow-Origin' "$http_origin";
+            add_header 'Access-Control-Allow-Credentials' 'true';
+        }
+
+        if ($cors = "truepost") {
+            add_header 'Access-Control-Allow-Origin' "$http_origin";
+            add_header 'Access-Control-Allow-Credentials' 'true';
+        }
+
+        if ($cors = "trueoptions") {
+            add_header 'Access-Control-Allow-Origin' "$http_origin";
+            add_header 'Access-Control-Allow-Credentials' 'true';
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since';
+            add_header 'Content-Length' 0;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            return 204;
+        }
+
          include uwsgi_params;
          uwsgi_pass unix:/tmp/{{instance}}.sock;
      }
