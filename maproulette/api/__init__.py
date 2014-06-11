@@ -257,7 +257,8 @@ class ApiStats(Resource):
                 latest_cte.c.status,
                 func.count(latest_cte.c.id)).group_by(
                 latest_cte.c.status,
-                latest_cte.c.display_name)
+                latest_cte.c.display_name).order_by(
+                latest_cte.c.status)
         elif request.path.endswith('/challenges'):
             breakdown = True
             stats_query = db.session.query(
@@ -265,11 +266,13 @@ class ApiStats(Resource):
                 latest_cte.c.status,
                 func.count(latest_cte.c.id)).group_by(
                 latest_cte.c.status,
-                latest_cte.c.challenge_slug)
+                latest_cte.c.challenge_slug).order_by(
+                latest_cte.c.status)
         else:
             stats_query = db.session.query(
                 latest_cte.c.status,
                 func.count(latest_cte.c.id)).group_by(
+                latest_cte.c.status).order_by(
                 latest_cte.c.status)
 
         # stats for a specific challenge
@@ -332,7 +335,8 @@ class ApiStatsHistory(Resource):
             query = query.filter(User.id == user_id)
 
         query = query.group_by(
-            'day', Action.status)
+            'day', Action.status).order_by(
+            Action.status)
 
         # time slicing filters
         if args['start'] is not None:
