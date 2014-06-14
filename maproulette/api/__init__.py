@@ -538,24 +538,35 @@ class AdminApiChallenge(Resource):
     """Admin challenge creation endpoint"""
 
     def put(self, slug):
-        if challenge_exists(slug):
-            return {}
+        exists = challenge_exists(slug)
         try:
             payload = json.loads(request.data)
         except Exception:
-            abort(400)
-        if not 'title' in payload:
-            abort(400)
-        c = Challenge(
-            slug,
-            payload.get('title'),
-            payload.get('geometry'),
-            payload.get('description'),
-            payload.get('blurb'),
-            payload.get('help'),
-            payload.get('instruction'),
-            payload.get('active'),
-            payload.get('difficulty'))
+            abort(400, "JSON bad")
+        if not exists and 'title' not in payload:
+            abort(400, "No title")
+            return {}
+        if exists:
+            app.logger.debug('challenge existed, retrieving')
+            c = get_challenge_or_404(slug, abort_if_inactive=False)
+            if 'title' in payload:
+                c.title = payload.get('title')
+        else:
+            c = Challenge(slug, payload.get('title'))
+        if 'geometry' in payload:
+            c.geometry = payload.get('geometry')
+        if 'description' in payload:
+            c.description = payload.get('description')
+        if 'blurb' in payload:
+            c.blurb = payload.get('blurb')
+        if 'help' in payload:
+            c.help = payload.get('help')
+        if 'instruction' in payload:
+            c.instruction = payload.get('instruction')
+        if 'active' in payload:
+            c.active = payload.get('active')
+        if 'difficulty' in payload:
+            c.difficulty = payload.get('difficulty')
         db.session.add(c)
         db.session.commit()
         return {}
