@@ -149,8 +149,6 @@ def prepare_task(node, args, osmid, geom):
                                      payload=payload
                                      )
 
-        payload = json.dumps(payload)
-
         return identifier, payload
 
 
@@ -213,7 +211,7 @@ def post_tasks(slug, tasks, sync):
         for identifier, payload in tasks:
             newids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
-            req.request(url=url, payload=payload)
+            req.request(url=url, payload=json.dumps(payload))
 
         responses = req.finish()
 
