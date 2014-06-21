@@ -283,7 +283,7 @@ def write_responses(responses, output):
                                   )
                 outfile.write(str(newr+'\n'))
 
-            except simplejson.scanner.JSONDecodeError:
+            except ValueError:
                 newr = json.dumps({'identifier': nid,
                                    'status': res.status_code
                                    }
