@@ -53,6 +53,9 @@ def get_tasks_from_db(args):
     db_user = args.user
     if not args.user:
         db_user = getpass.getuser()
+    db_pass = args.password
+    if not args.password:
+        db_pass = getpass.getpass()
 
     db_name = args.database
     if not args.database:
@@ -60,8 +63,9 @@ def get_tasks_from_db(args):
 
     db_query = args.query
 
-    db_string = "dbname={db_name} user={db_user}".format(db_name=db_name,
-                                                         db_user=db_user
+    db_string = "dbname={db_name} user={db_user} password={db_pass}".format(db_name=db_name,
+                                                         db_user=db_user,
+                                                         db_pass=db_pass,
                                                          )
 
     if args.host:
@@ -378,6 +382,8 @@ if __name__ == "__main__":
                            Defaults to osm')
     parser_db.add_argument('--user',
                            help='database user. Defaults to the current user')
+    parser_db.add_argument('--password',
+                           help='database password. Asked if omitted')
     parser_db.add_argument('--host',
                            help='database host. Defaults to localhost')
 
