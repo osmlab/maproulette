@@ -188,7 +188,7 @@ class Requester(object):
         if self.sync:
             return self.responses
         else:
-            return grequests.map(self.task_requests)
+            return grequests.map(self.task_requests, size=50)
 
 
 def select_tasks(newtasks, oldtasks):
