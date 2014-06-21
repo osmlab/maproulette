@@ -131,7 +131,7 @@ def generate_id(slug, osmid, payload):
 
 
 def prepare_task(node, args, osmid, geom):
-        instruction = node.get("instruction", None) or args.instruction or ''
+        instruction = node.get("instruction", None) or args.challenge_instruction or ''
 
         payload = {"instruction": instruction,
                    "geometries": geom
@@ -474,10 +474,10 @@ if __name__ == "__main__":
 
         else:
             if args.update_instruction or args.update_geometries:
-                instructions = args.instruction or None
+                instructions = args.challenge_instruction or None
                 responses, updids = update_tasks(slug=slug,
                                                  tasks=tasks,
-                                                 instructions=instructions,
+                                                 instruction=instructions,
                                                  statuses=statuses,
                                                  sync=args.sync
                                                  )
