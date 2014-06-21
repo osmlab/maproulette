@@ -80,7 +80,7 @@ def get_tasks_from_db(args):
     nodes = cur.fetchall()
 
     for node in nodes:
-        osmid = node["id"]
+        osmid = node.get("id")
 
         geom = {
             "type": "FeatureCollection",
