@@ -218,6 +218,24 @@ def post_tasks(slug, tasks, sync):
     return responses, newids
 
 
+def post_tasks_bulk(slug, tasks, sync):
+    newids = set()
+
+    with Requester(sync) as req:
+        bulk_payload = []
+        for identifier, payload in tasks:
+            newids.add(identifier)
+            payload["identifier"] = identifier
+            bulk_payload.append(payload)
+        print "Post %s taks" % len(bulk_payload)
+        url = mr_api_addtasks_endpoint.format(slug=slug)
+        req.request(url=url, payload=json.dumps(bulk_payload))
+
+        responses = req.finish()
+
+    return responses * len(newids), newids
+
+
 def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
     updids = set()
 
@@ -413,6 +431,8 @@ if __name__ == "__main__":
     mr_api_createchallenge_endpoint = base + "admin/challenge/{slug}"
     # - for creating a task
     mr_api_addtask_endpoint = base + "admin/challenge/{slug}/task/{id}"
+    # - for creating a tasks
+    mr_api_addtasks_endpoint = base + "admin/challenge/{slug}/tasks"
     # - for quering the status off all the tasks of challenge
     mr_api_querystatuses_endpoint = base + "admin/challenge/{slug}/tasks"
 
@@ -453,7 +473,7 @@ if __name__ == "__main__":
             rimids = set([nid for nid, p in all_tasks])
 
             tasks_to_post = select_tasks(all_tasks, statuses)
-            responses, newids = post_tasks(
+            responses, newids = post_tasks_bulk(
                 slug=slug,
                 tasks=tasks_to_post,
                 sync=args.sync)
