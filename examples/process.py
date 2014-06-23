@@ -259,8 +259,6 @@ def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
 
 
 def close_tasks_by_id(slug, closeids, sync=False):
-    closeids = set()
-
     with Requester(sync) as req:
         for identifier in closeids:
             closeids.add(identifier)
