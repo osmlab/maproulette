@@ -401,6 +401,9 @@ var MRManager = (function () {
                 case 'LineString':
                     selects.push('way' + feature.properties.osmid);
                     break;
+                case 'Polygon':
+                    selects.push('way' + feature.properties.osmid);
+                    break;
                 case 'MultiPolygon':
                     selects.push('relation' + feature.properties.osmid);
                     break;
@@ -431,6 +434,9 @@ var MRManager = (function () {
                     idUriComponent += "n" + feature.properties.osmid + ",";
                     break;
                 case 'LineString':
+                    idUriComponent += "w" + feature.properties.osmid + ",";
+                    break;
+                case 'Polygon':
                     idUriComponent += "w" + feature.properties.osmid + ",";
                     break;
                 case 'MultiPolygon':
