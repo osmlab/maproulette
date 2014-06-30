@@ -40,7 +40,7 @@ def get_challenge_or_404(challenge_slug, instance_type=None,
     """Return a challenge by its id or return 404.
 
     If instance_type is True, return the correct Challenge Type"""
-
+    app.logger.debug('retrieving {}'.format(challenge_slug))
     c = Challenge.query.filter(Challenge.slug == challenge_slug).first()
     if not c or (abort_if_inactive and not c.active):
         abort(404)
