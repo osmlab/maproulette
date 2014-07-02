@@ -69,6 +69,9 @@ class User(db.Model):
     difficulty = db.Column(
         db.SmallInteger)
 
+    __table_args__ = (
+        db.Index('idx_user_displayname', display_name),)
+
     def __unicode__(self):
         return self.display_name
 
@@ -121,14 +124,9 @@ class Challenge(db.Model):
         default='default',
         nullable=False)
 
-##    @validates('slug')
-##    def validate_slug(self, key, slug):
-##        app.logger.debug("Slug passed in: " + slug)
-##        app.logger.debug("Type: " + type(slug))
-##        assert match('^[a-z0-9]+$', str(slug))
-##        return slug
-
     # note that spatial indexes seem to be created automagically
+    __table_args__ = (
+        db.Index('idx_challenge_slug', slug),)
 
     def __init__(self,
                  slug,
@@ -380,6 +378,12 @@ class Action(db.Model):
     editor = db.Column(
         db.String())
 
+    __table_args__ = (
+        db.Index('idx_action_timestamp', timestamp),
+        db.Index('idx_action_userid', user_id),
+        db.Index('idx_action_taskid', task_id),
+        db.Index('idx_action_status', status))
+
     def __repr__(self):
         return "<Action %s set on %s>" % (self.status, self.timestamp)
 
@@ -391,3 +395,36 @@ class Action(db.Model):
             self.user_id = user_id
         if editor:
             self.editor = editor
+
+
+class Metrics(db.Model):
+
+    """Holds daily metrics per challenge, user, status"""
+
+    timestamp = db.Column(
+        db.DateTime,
+        primary_key=True,
+        nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        primary_key=True)
+    challenge_slug = db.Column(
+        db.String,
+        primary_key=True)
+    status = db.Column(
+        db.String,
+        primary_key=True)
+    count = db.Column(
+        db.String)
+
+    __table_args__ = (
+        db.Index('idx_metrics_userid', user_id),
+        db.Index('idx_metrics_challengeslug', challenge_slug),
+        db.Index('idx_metrics_status', status))
+
+    def __init__(self, timestamp, user_id, challenge_slug, status, count):
+        self.timestamp = timestamp
+        self.user_id = user_id
+        self.challenge_slug = challenge_slug
+        self.status = status
+        self.count = count
