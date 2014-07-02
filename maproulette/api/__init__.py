@@ -2,6 +2,7 @@ from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource
 from flask.ext.restful.fields import Raw
+from flask.ext.restful.utils import cors
 from flask import session, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
@@ -75,7 +76,7 @@ user_summary = {
     'display_name': fields.String
 }
 
-api = Api(app)
+api = Api(app, decorators=[cors.crossdomain(origin='*')])
 
 # override the default JSON representation to support the geo objects
 
