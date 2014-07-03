@@ -415,7 +415,7 @@ class Metrics(db.Model):
         db.String,
         primary_key=True)
     count = db.Column(
-        db.String)
+        db.Integer)
 
     __table_args__ = (
         db.Index('idx_metrics_userid', user_id),

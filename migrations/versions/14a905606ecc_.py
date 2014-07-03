@@ -21,7 +21,7 @@ def upgrade():
                     sa.Column('user_id', sa.Integer(), nullable=False),
                     sa.Column('challenge_slug', sa.String(), nullable=False),
                     sa.Column('status', sa.String(), nullable=False),
-                    sa.Column('count', sa.String(), nullable=True),
+                    sa.Column('count', sa.Integer(), nullable=True),
                     sa.PrimaryKeyConstraint(
                         'timestamp', 'user_id', 'challenge_slug', 'status')
                     )
