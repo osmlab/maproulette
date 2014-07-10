@@ -349,6 +349,8 @@ class ApiStatsHistory(Resource):
             query = query.filter(
                 Action.timestamp.between(start, end))
 
+        app.logger.debug(query)
+
         return as_stats_dict(
             query.all(),
             order=[1, 0, 2],
@@ -623,6 +625,8 @@ class AdminApiUpdateTasks(Resource):
         app.logger.debug(len(request.data))
         # Get the posted data
         taskdata = json.loads(request.data)
+
+        app.logger.debug(len(taskdata))
 
         for task in taskdata:
             parse_task_json(task, slug, task['identifier'], commit=False)
