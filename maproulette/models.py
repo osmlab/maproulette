@@ -397,9 +397,11 @@ class Action(db.Model):
             self.editor = editor
 
 
-class Metrics(db.Model):
+class HistoricalMetrics(db.Model):
 
-    """Holds daily metrics per challenge, user, status"""
+    """Holds daily metrics per challenge, user, status, day"""
+
+    __tablename__ = 'metrics_historical'
 
     timestamp = db.Column(
         db.DateTime,
@@ -428,3 +430,21 @@ class Metrics(db.Model):
         self.challenge_slug = challenge_slug
         self.status = status
         self.count = count
+
+
+class AggregateMetrics(db.Model):
+
+    """Holds the aggregate metrics for each challenge and user"""
+
+    __tablename__ = 'metrics_aggregate'
+
+    user_id = db.Column(
+        db.Integer,
+        primary_key=True)
+    challenge_slug = db.Column(
+        db.String,
+        primary_key=True)
+    status = db.Column(
+        db.String,
+        primary_key=True)
+    count = db.Column(db.Integer)
