@@ -410,6 +410,8 @@ class HistoricalMetrics(db.Model):
     user_id = db.Column(
         db.Integer,
         primary_key=True)
+    user_name = db.Column(
+        db.String)
     challenge_slug = db.Column(
         db.String,
         primary_key=True)
@@ -421,6 +423,7 @@ class HistoricalMetrics(db.Model):
 
     __table_args__ = (
         db.Index('idx_metrics_userid', user_id),
+        db.Index('idx_metrics_username', user_name),
         db.Index('idx_metrics_challengeslug', challenge_slug),
         db.Index('idx_metrics_status', status))
 
@@ -441,6 +444,8 @@ class AggregateMetrics(db.Model):
     user_id = db.Column(
         db.Integer,
         primary_key=True)
+    user_name = db.Column(
+        db.String)
     challenge_slug = db.Column(
         db.String,
         primary_key=True)
@@ -448,3 +453,7 @@ class AggregateMetrics(db.Model):
         db.String,
         primary_key=True)
     count = db.Column(db.Integer)
+
+    __table_args__ = (
+        db.Index('idx_metrics_agg_username', user_name),
+    )

@@ -1,4 +1,4 @@
-"""empty message
+"""new metrics tables and indices
 
 Revision ID: 585808afd671
 Revises: 14a905606ecc
