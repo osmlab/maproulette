@@ -75,3 +75,6 @@ MAILGUN_API_KEY = 'REPLACE WITH YOUR MAILGUN API KEY'
 # IP Whitelist for external API calls
 # (/api/admin/*, /api/stats*, /api/users, /api/challenges)
 IP_WHITELIST = [ ]
+
+# Max number of tasks in a bulk update call
+MAX_TASKS_BULK_UPDATE = 5000

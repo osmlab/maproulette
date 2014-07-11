@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.schema import Sequence
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
@@ -200,6 +201,7 @@ class Task(db.Model):
 
     id = db.Column(
         db.Integer,
+        Sequence('tasks_id_seq'),
         unique=True,
         nullable=False)
     identifier = db.Column(

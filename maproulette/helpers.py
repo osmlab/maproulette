@@ -138,8 +138,6 @@ def get_random_task(challenge):
 def parse_task_json(slug, data):
     """Parse task json coming in through the admin api"""
 
-    app.logger.debug(data)
-
     # task json needs to have identifier
     if not 'identifier' in data:
         abort(400, 'no identifier')

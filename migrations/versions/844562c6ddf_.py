@@ -12,6 +12,7 @@ down_revision = '1107fa473275'
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import text
 
 
 def upgrade():
@@ -30,16 +31,23 @@ def upgrade():
     op.alter_column('tasks', 'challenge_slug',
                     existing_type=sa.VARCHAR(),
                     nullable=False)
+    # now that the id column is no longer the primary key,
+    # ensure that it continues to be a serial
+    op.alter_column('tasks', 'id',
+                    existing_type=sa.VARCHAR(),
+                    nullable=False,
+                    server_default=text("nextval('tasks_id_seq')"))
+    # create a unique constraint on the id column, this will also
+    # create an index
+    op.create_unique_constraint(
+        'tasks_id_unique',
+        'tasks',
+        ['id'])
     # create the new one
     op.create_primary_key(
         'tasks_pkey',
         'tasks',
         ['identifier', 'challenge_slug'])
-    # create an index on id column
-    op.create_index(
-        'idx_tasks_id',
-        'tasks',
-        ['id'])
     # recreate the foreign keys
     op.create_foreign_key(
         'actions_task_id_fkey',
@@ -63,7 +71,9 @@ def downgrade():
     op.drop_constraint(
         'task_geometries_task_id_fkey',
         'task_geometries')
-    op.drop_index('idx_tasks_id')
+    op.drop_constraint(
+        'tasks_id_unique',
+        'tasks')
     op.drop_constraint(
         'tasks_pkey',
         'tasks')

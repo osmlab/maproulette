@@ -627,6 +627,9 @@ class AdminApiUpdateTasks(Resource):
         # debug output number of tasks being posted
         app.logger.debug('posting {number} tasks...'.format(number=len(data)))
 
+        if len(data) > 5000:
+            abort(400, 'more than 5000 tasks in bulk update')
+
         for task in data:
             db.session.merge(parse_task_json(slug, task))
 
