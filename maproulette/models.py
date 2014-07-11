@@ -201,14 +201,15 @@ class Task(db.Model):
     id = db.Column(
         db.Integer,
         unique=True,
-        primary_key=True,
         nullable=False)
     identifier = db.Column(
         db.String(72),
+        primary_key=True,
         nullable=False)
     challenge_slug = db.Column(
         db.String,
-        db.ForeignKey('challenges.slug', onupdate="cascade"))
+        db.ForeignKey('challenges.slug', onupdate="cascade"),
+        primary_key=True)
     random = db.Column(
         db.Float,
         default=getrandom,
@@ -236,14 +237,22 @@ class Task(db.Model):
         db.Index('idx_challenge', challenge_slug),
         db.Index('idx_random', random))
 
-    def __init__(self, challenge_slug, identifier, instruction=None):
+    # geometries should always be provided for new tasks, defaulting to None so
+    # we can handle task updates and two step initialization of tasks
+    def __init__(
+            self,
+            challenge_slug,
+            identifier,
+            geometries=None,
+            instruction=None):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.instruction = instruction
+        self.geometries = geometries
         self.append_action(Action('created'))
 
     def __repr__(self):
-        return '<Task %s>' % (self.identifier)
+        return '<Task {identifier}>'.format(identifier=self.identifier)
 
     def __str__(self):
         return self.identifier
@@ -271,16 +280,14 @@ class Task(db.Model):
                 return False
             setattr(self, k, v)
 
-        self.geometries = []
-
-        for geometry in geometries:
-            self.geometries = geometries
+        self.geometries = geometries
 
         # set the location for this task, as a representative point of the
         # combined geometries.
-        self.set_location()
+        if self.location is None:
+            self.set_location()
 
-        db.session.merge(self)
+        db.session.add(self)
         if commit:
             db.session.commit()
         return True
