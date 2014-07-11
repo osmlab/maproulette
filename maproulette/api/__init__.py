@@ -596,13 +596,13 @@ class AdminApiTaskStatuses(Resource):
 
 class AdminApiUpdateTask(Resource):
 
-    """Challenge Task Statuses endpoint"""
+    """Challenge Task Create / Update endpoint"""
 
     def put(self, slug, identifier):
         """Create or update one task."""
 
         # Parse the posted data
-        parse_task_json(json.loads(request.data), slug, identifier)
+        db.session.add(parse_task_json(slug, json.loads(request.data)))
         return {}, 201
 
     def delete(self, slug, identifier):
@@ -617,19 +617,18 @@ class AdminApiUpdateTask(Resource):
 
 class AdminApiUpdateTasks(Resource):
 
-    """Bulk task creation / update endpoint"""
+    """Bulk task create / update endpoint"""
 
     def put(self, slug):
 
-        app.logger.debug('putting multiple tasks')
-        app.logger.debug(len(request.data))
         # Get the posted data
-        taskdata = json.loads(request.data)
+        data = json.loads(request.data)
 
-        app.logger.debug(len(taskdata))
+        # debug output number of tasks being posted
+        app.logger.debug('posting {number} tasks...'.format(number=len(data)))
 
-        for task in taskdata:
-            parse_task_json(task, slug, task['identifier'], commit=False)
+        for task in data:
+            db.session.merge(parse_task_json(slug, task))
 
         # commit all dirty tasks at once.
         db.session.commit()
