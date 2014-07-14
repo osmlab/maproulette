@@ -220,6 +220,7 @@ class ApiStats(Resource):
     def get(self, challenge_slug=None, user_id=None):
         from dateutil import parser as dateparser
         from datetime import datetime
+        from maproulette.models import AggregateMetrics
 
         start = None
         end = None
@@ -234,57 +235,34 @@ class ApiStats(Resource):
 
         breakdown = False
 
-        # base CTE and query
-        # the base CTE gets the set of latest actions for any task
-        latest_cte = db.session.query(
-            Action.id,
-            Action.task_id,
-            Action.timestamp,
-            Action.user_id,
-            Action.status,
-            Task.challenge_slug,
-            User.display_name).join(
-            Task).outerjoin(User).distinct(
-            Action.task_id).order_by(
-            Action.task_id,
-            Action.id.desc()).cte(name='latest')
+        select_fields = [
+            AggregateMetrics.status,
+            func.sum(AggregateMetrics.count)]
 
-        # the base query gets a count on the base CTE grouped by status,
-        # optionally broken down by users or challenges
+        group_fields = [
+            AggregateMetrics.status]
+
         if request.path.endswith('/users'):
+            select_fields.insert(0, AggregateMetrics.user_name)
+            group_fields.insert(0, AggregateMetrics.user_name)
             breakdown = True
-            stats_query = db.session.query(
-                latest_cte.c.display_name,
-                latest_cte.c.status,
-                func.count(latest_cte.c.id)).group_by(
-                latest_cte.c.status,
-                latest_cte.c.display_name).order_by(
-                latest_cte.c.status)
         elif request.path.endswith('/challenges'):
+            select_fields.insert(0, AggregateMetrics.challenge_slug)
+            group_fields.insert(0, AggregateMetrics.challenge_slug)
             breakdown = True
-            stats_query = db.session.query(
-                latest_cte.c.challenge_slug,
-                latest_cte.c.status,
-                func.count(latest_cte.c.id)).group_by(
-                latest_cte.c.status,
-                latest_cte.c.challenge_slug).order_by(
-                latest_cte.c.status)
-        else:
-            stats_query = db.session.query(
-                latest_cte.c.status,
-                func.count(latest_cte.c.id)).group_by(
-                latest_cte.c.status).order_by(
-                latest_cte.c.status)
+        stats_query = db.session.query(
+            *select_fields).group_by(
+            *group_fields)
 
         # stats for a specific challenge
         if challenge_slug is not None:
-            stats_query = stats_query.filter(
-                latest_cte.c.challenge_slug == challenge_slug)
+            stats_query = stats_query.filter_by(
+                challenge_slug=challenge_slug)
 
         # stats for a specific user
         if user_id is not None:
-            stats_query = stats_query.filter(
-                latest_cte.c.user_id == user_id)
+            stats_query = stats_query.filter_by(
+                user_id=user_id)
 
         # time slicing filters
         if args['start'] is not None:
@@ -294,7 +272,9 @@ class ApiStats(Resource):
             else:
                 end = dateparser.parse(args['end'])
             stats_query = stats_query.filter(
-                latest_cte.c.timestamp.between(start, end))
+                AggregateMetrics.timestamp.between(start, end))
+
+        app.logger.debug(stats_query)
 
         if breakdown:
             # if this is a breakdown by a secondary variable, the
