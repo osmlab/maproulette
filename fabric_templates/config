@@ -1,15 +1,18 @@
 # The application secret key
 
 # http://www.thedutchtable.com/2013/03/een-ei-is-geen-eivrolijk-pasen.html
-SECRET_KEY = 'een ei is geen ei twee ei is een half ei'
+SECRET_KEY = 'REPLACE WITH YOUR APPLICATION SECRET KEY'
 
-{% if setting == "dev" %}
-{% set db = "maproulette_dev" %}
-{% elif setting == "test" %}
-{% set db = "maproulette_test" %}
-{% elif setting == "prod" %}
-{% set db = "maproulette_test" %}
-{% endif %}
+{% if setting == "dev" -%}
+{% set db = "maproulette_dev" -%}
+{% set cors_url = "http://maproulette-metrics-stage.s3-website-us-east-1.amazonaws.com/" -%}
+{% elif setting == "test" -%}
+{% set db = "maproulette_test" -%}
+{% set cors_url = "http://maproulette-metrics-stage.s3-website-us-east-1.amazonaws.com/" -%}
+{% elif setting == "prod" -%}
+{% set db = "maproulette" -%}
+{% set cors_url = "http://maproulette-metrics-production.s3-website-us-east-1.amazonaws.com/" -%}
+{% endif -%}
 
 # The database connection
 SQLALCHEMY_DATABASE_URI = "postgresql://osm@localhost/{{db}}"
@@ -75,3 +78,9 @@ MAILGUN_API_KEY = 'REPLACE WITH YOUR MAILGUN API KEY'
 # IP Whitelist for external API calls
 # (/api/admin/*, /api/stats*, /api/users, /api/challenges)
 IP_WHITELIST = [ ]
+
+# Max number of tasks in a bulk update call
+MAX_TASKS_BULK_UPDATE = 5000
+
+# URL to the metrics site instance, for allowing CORS requests from
+METRICS_URL = '{{cors_url}}'

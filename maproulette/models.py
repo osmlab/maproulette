@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.schema import Sequence
 from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
@@ -69,6 +70,9 @@ class User(db.Model):
     difficulty = db.Column(
         db.SmallInteger)
 
+    __table_args__ = (
+        db.Index('idx_user_displayname', display_name),)
+
     def __unicode__(self):
         return self.display_name
 
@@ -121,14 +125,9 @@ class Challenge(db.Model):
         default='default',
         nullable=False)
 
-##    @validates('slug')
-##    def validate_slug(self, key, slug):
-##        app.logger.debug("Slug passed in: " + slug)
-##        app.logger.debug("Type: " + type(slug))
-##        assert match('^[a-z0-9]+$', str(slug))
-##        return slug
-
     # note that spatial indexes seem to be created automagically
+    __table_args__ = (
+        db.Index('idx_challenge_slug', slug),)
 
     def __init__(self,
                  slug,
@@ -202,15 +201,17 @@ class Task(db.Model):
 
     id = db.Column(
         db.Integer,
+        Sequence('tasks_id_seq'),
         unique=True,
-        primary_key=True,
         nullable=False)
     identifier = db.Column(
         db.String(72),
+        primary_key=True,
         nullable=False)
     challenge_slug = db.Column(
         db.String,
-        db.ForeignKey('challenges.slug', onupdate="cascade"))
+        db.ForeignKey('challenges.slug', onupdate="cascade"),
+        primary_key=True)
     random = db.Column(
         db.Float,
         default=getrandom,
@@ -238,14 +239,22 @@ class Task(db.Model):
         db.Index('idx_challenge', challenge_slug),
         db.Index('idx_random', random))
 
-    def __init__(self, challenge_slug, identifier, instruction=None):
+    # geometries should always be provided for new tasks, defaulting to None so
+    # we can handle task updates and two step initialization of tasks
+    def __init__(
+            self,
+            challenge_slug,
+            identifier,
+            geometries=None,
+            instruction=None):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.instruction = instruction
+        self.geometries = geometries
         self.append_action(Action('created'))
 
     def __repr__(self):
-        return '<Task %s>' % (self.identifier)
+        return '<Task {identifier}>'.format(identifier=self.identifier)
 
     def __str__(self):
         return self.identifier
@@ -273,16 +282,14 @@ class Task(db.Model):
                 return False
             setattr(self, k, v)
 
-        self.geometries = []
-
-        for geometry in geometries:
-            self.geometries = geometries
+        self.geometries = geometries
 
         # set the location for this task, as a representative point of the
         # combined geometries.
-        self.set_location()
+        if self.location is None:
+            self.set_location()
 
-        db.session.merge(self)
+        db.session.add(self)
         if commit:
             db.session.commit()
         return True
@@ -380,6 +387,12 @@ class Action(db.Model):
     editor = db.Column(
         db.String())
 
+    __table_args__ = (
+        db.Index('idx_action_timestamp', timestamp),
+        db.Index('idx_action_userid', user_id),
+        db.Index('idx_action_taskid', task_id),
+        db.Index('idx_action_status', status))
+
     def __repr__(self):
         return "<Action %s set on %s>" % (self.status, self.timestamp)
 
@@ -391,3 +404,65 @@ class Action(db.Model):
             self.user_id = user_id
         if editor:
             self.editor = editor
+
+
+class HistoricalMetrics(db.Model):
+
+    """Holds daily metrics per challenge, user, status, day"""
+
+    __tablename__ = 'metrics_historical'
+
+    timestamp = db.Column(
+        db.DateTime,
+        primary_key=True,
+        nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        primary_key=True)
+    user_name = db.Column(
+        db.String)
+    challenge_slug = db.Column(
+        db.String,
+        primary_key=True)
+    status = db.Column(
+        db.String,
+        primary_key=True)
+    count = db.Column(
+        db.Integer)
+
+    __table_args__ = (
+        db.Index('idx_metrics_userid', user_id),
+        db.Index('idx_metrics_username', user_name),
+        db.Index('idx_metrics_challengeslug', challenge_slug),
+        db.Index('idx_metrics_status', status))
+
+    def __init__(self, timestamp, user_id, challenge_slug, status, count):
+        self.timestamp = timestamp
+        self.user_id = user_id
+        self.challenge_slug = challenge_slug
+        self.status = status
+        self.count = count
+
+
+class AggregateMetrics(db.Model):
+
+    """Holds the aggregate metrics for each challenge and user"""
+
+    __tablename__ = 'metrics_aggregate'
+
+    user_id = db.Column(
+        db.Integer,
+        primary_key=True)
+    user_name = db.Column(
+        db.String)
+    challenge_slug = db.Column(
+        db.String,
+        primary_key=True)
+    status = db.Column(
+        db.String,
+        primary_key=True)
+    count = db.Column(db.Integer)
+
+    __table_args__ = (
+        db.Index('idx_metrics_agg_username', user_name),
+    )

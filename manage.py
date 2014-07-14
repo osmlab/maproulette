@@ -107,10 +107,8 @@ def create_testdata(challenges=10, tasks=100, users=10):
         for j in range(int(tasks)):
             # generate a unique identifier
             identifier = str(uuid.uuid4())
-            # instantiate the task and register it with challenge 'test'
-            # Initialize a task with its challenge slug and persistent ID
-            task = Task(challenge.slug, identifier)
             # create two random points not too far apart
+            task_geometries = []
             p1 = Point(
                 random.randrange(minx, maxx) + random.random(),
                 random.randrange(miny, maxy) + random.random())
@@ -123,10 +121,13 @@ def create_testdata(challenges=10, tasks=100, users=10):
             # generate some random 'osm ids'
             osmids = [random.randrange(1000000, 1000000000) for _ in range(2)]
             # add the first point and the linestring to the task's geometries
-            task.geometries.append(TaskGeometry(osmids[0], p1))
+            task_geometries.append(TaskGeometry(osmids[0], p1))
             # set a linestring for every other challenge
             if not j % 2:
-                task.geometries.append(TaskGeometry(osmids[1], l1))
+                task_geometries.append(TaskGeometry(osmids[1], l1))
+            # instantiate the task and register it with challenge 'test'
+            # Initialize a task with its challenge slug and persistent ID
+            task = Task(challenge.slug, identifier, task_geometries)
             # because we are not using the API, we need to call set_location
             # explicitly to set the task's location
             task.set_location()

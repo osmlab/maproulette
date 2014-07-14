@@ -118,10 +118,12 @@ def setup_cron(instance):
         sudo('crontab /tmp/crondump', user='www-data')
 
 
-def install_python_dependencies(instance):
+def install_python_dependencies(instance, upgrade=False):
     dirname = "/srv/www/%s" % instance
-    cmd = 'source %s/virtualenv/bin/activate && pip\
-    install -r %s/htdocs/maproulette/requirements.txt' % (dirname, dirname)
+    cmd = 'source {basepath}/virtualenv/bin/activate && pip\
+    install {upgrade}-r {basepath}/htdocs/maproulette/requirements.txt'.format(
+        basepath=dirname,
+        upgrade='--upgrade' if upgrade else '')
     sudo(cmd, user="www-data")
 
 

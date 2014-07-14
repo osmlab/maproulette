@@ -80,16 +80,6 @@ def task_exists(challenge_slug, task_identifier):
     return True
 
 
-def get_or_create_task(challenge, task_identifier):
-    """Return a task, either pull a new one or create a new one"""
-
-    task = (Task.identifier == task_identifier). \
-        filter(Task.challenge_slug == challenge.slug).first()
-    if not task:
-        task = Task(challenge.id, task_identifier)
-    return task
-
-
 def require_signedin(f):
     """Require the caller to be authenticated against OSM"""
 
@@ -145,44 +135,36 @@ def get_random_task(challenge):
     return q.first() or None
 
 
-def parse_task_json(data, slug, identifier, commit=True):
+def parse_task_json(slug, data):
     """Parse task json coming in through the admin api"""
 
-    task_geometries = []
+    # task json needs to have identifier
+    if not 'identifier' in data:
+        abort(400, 'no identifier')
 
-    exists = task_exists(slug, identifier)
-
-    # abort if the taskdata does not contain geometries and it's a new task
+    # if the task is new, it needs to have geometry
     if not 'geometries' in data:
-        if not exists:
-            abort(400)
-    else:
-        # extract the geometries
-        geometries = data.pop('geometries')
-        # parse the geometries
-        for feature in geometries['features']:
-            osmid = feature['properties'].get('osmid')
-            shape = asShape(feature['geometry'])
-            t = TaskGeometry(osmid, shape)
-            task_geometries.append(t)
+        if not task_exists(data['identifier']):
+            abort(400, 'no geometries for new tasks')
 
-    # there's two possible scenarios:
-    # 1.    An existing task gets an update, in that case
-    #       we only need the identifier
-    # 2.    A new task is inserted, in this case we need at
-    #       least an identifier and encoded geometries.
+    # extract the task geometries
+    task_geometries = []
+    geometries = data.pop('geometries')
+    # parse the geometries
+    for feature in geometries['features']:
+        osmid = feature['properties'].get('osmid')
+        shape = asShape(feature['geometry'])
+        g = TaskGeometry(osmid, shape)
+        task_geometries.append(g)
 
-    # now we check if the task exists
-    if exists:
-        # if it does, update it
-        task = get_task_or_404(slug, identifier)
-        if not task.update(data, task_geometries, commit=commit):
-            abort(400)
-    else:
-        # if it does not, create it
-        new_task = Task(slug, identifier)
-        new_task.update(data, task_geometries, commit=commit)
-    return True
+    # create the task
+    t = Task(slug, data['identifier'], task_geometries)
+
+    # check for instruction
+    if 'instruction' in data:
+        t.instruction = data['instruction']
+
+    return t
 
 
 def get_envelope(geoms):
