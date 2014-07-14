@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from simplekv.fs import FilesystemStore
-from flask_kvsession import KVSessionExtension
+from flask.ext.kvsession import KVSessionExtension
 
 # initialize server KV session store
 if not os.path.exists('./sessiondata'):
