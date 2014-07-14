@@ -250,6 +250,7 @@ class ApiStats(Resource):
             select_fields.insert(0, AggregateMetrics.challenge_slug)
             group_fields.insert(0, AggregateMetrics.challenge_slug)
             breakdown = True
+
         stats_query = db.session.query(
             *select_fields).group_by(
             *group_fields)
@@ -291,6 +292,8 @@ class ApiStatsHistory(Resource):
 
     def get(self, challenge_slug=None, user_id=None):
 
+        from maproulette.models import HistoricalMetrics as HM
+
         start = None
         end = None
 
@@ -304,20 +307,19 @@ class ApiStatsHistory(Resource):
 
         args = parser.parse_args()
 
-        query = db.session.query(
-            func.date_trunc('day', Action.timestamp).label('day'),
-            Action.status,
-            func.count(Action.id)).join(
-            Task).outerjoin(User)
+        stats_query = db.session.query(
+            HM.timestamp,
+            HM.status,
+            func.sum(HM.count))
 
         if challenge_slug is not None:
-            query = query.filter(Task.challenge_slug == challenge_slug)
+            stats_query = stats_query.filter(HM.challenge_slug == challenge_slug)
         if user_id is not None:
-            query = query.filter(User.id == user_id)
+            stats_query = stats_query.filter(HM.user_id == user_id)
 
-        query = query.group_by(
-            'day', Action.status).order_by(
-            Action.status)
+        stats_query = stats_query.group_by(
+            HM.timestamp, HM.status).order_by(
+            HM.status)
 
         # time slicing filters
         if args['start'] is not None:
@@ -326,13 +328,13 @@ class ApiStatsHistory(Resource):
                 end = datetime.utcnow()
             else:
                 end = dateparser.parse(args['end'])
-            query = query.filter(
+            stats_query = stats_query.filter(
                 Action.timestamp.between(start, end))
 
-        app.logger.debug(query)
+        app.logger.debug(stats_query)
 
         return as_stats_dict(
-            query.all(),
+            stats_query.all(),
             order=[1, 0, 2],
             start=start,
             end=end)
