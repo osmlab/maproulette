@@ -1,0 +1,5 @@
+DELETE FROM metrics_historical;
+INSERT INTO metrics_historical (timestamp, user_id, user_name, challenge_slug, status, count) (SELECT date_trunc('day', actions.timestamp) AS day, COALESCE(actions.user_id, 0)::integer, COALESCE(users.display_name, ''), tasks.challenge_slug, actions.status, count(actions.id) FROM actions JOIN tasks ON tasks.id = actions.task_id LEFT OUTER JOIN users on users.id = actions.user_id GROUP BY day, tasks.challenge_slug, actions.user_id, actions.status, users.display_name);
+
+DELETE FROM metrics_aggregate;
+INSERT INTO metrics_aggregate (user_id, user_name, challenge_slug, status, count) (WITH actions as (SELECT DISTINCT ON (task_id) users.id user_id, tasks.challenge_slug challenge_slug, actions.status status, users.display_name display_name FROM actions JOIN tasks ON actions.task_id = tasks.id LEFT OUTER JOIN users ON actions.user_id = users.id ORDER BY task_id DESC) SELECT coalesce(user_id, 0), display_name, challenge_slug, status, count(1) FROM actions GROUP BY user_id, challenge_slug, status, display_name);
