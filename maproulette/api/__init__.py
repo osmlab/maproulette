@@ -524,6 +524,7 @@ class AdminApiChallenge(Resource):
     """Admin challenge creation endpoint"""
 
     def put(self, slug):
+        app.logger.debug(request.data)
         exists = challenge_exists(slug)
         try:
             payload = json.loads(request.data)
