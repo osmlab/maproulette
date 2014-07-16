@@ -144,7 +144,7 @@ def parse_task_json(slug, data):
 
     # if the task is new, it needs to have geometry
     if not 'geometries' in data:
-        if not task_exists(data['identifier']):
+        if not task_exists(slug, data['identifier']):
             abort(400, 'no geometries for new tasks')
 
     # extract the task geometries
