@@ -7,7 +7,7 @@ from flask import session, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, challenge_exists,\
-    parse_task_json, refine_with_user_area, user_area_is_defined,\
+    json_to_task, refine_with_user_area, user_area_is_defined,\
     send_email, as_stats_dict
 from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
@@ -276,8 +276,6 @@ class ApiStats(Resource):
             stats_query = stats_query.filter(
                 AggregateMetrics.timestamp.between(start, end))
 
-        app.logger.debug(stats_query)
-
         if breakdown:
             # if this is a breakdown by a secondary variable, the
             # query will have returned three columns and we need to
@@ -331,8 +329,6 @@ class ApiStatsHistory(Resource):
                 end = dateparser.parse(args['end'])
             stats_query = stats_query.filter(
                 Action.timestamp.between(start, end))
-
-        app.logger.debug(stats_query)
 
         return as_stats_dict(
             stats_query.all(),
@@ -427,7 +423,8 @@ class ApiChallengeTaskDetails(ProtectedResource):
         task.append_action(Action(args.action,
                                   session.get('osm_id'),
                                   args.editor))
-        db.session.add(task)
+        merged_task = db.session.merge(task)
+        db.session.add(merged_task)
         db.session.commit()
         return {}
 
@@ -524,7 +521,6 @@ class AdminApiChallenge(Resource):
     """Admin challenge creation endpoint"""
 
     def put(self, slug):
-        app.logger.debug(request.data)
         exists = challenge_exists(slug)
         try:
             payload = json.loads(request.data)
@@ -554,7 +550,8 @@ class AdminApiChallenge(Resource):
             c.active = payload.get('active')
         if 'difficulty' in payload:
             c.difficulty = payload.get('difficulty')
-        db.session.add(c)
+        merged_challenge = db.session.merge(c)
+        db.session.add(merged_challenge)
         db.session.commit()
         return {}
 
@@ -586,7 +583,9 @@ class AdminApiUpdateTask(Resource):
         """Create or update one task."""
 
         # Parse the posted data
-        db.session.add(parse_task_json(slug, json.loads(request.data)))
+        merged_task = db.session.merge(json_to_task(slug, json.loads(request.data)))
+        db.session.add(merged_task)
+        db.session.commit()
         return {}, 201
 
     def delete(self, slug, identifier):
@@ -594,7 +593,8 @@ class AdminApiUpdateTask(Resource):
 
         task = get_task_or_404(slug, identifier)
         task.append_action(Action('deleted'))
-        db.session.add(task)
+        merged_task = db.session.merge(task)
+        db.session.add(merged_task)
         db.session.commit()
         return {}, 204
 
@@ -615,7 +615,8 @@ class AdminApiUpdateTasks(Resource):
             abort(400, 'more than 5000 tasks in bulk update')
 
         for task in data:
-            db.session.merge(parse_task_json(slug, task))
+            merged_task = db.session.merge(json_to_task(slug, task))
+            db.session.add(merged_task)
 
         # commit all dirty tasks at once.
         db.session.commit()
