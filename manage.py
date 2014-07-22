@@ -159,7 +159,7 @@ def clean_stale_tasks():
     for task in db.session.query(Task).filter(
         Task.status.in_(['assigned', 'editing'])).join(
         Task.actions).group_by(
-            Task.id).having(max(Action.timestamp) < stale_threshold).all():
+            Task.identifier, Task.challenge_slug).having(max(Action.timestamp) < stale_threshold).all():
         task.append_action(Action("available"))
         db.session.add(task)
         print "setting task %s to available" % (task.identifier)
