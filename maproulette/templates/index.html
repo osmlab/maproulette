@@ -18,7 +18,7 @@
     <div id="challengemenu">
         <div class="button tiny" onClick='MRManager.presentChallengeHelp()'>More help for this challenge</div>
         <div class="button tiny" onClick='MRManager.presentChallengeSelectionDialog()'>Select a different challenge</div>
-        <div class="button tiny" onClick='location.href="{{ url_for("challenge_stats") }}";'>Challenge statistics</div>
+        <div class="button tiny" onClick='window.open("http://metrics.maproulette.org/", "_blank")'>MapRoulette Metrics</div>
         <!--<div class="button tiny" id="preferences" onClick='MRManager.userPreferences()'>MapRoulette Options</div>-->
     </div>
     <div class="smallmsg" id="stats">This challenge has <span id="challenge_total">N/A</span> tasks, and we still need to fix <span id="challenge_unfixed">N/A</span> of them.</div>

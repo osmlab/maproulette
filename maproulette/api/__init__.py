@@ -423,8 +423,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
         task.append_action(Action(args.action,
                                   session.get('osm_id'),
                                   args.editor))
-        merged_task = db.session.merge(task)
-        db.session.add(merged_task)
+        db.session.add(task)
         db.session.commit()
         return {}
 
@@ -550,8 +549,7 @@ class AdminApiChallenge(Resource):
             c.active = payload.get('active')
         if 'difficulty' in payload:
             c.difficulty = payload.get('difficulty')
-        merged_challenge = db.session.merge(c)
-        db.session.add(merged_challenge)
+        db.session.add(c)
         db.session.commit()
         return {}
 
@@ -583,18 +581,17 @@ class AdminApiUpdateTask(Resource):
         """Create or update one task."""
 
         # Parse the posted data
-        merged_task = db.session.merge(json_to_task(slug, json.loads(request.data)))
-        db.session.add(merged_task)
+        t = json_to_task(slug, json.loads(request.data))
+        db.session.add(t)
         db.session.commit()
         return {}, 201
 
     def delete(self, slug, identifier):
         """Delete a task"""
 
-        task = get_task_or_404(slug, identifier)
-        task.append_action(Action('deleted'))
-        merged_task = db.session.merge(task)
-        db.session.add(merged_task)
+        t = get_task_or_404(slug, identifier)
+        t.append_action(Action('deleted'))
+        db.session.add(t)
         db.session.commit()
         return {}, 204
 
@@ -615,8 +612,8 @@ class AdminApiUpdateTasks(Resource):
             abort(400, 'more than 5000 tasks in bulk update')
 
         for task in data:
-            merged_task = db.session.merge(json_to_task(slug, task))
-            db.session.add(merged_task)
+            t = json_to_task(slug, task)
+            db.session.add(t)
 
         # commit all dirty tasks at once.
         db.session.commit()
