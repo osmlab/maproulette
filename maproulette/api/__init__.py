@@ -382,7 +382,8 @@ class ApiChallengeTask(ProtectedResource):
 
                 # Deactivate the challenge
                 challenge.active = False
-                db.session.add(challenge)
+                merged_c = db.session.merge(challenge)
+                db.session.add(merged_c)
                 db.session.commit()
 
             # Is this the right error?
@@ -390,7 +391,8 @@ class ApiChallengeTask(ProtectedResource):
                             "Challenge {} is complete".format(challenge.title))
         if assign:
             task.append_action(Action("assigned", osmid))
-            db.session.add(task)
+            merged_t = db.session.merge(task)
+            db.session.add(merged_t)
 
         db.session.commit()
         return marshal(task, task_fields)
@@ -423,7 +425,8 @@ class ApiChallengeTaskDetails(ProtectedResource):
         task.append_action(Action(args.action,
                                   session.get('osm_id'),
                                   args.editor))
-        db.session.add(task)
+        merged_t = db.session.merge(task)
+        db.session.add(merged_t)
         db.session.commit()
         return {}
 
@@ -549,7 +552,8 @@ class AdminApiChallenge(Resource):
             c.active = payload.get('active')
         if 'difficulty' in payload:
             c.difficulty = payload.get('difficulty')
-        db.session.add(c)
+        merged_c = db.session.merge(c)
+        db.session.add(merged_c)
         db.session.commit()
         return {}
 
@@ -582,7 +586,8 @@ class AdminApiUpdateTask(Resource):
 
         # Parse the posted data
         t = json_to_task(slug, json.loads(request.data))
-        db.session.add(t)
+        merged_t = db.session.merge(t)
+        db.session.add(merged_t)
         db.session.commit()
         return {}, 201
 
@@ -591,7 +596,8 @@ class AdminApiUpdateTask(Resource):
 
         t = get_task_or_404(slug, identifier)
         t.append_action(Action('deleted'))
-        db.session.add(t)
+        merged_t = db.session.merge(t)
+        db.session.add(merged_t)
         db.session.commit()
         return {}, 204
 
@@ -613,7 +619,8 @@ class AdminApiUpdateTasks(Resource):
 
         for task in data:
             t = json_to_task(slug, task)
-            db.session.add(t)
+            merged_t = db.session.merge(t)
+            db.session.add(merged_t)
 
         # commit all dirty tasks at once.
         db.session.commit()
