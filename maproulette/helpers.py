@@ -135,21 +135,13 @@ def get_random_task(challenge):
     return q.first() or None
 
 
-def json_to_task(slug, data):
+def json_to_task(slug, data, task=None):
     """Parse task json coming in through the admin api"""
 
     task_geometries = []
 
-    # task json needs to have identifier
-    if not 'identifier' in data:
-        abort(400, 'no identifier')
-
-    # if the task is new, it needs to have geometry
-    if not 'geometries' in data:
-        if not task_exists(slug, data['identifier']):
-            abort(400, 'no geometries for new tasks')
-    else:
-        # extract the task geometries
+    # extract the task geometries
+    if 'geometries' in data:
         geometries = data.pop('geometries')
         # parse the geometries
         for feature in geometries['features']:
@@ -159,15 +151,16 @@ def json_to_task(slug, data):
             task_geometries.append(g)
 
     # create the task
-    t = Task(slug, data['identifier'], task_geometries)
+    if task is None:
+        task = Task(slug, data['identifier'], task_geometries)
 
     # check for instruction
     if 'instruction' in data:
-        t.instruction = data['instruction']
+        task.instruction = data['instruction']
     # check for status
     if 'status' in data:
-        t.status = data['status']
-    return t
+        task.status = data['status']
+    return task
 
 
 def get_envelope(geoms):

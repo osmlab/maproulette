@@ -6,7 +6,7 @@ from flask.ext.restful.utils import cors
 from flask import session, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
-    require_signedin, osmerror, challenge_exists,\
+    require_signedin, osmerror, \
     json_to_task, refine_with_user_area, user_area_is_defined,\
     send_email, as_stats_dict
 from maproulette.models import Challenge, Task, Action, User, db
@@ -522,22 +522,16 @@ class AdminApiChallenge(Resource):
 
     """Admin challenge creation endpoint"""
 
-    def put(self, slug):
-        exists = challenge_exists(slug)
+    def post(self, slug):
         try:
             payload = json.loads(request.data)
         except Exception:
             abort(400, "JSON bad")
-        if not exists and 'title' not in payload:
-            abort(400, "No title")
-            return {}
-        if exists:
-            app.logger.debug('challenge existed, retrieving')
-            c = get_challenge_or_404(slug, abort_if_inactive=False)
-            if 'title' in payload:
-                c.title = payload.get('title')
-        else:
-            c = Challenge(slug, payload.get('title'))
+        if 'title' not in payload:
+            abort(400, "new challenge must have title")
+        c = Challenge(slug, payload.get('title'))
+        if 'title' in payload:
+            c.title = payload.get('title')
         if 'geometry' in payload:
             c.geometry = payload.get('geometry')
         if 'description' in payload:
@@ -552,10 +546,35 @@ class AdminApiChallenge(Resource):
             c.active = payload.get('active')
         if 'difficulty' in payload:
             c.difficulty = payload.get('difficulty')
-        merged_c = db.session.merge(c)
-        db.session.add(merged_c)
+        db.session.add(c)
         db.session.commit()
-        return {}
+        return {}, 201
+
+    def put(self, slug):
+        try:
+            payload = json.loads(request.data)
+        except Exception:
+            abort(400, "JSON bad")
+        c = get_challenge_or_404(slug, abort_if_inactive=False)
+        if 'title' in payload:
+            c.title = payload.get('title')
+        if 'geometry' in payload:
+            c.geometry = payload.get('geometry')
+        if 'description' in payload:
+            c.description = payload.get('description')
+        if 'blurb' in payload:
+            c.blurb = payload.get('blurb')
+        if 'help' in payload:
+            c.help = payload.get('help')
+        if 'instruction' in payload:
+            c.instruction = payload.get('instruction')
+        if 'active' in payload:
+            c.active = payload.get('active')
+        if 'difficulty' in payload:
+            c.difficulty = payload.get('difficulty')
+        db.session.add(c)
+        db.session.commit()
+        return {}, 200
 
     def delete(self, slug):
         """delete a challenge"""
@@ -581,15 +600,28 @@ class AdminApiUpdateTask(Resource):
 
     """Challenge Task Create / Update endpoint"""
 
-    def put(self, slug, identifier):
-        """Create or update one task."""
+    def post(self, slug, identifier):
+        """create one task."""
 
         # Parse the posted data
-        t = json_to_task(slug, json.loads(request.data))
-        merged_t = db.session.merge(t)
-        db.session.add(merged_t)
+        t = json_to_task(
+            slug,
+            json.loads(request.data))
+        db.session.add(t)
         db.session.commit()
         return {}, 201
+
+    def put(self, slug, identifier):
+        """update one task."""
+
+        # Parse the posted data
+        t = json_to_task(
+            slug,
+            json.loads(request.data),
+            task=get_task_or_404(slug, identifier))
+        db.session.add(t)
+        db.session.commit()
+        return {}, 200
 
     def delete(self, slug, identifier):
         """Delete a task"""
@@ -606,7 +638,9 @@ class AdminApiUpdateTasks(Resource):
 
     """Bulk task create / update endpoint"""
 
-    def put(self, slug):
+    def post(self, slug):
+
+        """bulk create"""
 
         # Get the posted data
         data = json.loads(request.data)
@@ -615,12 +649,40 @@ class AdminApiUpdateTasks(Resource):
         app.logger.debug('posting {number} tasks...'.format(number=len(data)))
 
         if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
+            abort(400, 'more than 5000 tasks in bulk create')
+
+        for task in data:
+            if not 'identifier' in task:
+                abort(400, 'task must have identifier')
+            if not 'geometries' in task:
+                abort(400, 'new task must have geometries')
+            t = json_to_task(slug, task)
+            db.session.add(t)
+
+        # commit all dirty tasks at once.
+        db.session.commit()
+        return {}, 200
+
+    def put(self, slug):
+
+        """bulk update"""
+
+        # Get the posted data
+        data = json.loads(request.data)
+
+        # debug output number of tasks being posted
+        app.logger.debug('putting {number} tasks...'.format(number=len(data)))
+
+        if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
             abort(400, 'more than 5000 tasks in bulk update')
 
         for task in data:
-            t = json_to_task(slug, task)
-            merged_t = db.session.merge(t)
-            db.session.add(merged_t)
+            if not 'identifier' in task:
+                abort(400, 'task must have identifier')
+            t = json_to_task(slug,
+                             task,
+                             task=get_task_or_404(slug, task['identifier']))
+            db.session.add(t)
 
         # commit all dirty tasks at once.
         db.session.commit()
