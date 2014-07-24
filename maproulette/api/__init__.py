@@ -176,7 +176,10 @@ class ApiSelfInfo(ProtectedResource):
             abort(400)
         [session.pop(k, None) for k, v in payload.iteritems() if v is None]
         for k, v in payload.iteritems():
+            if k not in me_fields.keys():
+                abort(400, 'you cannot set this key')
             if v is not None:
+                app.logger.debug('setting {k} to {v}'.format(k=k, v=v))
                 session[k] = v
         return {}
 
