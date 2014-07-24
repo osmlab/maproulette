@@ -20,6 +20,9 @@ If you want to deploy your own live MapRoulette server, see the documentation [h
 
 If you want to set up MapRoulette locally for testing and development, and you want to benefit from the built-in debugging features of Flask, follow [these](https://github.com/osmlab/maproulette/wiki/Run-A-MapRoulette-Development-Server-Locally) steps.
 
+## Creating new Challenges
+Ceating and maintaining a good challenge is a little more complex than just pushing a button. It's not too difficult though. For a gentle introduction, please see [this workshop at SOTM EU](http://sotm-eu.org/en/slots/39) and [these slides](https://docs.google.com/presentation/d/1bl0WJ3iBjMH0AwTsOPu8sHeaInd1w-KXk_QXaEFSVFo/edit?usp=sharing) to get started.
+
 ## Contact
 
 Bug and feature requests are best left as an issue right here on Github. For other things, contact maproulette@maproulette.org
