@@ -8,7 +8,7 @@ from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, \
     json_to_task, refine_with_user_area, user_area_is_defined,\
-    send_email, as_stats_dict
+    send_email, as_stats_dict, challenge_exists
 from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
@@ -16,6 +16,7 @@ from sqlalchemy import func
 import geojson
 import json
 import markdown
+import re
 
 
 class ProtectedResource(Resource):
@@ -523,6 +524,10 @@ class AdminApiChallenge(Resource):
     """Admin challenge creation endpoint"""
 
     def post(self, slug):
+        if challenge_exists(slug):
+            abort(409, 'This challenge already exists')
+        if not re.match("^[\w\d_-]+$", slug):
+            abort(400, 'slug should contain only a-z, A-Z, 0-9, _, -')
         try:
             payload = json.loads(request.data)
         except Exception:
@@ -551,11 +556,13 @@ class AdminApiChallenge(Resource):
         return {}, 201
 
     def put(self, slug):
+        c = get_challenge_or_404(slug, abort_if_inactive=False)
+        if not re.match("^[\w\d_-]+$", slug):
+            abort(400, 'slug should contain only a-z, A-Z, 0-9, _, -')
         try:
             payload = json.loads(request.data)
         except Exception:
             abort(400, "JSON bad")
-        c = get_challenge_or_404(slug, abort_if_inactive=False)
         if 'title' in payload:
             c.title = payload.get('title')
         if 'geometry' in payload:
@@ -602,6 +609,9 @@ class AdminApiUpdateTask(Resource):
 
     def post(self, slug, identifier):
         """create one task."""
+
+        if not re.match("^[\w\d_-]+$", identifier):
+            abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
 
         # Parse the posted data
         t = json_to_task(
@@ -654,6 +664,8 @@ class AdminApiUpdateTasks(Resource):
         for task in data:
             if not 'identifier' in task:
                 abort(400, 'task must have identifier')
+            if not re.match("^[\w\d_-]+$", task['identifier']):
+                abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
             if not 'geometries' in task:
                 abort(400, 'new task must have geometries')
             t = json_to_task(slug, task)
@@ -679,6 +691,8 @@ class AdminApiUpdateTasks(Resource):
         for task in data:
             if not 'identifier' in task:
                 abort(400, 'task must have identifier')
+            if not re.match("^[\w\d_-]+$", task['identifier']):
+                abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
             t = json_to_task(slug,
                              task,
                              task=get_task_or_404(slug, task['identifier']))
