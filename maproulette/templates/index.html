@@ -7,7 +7,7 @@
     <div id="user">
         {%- if session.get('osm_token') -%}
         <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
-        signed in as <a href="{{ url_for("me") }}">{{ session.display_name }}</a>. <a href="{{ url_for("logout") }}">sign out</a>
+        signed in as {{ session.display_name }}. <a href="{{ url_for("logout") }}">sign out</a>
         {%- else -%}
         <script type="text/javascript">MRManager.loggedIn = false;</script>
         not signed in. <a href="{{ url_for("oauth_authorize") }}">sign in on OSM</a>
