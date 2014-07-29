@@ -77,10 +77,3 @@ def logout():
     if signed_in() or app.debug:
         session.destroy()
     return redirect('/')
-
-
-@app.route('/me')
-def me():
-    """Display a page about me with some stats
-    and user settings."""
-    return render_template('me.html')
