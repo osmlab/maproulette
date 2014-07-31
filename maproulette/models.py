@@ -119,6 +119,8 @@ class Challenge(db.Model):
         default=1)
     tasks = db.relationship(
         "Task",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
         backref="challenges")
     type = db.Column(
         db.String,
@@ -210,7 +212,10 @@ class Task(db.Model):
         nullable=False)
     challenge_slug = db.Column(
         db.String,
-        db.ForeignKey('challenges.slug', onupdate="cascade"),
+        db.ForeignKey(
+            'challenges.slug',
+            onupdate="cascade",
+            ondelete="cascade"),
         primary_key=True)
     random = db.Column(
         db.Float,
@@ -223,10 +228,12 @@ class Task(db.Model):
     geometries = db.relationship(
         "TaskGeometry",
         cascade='all,delete-orphan',
+        passive_deletes=True,
         backref=db.backref("task"))
     actions = db.relationship(
         "Action",
         cascade='all,delete-orphan',
+        passive_deletes=True,
         backref=db.backref("task"))
     status = db.Column(
         db.String)
@@ -334,7 +341,10 @@ class TaskGeometry(db.Model):
         db.BigInteger)
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id', onupdate="cascade"),
+        db.ForeignKey(
+            'tasks.id',
+            onupdate="cascade",
+            ondelete="cascade"),
         nullable=False)
     geom = db.Column(
         Geometry,
@@ -377,10 +387,16 @@ class Action(db.Model):
         nullable=False)
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('users.id', onupdate="cascade"))
+        db.ForeignKey(
+            'users.id',
+            onupdate="cascade",
+            ondelete="cascade"))
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id', onupdate="cascade"))
+        db.ForeignKey(
+            'tasks.id',
+            onupdate="cascade",
+            ondelete="cascade"))
     status = db.Column(
         db.String(),
         nullable=False)
