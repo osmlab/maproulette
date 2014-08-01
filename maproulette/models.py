@@ -1,24 +1,15 @@
-  # """This file contains the SQLAlchemy ORM models"""
+# """This file contains the SQLAlchemy ORM models"""
 
-from sqlalchemy import create_engine
 from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import Sequence
-from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 import random
 from datetime import datetime
-from maproulette import app
+from maproulette import app, db
 from shapely.geometry import Polygon, Point, MultiPoint
 import pytz
-
-# set up the ORM engine and database object
-engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
-                       convert_unicode=True)
-Base = declarative_base()
-db = SQLAlchemy(app)
 
 random.seed()
 

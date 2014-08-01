@@ -4,8 +4,7 @@ import os
 import sys
 import subprocess
 from flask.ext.runner import Manager
-from maproulette import app
-from maproulette.models import db
+from maproulette import app, db
 from flask.ext.migrate import MigrateCommand, Migrate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -41,7 +40,8 @@ def create_testdata(challenges=10, tasks=100, users=10):
     """Creates test data in the database"""
     import uuid
     import random
-    from maproulette.models import db, User, Challenge, Task, TaskGeometry, Action
+    from maproulette import db
+    from maproulette.models import User, Challenge, Task, TaskGeometry, Action
     from shapely.geometry import Point, LineString, box
 
     # statuses to use
@@ -147,7 +147,8 @@ def create_testdata(challenges=10, tasks=100, users=10):
 @manager.command
 def clean_stale_tasks():
 
-    from maproulette.models import db, Task, Action
+    from maproulette import db
+    from maproulette.models import Task, Action
     from sqlalchemy.sql.functions import max
     from datetime import datetime, timedelta
     import pytz
@@ -171,7 +172,8 @@ def clean_stale_tasks():
 @manager.command
 def populate_task_location():
     """This command populates the new location field for each task"""
-    from maproulette.models import db, Task, Challenge
+    from maproulette import db
+    from maproulette.models import Task, Challenge
     for challenge in db.session.query(Challenge):
         counter = 0
         for task in db.session.query(Task).filter_by(
