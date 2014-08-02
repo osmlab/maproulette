@@ -1,24 +1,15 @@
-  # """This file contains the SQLAlchemy ORM models"""
+# """This file contains the SQLAlchemy ORM models"""
 
-from sqlalchemy import create_engine
 from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import Sequence
-from flask.ext.sqlalchemy import SQLAlchemy
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 import random
 from datetime import datetime
-from maproulette import app
+from maproulette import app, db
 from shapely.geometry import Polygon, Point, MultiPoint
 import pytz
-
-# set up the ORM engine and database object
-engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
-                       convert_unicode=True)
-Base = declarative_base()
-db = SQLAlchemy(app)
 
 random.seed()
 
@@ -119,6 +110,8 @@ class Challenge(db.Model):
         default=1)
     tasks = db.relationship(
         "Task",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
         backref="challenges")
     type = db.Column(
         db.String,
@@ -210,7 +203,10 @@ class Task(db.Model):
         nullable=False)
     challenge_slug = db.Column(
         db.String,
-        db.ForeignKey('challenges.slug', onupdate="cascade"),
+        db.ForeignKey(
+            'challenges.slug',
+            onupdate="cascade",
+            ondelete="cascade"),
         primary_key=True)
     random = db.Column(
         db.Float,
@@ -223,10 +219,12 @@ class Task(db.Model):
     geometries = db.relationship(
         "TaskGeometry",
         cascade='all,delete-orphan',
+        passive_deletes=True,
         backref=db.backref("task"))
     actions = db.relationship(
         "Action",
         cascade='all,delete-orphan',
+        passive_deletes=True,
         backref=db.backref("task"))
     status = db.Column(
         db.String)
@@ -334,7 +332,10 @@ class TaskGeometry(db.Model):
         db.BigInteger)
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id', onupdate="cascade"),
+        db.ForeignKey(
+            'tasks.id',
+            onupdate="cascade",
+            ondelete="cascade"),
         nullable=False)
     geom = db.Column(
         Geometry,
@@ -377,10 +378,16 @@ class Action(db.Model):
         nullable=False)
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey('users.id', onupdate="cascade"))
+        db.ForeignKey(
+            'users.id',
+            onupdate="cascade",
+            ondelete="cascade"))
     task_id = db.Column(
         db.Integer,
-        db.ForeignKey('tasks.id', onupdate="cascade"))
+        db.ForeignKey(
+            'tasks.id',
+            onupdate="cascade",
+            ondelete="cascade"))
     status = db.Column(
         db.String(),
         nullable=False)

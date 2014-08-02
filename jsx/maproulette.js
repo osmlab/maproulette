@@ -607,7 +607,7 @@ var MRManager = (function () {
             };
             $.ajax({
                 url: "/api/challenge/" + challenge.slug + "/task/" + task.identifier,
-                type: "POST",
+                type: "PUT",
                 data: payload
             });
         };
