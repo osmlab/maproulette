@@ -618,11 +618,20 @@ class AdminApiUpdateTask(Resource):
             abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
 
         # Parse the posted data
-        t = json_to_task(
-            slug,
-            json.loads(request.data))
-        db.session.add(t)
-        db.session.commit()
+        try:
+            t = json_to_task(
+                slug,
+                json.loads(request.data))
+            db.session.add(t)
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'you posted a task that already existed: {}'.format(e.message))
+            else:
+                    app.logger.warn(e.message)
+                    abort(500, 'something unexpected happened')
         return {}, 201
 
     def put(self, slug, identifier):
