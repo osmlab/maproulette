@@ -13,6 +13,7 @@ from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 import geojson
 import json
 import markdown
@@ -412,7 +413,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
         task = get_task_or_404(slug, identifier)
         return marshal(task, task_fields)
 
-    def post(self, slug, identifier):
+    def put(self, slug, identifier):
         """Update the task identified by 'identifier' from
         the challenge identified by 'slug'"""
         # initialize the parser
@@ -664,28 +665,37 @@ class AdminApiUpdateTasks(Resource):
         if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
             abort(400, 'more than 5000 tasks in bulk create')
 
-        for task in data:
-            if not 'identifier' in task:
-                abort(400, 'task must have identifier')
-            if not re.match("^[\w\d_-]+$", task['identifier']):
-                abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
-            if not 'geometries' in task:
-                abort(400, 'new task must have geometries')
-            t = json_to_task(slug, task)
-            db.session.add(t)
+        try:
+            for task in data:
+                if not 'identifier' in task:
+                    abort(400, 'task must have identifier')
+                if not re.match("^[\w\d_-]+$", task['identifier']):
+                    abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
+                if not 'geometries' in task:
+                    abort(400, 'new task must have geometries')
+                t = json_to_task(slug, task)
+                db.session.add(t)
 
-        # commit all dirty tasks at once.
-        db.session.commit()
+            # commit all dirty tasks at once.
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'you posted a task that already existed: {}'.format(e.message))
+            else:
+                    app.logger.warn(e.message)
+                    abort(500, 'something unexpected happened')
         return {}, 200
 
     def put(self, slug):
 
         """bulk update"""
 
-        # Get the posted data
+        # Get the data
         data = json.loads(request.data)
 
-        # debug output number of tasks being posted
+        # debug output number of tasks being put
         app.logger.debug('putting {number} tasks...'.format(number=len(data)))
 
         if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
