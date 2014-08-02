@@ -621,7 +621,8 @@ class AdminApiUpdateTask(Resource):
         try:
             t = json_to_task(
                 slug,
-                json.loads(request.data))
+                json.loads(request.data),
+                identifier=identifier)
             db.session.add(t)
             db.session.commit()
         except Exception as e:
