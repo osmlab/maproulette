@@ -1,8 +1,10 @@
 # """This file contains the SQLAlchemy ORM models"""
 
+from flask import abort
 from sqlalchemy.orm import synonym
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.schema import Sequence
+from sqlalchemy.exc import IntegrityError
 from geoalchemy2.types import Geometry
 from geoalchemy2.shape import from_shape, to_shape
 import random
@@ -289,7 +291,16 @@ class Task(db.Model):
 
         db.session.add(self)
         if commit:
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception as e:
+                if type(e) == IntegrityError:
+                    app.logger.warn(e.message)
+                    db.session.rollback()
+                    abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                else:
+                    app.logger.warn(e.message)
+                    abort(500, 'something unexpected happened')
         return True
 
     @property
@@ -300,7 +311,16 @@ class Task(db.Model):
         self.actions.append(action)
         # duplicate the action status string in the tasks table to save lookups
         self.status = action.status
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
 
     def set_location(self):
         """Set the location of a task as a cheaply calculated

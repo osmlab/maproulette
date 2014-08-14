@@ -410,7 +410,16 @@ class ApiChallengeTask(ProtectedResource):
             merged_t = db.session.merge(task)
             db.session.add(merged_t)
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return marshal(task, task_fields)
 
 
@@ -443,7 +452,16 @@ class ApiChallengeTaskDetails(ProtectedResource):
                                   args.editor))
         merged_t = db.session.merge(task)
         db.session.add(merged_t)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}
 
 
@@ -567,7 +585,16 @@ class AdminApiChallenge(Resource):
         if 'difficulty' in payload:
             c.difficulty = payload.get('difficulty')
         db.session.add(c)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 201
 
     def put(self, slug):
@@ -595,14 +622,32 @@ class AdminApiChallenge(Resource):
         if 'difficulty' in payload:
             c.difficulty = payload.get('difficulty')
         db.session.add(c)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 200
 
     def delete(self, slug):
         """delete a challenge"""
         challenge = get_challenge_or_404(slug)
         db.session.delete(challenge)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 204
 
 
@@ -642,8 +687,8 @@ class AdminApiUpdateTask(Resource):
                 db.session.rollback()
                 abort(409, 'you posted a task that already existed: {}'.format(e.message))
             else:
-                    app.logger.warn(e.message)
-                    abort(500, 'something unexpected happened')
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 201
 
     def put(self, slug, identifier):
@@ -655,7 +700,16 @@ class AdminApiUpdateTask(Resource):
             json.loads(request.data),
             task=get_task_or_404(slug, identifier))
         db.session.add(t)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 200
 
     def delete(self, slug, identifier):
@@ -665,7 +719,16 @@ class AdminApiUpdateTask(Resource):
         t.append_action(Action('deleted'))
         merged_t = db.session.merge(t)
         db.session.add(merged_t)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 204
 
 
@@ -733,7 +796,16 @@ class AdminApiUpdateTasks(Resource):
             db.session.add(t)
 
         # commit all dirty tasks at once.
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            if type(e) == IntegrityError:
+                app.logger.warn(e.message)
+                db.session.rollback()
+                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+            else:
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 200
 
 api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
