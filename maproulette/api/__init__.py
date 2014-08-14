@@ -97,7 +97,18 @@ class ApiGetAChallenge(ProtectedResource):
     @marshal_with(challenge_summary)
     def get(self):
         """Return a single challenge"""
-        return get_challenge_or_404(app.config["DEFAULT_CHALLENGE"])
+        c = None
+        # start with the default challenge
+        c = Challenge.query.filter(Challenge.slug == app.config["DEFAULT_CHALLENGE"]).first()
+        # if it exists and is active, return it:
+        if c is not None and c.active:
+            return c
+        # else just get the first active one:
+        c = Challenge.query.filter(Challenge.active).first()
+        if c is not None:
+            return c
+        # if no active challenges exist, abort with a 404. This Should Never Happen.
+        abort(404)
 
 
 class ApiChallengeList(Resource):
