@@ -45,7 +45,6 @@ def oauthorized(resp):
         resp['oauth_token_secret']
     )
     retrieve_osm_data()
-    app.logger.debug('redirecting to %s' % next_url)
     return redirect(next_url)
 
 
@@ -103,7 +102,6 @@ def retrieve_osm_data():
                     lastchangeset.attrib['min_lat'],
                     lastchangeset.attrib['min_lon'],
                     lastchangeset.attrib['min_lat'])
-                app.logger.debug(wktbbox)
                 user.last_changeset_bbox = WKTElement(wktbbox)
                 user.last_changeset_date = lastchangeset.attrib['created_at']
                 user.last_changeset_id = lastchangeset.attrib['id']
