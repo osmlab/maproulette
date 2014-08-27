@@ -138,7 +138,24 @@ def get_random_task(challenge):
 def json_to_task(slug, data, task=None, identifier=None):
     """Parse task json coming in through the admin api"""
 
-    task_geometries = []
+    if identifier is None:
+        if not 'identifier' in data:
+            raise Exception('no identifier given')
+        identifier = data['identifier']
+
+    if task is None:
+        # create the task if none was passed in
+        task = Task(slug, identifier)
+    else:
+        # delete existing task geometries
+        task.geometries = []
+
+    # check for instruction
+    if 'instruction' in data:
+        task.instruction = data['instruction']
+    # check for status
+    if 'status' in data:
+        task.status = data['status']
 
     # extract the task geometries
     if 'geometries' in data:
@@ -148,23 +165,8 @@ def json_to_task(slug, data, task=None, identifier=None):
             osmid = feature['properties'].get('osmid')
             shape = asShape(feature['geometry'])
             g = TaskGeometry(osmid, shape)
-            task_geometries.append(g)
+            task.geometries.append(g)
 
-    if identifier is None:
-        if not 'identifier' in data:
-            raise Exception('no identifier given')
-        identifier = data['identifier']
-
-    # create the task
-    if task is None:
-        task = Task(slug, identifier, task_geometries)
-
-    # check for instruction
-    if 'instruction' in data:
-        task.instruction = data['instruction']
-    # check for status
-    if 'status' in data:
-        task.status = data['status']
     return task
 
 
