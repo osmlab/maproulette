@@ -243,12 +243,12 @@ class Task(db.Model):
             self,
             challenge_slug,
             identifier,
-            geometries=None,
+            geometries=[],
             instruction=None):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.instruction = instruction
-        self.geometries = []
+        self.geometries = geometries
         self.append_action(Action('created'))
 
     def __repr__(self):
