@@ -145,7 +145,11 @@ def json_to_task(slug, data, task=None, identifier=None):
 
     if task is None:
         # create the task if none was passed in
-        task = Task(slug, identifier)
+        try:
+            task = Task(slug, identifier)
+        except Exception, e:
+            app.logger.warn(e.message)
+            raise e
     else:
         # delete existing task geometries
         task.geometries = []
