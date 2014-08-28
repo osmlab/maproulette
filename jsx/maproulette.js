@@ -166,7 +166,7 @@ var DefaultDoneDialog = React.createClass({
 // Misc functions
 
 var signIn = function(){
-  location.reload();
+  //location.reload();
   location.href="/signin"
 }
 
