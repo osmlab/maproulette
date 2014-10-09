@@ -154,7 +154,8 @@ var DefaultDoneDialog = React.createClass({
   render: function(){
       return (
           <div>
-          <p>This area is being loaded in your editor. Did you fix it?</p>
+          <p>The area is now loaded in your OSM editor. See if you can fix it, and then return to MapRoulette.</p>
+          <p><em>Please make sure you save (iD) or upload (JOSM) your work after each fix!</em></p>
           <ActionButton action="fixed">I fixed it!</ActionButton>
           <ActionButton action="skipped">Too difficult/Couldn&#39;t see</ActionButton>
           <ActionButton action="falsepositive">It was not an error</ActionButton>
