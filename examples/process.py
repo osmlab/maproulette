@@ -3,7 +3,6 @@
 import hashlib
 import psycopg2
 import getpass
-import simplejson
 import requests
 import grequests
 import geojson
@@ -16,8 +15,7 @@ from psycopg2.extras import register_hstore, DictCursor
 
 CFS_STATUSES = ('created', 'falsepositive', 'skipped')
 
-CLOSING_PAYLOAD = json.dumps({"status": "closed"})
-
+CLOSING_PAYLOAD = json.dumps({"status": "deleted"})
 
 DELETING_PAYLOAD = json.dumps({"status": "deleted"})
 
@@ -41,7 +39,7 @@ def create_challenge_if_not_exists(slug, title):
     """This function creates the MR challenge if it does not already exist"""
     if not challenge_exists(slug=slug):
         print "creating challenge"
-        r = requests.put(
+        requests.put(
             mr_api_createchallenge_endpoint.format(slug=slug),
             data=json.dumps({"title": title, "active": True})
         )
@@ -64,9 +62,9 @@ def get_tasks_from_db(args):
     db_query = args.query
 
     db_string = "dbname={db_name} user={db_user} password={db_pass}".format(db_name=db_name,
-                                                         db_user=db_user,
-                                                         db_pass=db_pass,
-                                                         )
+                                                                            db_user=db_user,
+                                                                            db_pass=db_pass,
+                                                                            )
 
     if args.host:
         db_string += " host={db_host}".format(db_host=args.host)
@@ -172,6 +170,7 @@ class Requester(object):
         pass
 
     def request(self, url, payload):
+        print payload
         if self.sync:
             self.responses.append(
                 requests.put(url,
@@ -292,21 +291,21 @@ def write_responses(responses, output):
     for res, nid in responses:
         with open(output, 'a+') as outfile:
             try:
-                outfile.write(str(res.json())+'\n')
+                outfile.write(str(res.json()) + '\n')
 
             except AttributeError:
                 newr = json.dumps({'identifier': nid,
                                    'status': 'failed'
                                    }
                                   )
-                outfile.write(str(newr+'\n'))
+                outfile.write(str(newr + '\n'))
 
             except ValueError:
                 newr = json.dumps({'identifier': nid,
                                    'status': res.status_code
                                    }
                                   )
-                outfile.write(str(newr+'\n'))
+                outfile.write(str(newr + '\n'))
 
 
 if __name__ == "__main__":

@@ -154,7 +154,8 @@ var DefaultDoneDialog = React.createClass({
   render: function(){
       return (
           <div>
-          <p>This area is being loaded in your editor. Did you fix it?</p>
+          <p>The area is now loaded in your OSM editor. See if you can fix it, and then return to MapRoulette.</p>
+          <p><em>Please make sure you save (iD) or upload (JOSM) your work after each fix!</em></p>
           <ActionButton action="fixed">I fixed it!</ActionButton>
           <ActionButton action="skipped">Too difficult/Couldn&#39;t see</ActionButton>
           <ActionButton action="falsepositive">It was not an error</ActionButton>
@@ -774,7 +775,11 @@ var MRManager = (function () {
     React.renderComponent(
         <div>
         <h1>Welcome to MapRoulette</h1>
-        <div>Sign in with OpenStreetMap to play MapRoulette</div>
+        <p>Not sure what to map? MapRoulette knows!</p>
+        <p>Whether you have a few minutes or hours to spare, MapRoulette will keep giving you useful things to do to help make OpenStreetMap better instantly.</p>
+        <p>Not too experienced? There are easy challenges just for you. Or if you feel up to it, try one of the harder challenges.</p>
+        <p>Whatever your skill level, have fun and thanks for trying MapRoulette!</p>
+        <p><b>To get started, please sign in with your OpenStreetMap account.</b></p>
         <Button onClick={signIn}>Sign in</Button>
         </div>, document.getElementById('dialog'));
     $('#dialog').fadeIn();

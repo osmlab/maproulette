@@ -13,7 +13,7 @@ OSM = {
 }
 
 # by default, disable Flask debug and testing modes
-DEBUG = False
+DEBUG = False  # Also remember to change LOGLEVEL below
 TESTING = False
 
 # This is the buffer for looking for tasks / challenges near the given
@@ -24,20 +24,13 @@ NEARBUFFER = 0.01
 # for considering a challenge 'local'
 MAX_SQ_DEGREES_FOR_LOCAL = 10
 
-from datetime import timedelta
-
-# The expiration threshold for tasks that are 'assigned' or 'editing'
-TASK_EXPIRATION_THRESHOLD = timedelta(hours=1)
-
-# The time buffer between a task marked as fixed and the timestamp on the
-# changeset in OSM. (Used in validation)
-MAX_CHANGESET_OFFSET = timedelta(hours=1)
-
 # The database connection
 SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette"
 
-# The application log file
+# Logging details
+import logging
 LOGFILE = 'CHANGE THIS'
+LOGLEVEL = logging.DEBUG
 
 # the default challenge to run
 DEFAULT_CHALLENGE = 'CHANGE THIS'
@@ -46,3 +39,14 @@ DEFAULT_CHALLENGE = 'CHANGE THIS'
 TEASER = False
 # the text that should go into the teaser
 TEASER_TEXT = 'New MapRoulette Coming SOON!'
+
+# IP Whitelist for external API calls
+# (/api/admin/*, /api/stats*, /api/users, /api/challenges)
+IP_WHITELIST = []
+
+# Service API keys
+MAILGUN_API_KEY = 'CHANGE THIS'
+SKOBBLER_API_KEY = 'CHANGE THIS'
+
+# URL to the metrics site instance, for allowing CORS requests from there
+METRICS_URL = 'http://metrics.maproulette.org/'
