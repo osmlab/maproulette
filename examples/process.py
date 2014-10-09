@@ -23,14 +23,19 @@ def is_running_instance(api_url):
 
 def create_challenge_if_not_exists(slug, title):
     """This function creates the MR challenge if it does not already exist"""
+    print "let's see if challenge {slug} exists...".format(slug=slug)
     r = requests.get(mr_api_getchallenge_endpoint.format(slug=slug))
     if not r.status_code == 200:
         print "creating challenge"
-        r = requests.put(
+        r = requests.post(
             mr_api_createchallenge_endpoint.format(slug=slug),
             data=json.dumps({"title": title, "active": True})
         )
-    print 'challenge existed.'
+        return []
+    else:
+        print 'challenge existed. Getting current tasks...'
+        r = requests.get(mr_api_gettasks_endpoint.format(slug=slug))
+        return [task['identifier'] for task in json.loads(r.text)]
 
 
 def generate_id(slug, osmid, payload):
@@ -62,7 +67,11 @@ def prepare_task(node, args, osmid, geom):
                                  osmid=osmid,
                                  payload=payload
                                  )
-        return identifier, payload
+
+        if identifier in existing_identifiers:
+            return None
+        else:
+            return identifier, payload
 
 
 def post_tasks(slug, tasks):
@@ -70,7 +79,7 @@ def post_tasks(slug, tasks):
     headers = {'content-type': 'application/json'}
 
     s = requests.session()
-    rs = (grequests.put(
+    rs = (grequests.post(
         mr_api_addtask_endpoint.format(
             slug=slug,
             id=identifier),
@@ -120,11 +129,13 @@ def get_tasks_from_db(args):
             }]
         }
 
-        yield prepare_task(node=node,
-                           args=args,
-                           osmid=osmid,
-                           geom=geom
-                           )
+        task = prepare_task(node=node,
+                            args=args,
+                            osmid=osmid,
+                            geom=geom
+                            )
+        if task is not None:
+            yield task
 
 
 def get_tasks_from_json(args):
@@ -236,6 +247,8 @@ if __name__ == "__main__":
     mr_api_createchallenge_endpoint = base + "admin/challenge/{slug}"
     # - for creating a task
     mr_api_addtask_endpoint = base + "admin/challenge/{slug}/task/{id}"
+    # - for creating a task
+    mr_api_gettasks_endpoint = base + "admin/challenge/{slug}/tasks"
 
     challenge_title = args.challenge_title
     if not args.challenge_title:
@@ -249,7 +262,7 @@ if __name__ == "__main__":
 
     # if the challenge does not exist, create it.
     if not args.dry:
-        create_challenge_if_not_exists(slug, challenge_title)
+        existing_identifiers = create_challenge_if_not_exists(slug, challenge_title)
 
     tasks = []
     if 'query' in args:
@@ -264,6 +277,6 @@ if __name__ == "__main__":
 
     for r in responses:
         with open(args.output, 'a+') as outfile:
-            outfile.write(str(r.json())+'\n')
+            outfile.write(str(r.json()) + '\n')
 
-    print '\ndone.'
+    print '\ndone. {num} new tasks posted.'.format(num=len(responses))
