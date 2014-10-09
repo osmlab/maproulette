@@ -384,6 +384,7 @@ var MRManager = (function () {
             var bounds = map.getBounds();
             var nodes = [];
             var ways = [];
+            var relations = [];
             var sw = bounds.getSouthWest();
             var ne = bounds.getNorthEast();
             var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
@@ -400,6 +401,12 @@ var MRManager = (function () {
                     break;
                 case 'LineString':
                     selects.push('way' + feature.properties.osmid);
+                    break;
+                case 'Polygon':
+                    selects.push('way' + feature.properties.osmid);
+                    break;
+                case 'MultiPolygon':
+                    selects.push('relation' + feature.properties.osmid);
                     break;
                 }
             }
@@ -430,6 +437,12 @@ var MRManager = (function () {
                 case 'LineString':
                     idUriComponent += "w" + feature.properties.osmid + ",";
                     break;
+                case 'Polygon':
+                    idUriComponent += "w" + feature.properties.osmid + ",";
+                    break;
+                case 'MultiPolygon':
+                    idUrlComponent += "r" + feature.properties.osmid + ",";
+                    break
                 }
             }
             // remove trailing comma - iD won't play ball with it
