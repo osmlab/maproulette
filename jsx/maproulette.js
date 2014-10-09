@@ -762,7 +762,11 @@ var MRManager = (function () {
     React.renderComponent(
         <div>
         <h1>Welcome to MapRoulette</h1>
-        <div>Sign in with OpenStreetMap to play MapRoulette</div>
+        <p>Not sure what to map? MapRoulette knows!</p>
+        <p>Whether you have a few minutes or hours to spare, MapRoulette will keep giving you useful things to do to help make OpenStreetMap better instantly.</p>
+        <p>Not too experienced? There are easy challenges just for you. Or if you feel up to it, try one of the harder challenges.</p>
+        <p>Whatever your skill level, have fun and thanks for trying MapRoulette!</p>
+        <p><b>To get started, please sign in with your OpenStreetMap account.</b></p>
         <Button onClick={signIn}>Sign in</Button>
         </div>, document.getElementById('dialog'));
     $('#dialog').fadeIn();
