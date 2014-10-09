@@ -768,8 +768,8 @@ class AdminApiUpdateTasks(Resource):
                 db.session.rollback()
                 abort(409, 'you posted a task that already existed: {}'.format(e.message))
             else:
-                    app.logger.warn(e.message)
-                    abort(500, 'something unexpected happened')
+                app.logger.warn(e.message)
+                abort(500, 'something unexpected happened')
         return {}, 200
 
     def put(self, slug):
@@ -788,6 +788,8 @@ class AdminApiUpdateTasks(Resource):
         for task in data:
             if not 'identifier' in task:
                 abort(400, 'task must have identifier')
+            if not isinstance(task['identifier'], basestring):
+                abort(400, 'task identifier must be string')
             if not re.match("^[\w\d_-]+$", task['identifier']):
                 abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
             t = json_to_task(slug,
