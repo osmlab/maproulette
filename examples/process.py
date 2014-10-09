@@ -15,8 +15,7 @@ from psycopg2.extras import register_hstore, DictCursor
 
 CFS_STATUSES = ('created', 'falsepositive', 'skipped')
 
-CLOSING_PAYLOAD = json.dumps({"status": "closed"})
-
+CLOSING_PAYLOAD = json.dumps({"status": "deleted"})
 
 DELETING_PAYLOAD = json.dumps({"status": "deleted"})
 
@@ -171,6 +170,7 @@ class Requester(object):
         pass
 
     def request(self, url, payload):
+        print payload
         if self.sync:
             self.responses.append(
                 requests.put(url,
