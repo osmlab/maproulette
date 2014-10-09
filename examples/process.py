@@ -15,7 +15,7 @@ from psycopg2.extras import register_hstore, DictCursor
 
 CFS_STATUSES = ('created', 'falsepositive', 'skipped')
 
-CLOSING_PAYLOAD = json.dumps({"status": "deleted"})
+CLOSING_PAYLOAD = json.dumps({"status": "closed"})
 
 DELETING_PAYLOAD = json.dumps({"status": "deleted"})
 
@@ -31,6 +31,7 @@ def is_running_instance(api_url):
 
 
 def challenge_exists(slug):
+    print "checking if challenge exists..."
     r = requests.get(mr_api_getchallenge_endpoint.format(slug=slug))
     return r.status_code == 200
 
@@ -39,7 +40,7 @@ def create_challenge_if_not_exists(slug, title):
     """This function creates the MR challenge if it does not already exist"""
     if not challenge_exists(slug=slug):
         print "creating challenge"
-        requests.put(
+        requests.post(
             mr_api_createchallenge_endpoint.format(slug=slug),
             data=json.dumps({"title": title, "active": True})
         )
@@ -51,13 +52,14 @@ def get_tasks_from_db(args):
     db_user = args.user
     if not args.user:
         db_user = getpass.getuser()
-    db_pass = args.password
-    if not args.password:
-        db_pass = getpass.getpass()
 
     db_name = args.database
     if not args.database:
         db_name = 'osm'
+
+    db_pass = args.password
+    if not args.password:
+        db_pass = getpass.getpass('please enter the password for database {dbname} and user {dbuser}: '.format(dbname=db_name, dbuser=db_user))
 
     db_query = args.query
 
@@ -139,13 +141,10 @@ def prepare_task(node, args, osmid, geom):
                    "geometries": geom
                    }
 
-        identifier = node.get('id', None)
-
-        if identifier is None:
-            identifier = generate_id(slug=args.challenge_slug,
-                                     osmid=osmid,
-                                     payload=payload
-                                     )
+        identifier = generate_id(slug=args.challenge_slug,
+                                 osmid=osmid,
+                                 payload=payload
+                                 )
 
         return identifier, payload
 
@@ -169,8 +168,7 @@ class Requester(object):
     def __exit__(self, type, value, traceback):
         pass
 
-    def request(self, url, payload):
-        print payload
+    def put(self, url, payload):
         if self.sync:
             self.responses.append(
                 requests.put(url,
@@ -184,6 +182,21 @@ class Requester(object):
                               data=payload,
                               headers=HEADERS
                               ))
+
+    def post(self, url, payload):
+        if self.sync:
+            self.responses.append(
+                requests.post(url,
+                              data=payload,
+                              headers=HEADERS
+                              ))
+        else:
+            self.task_requests.append(
+                grequests.post(url,
+                               session=self.session,
+                               data=payload,
+                               headers=HEADERS
+                               ))
 
     def finish(self):
         if self.sync:
@@ -210,7 +223,7 @@ def post_tasks(slug, tasks, sync):
         for identifier, payload in tasks:
             newids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
-            req.request(url=url, payload=json.dumps(payload))
+            req.post(url=url, payload=json.dumps(payload))
 
         responses = req.finish()
 
@@ -226,9 +239,9 @@ def post_tasks_bulk(slug, tasks, sync):
             newids.add(identifier)
             payload["identifier"] = identifier
             bulk_payload.append(payload)
-        print "Post %s taks" % len(bulk_payload)
+        print "posting %s taks" % len(bulk_payload)
         url = mr_api_addtasks_endpoint.format(slug=slug)
-        req.request(url=url, payload=json.dumps(bulk_payload))
+        req.post(url=url, payload=json.dumps(bulk_payload))
 
         responses = req.finish()
 
@@ -250,7 +263,7 @@ def update_tasks(slug, tasks, instruction=None, statuses=None, sync=False):
 
             updids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
-            req.request(url=url, payload=payload)
+            req.put(url=url, payload=payload)
 
         responses = req.finish()
 
@@ -262,7 +275,7 @@ def close_tasks_by_id(slug, closeids, sync=False):
         for identifier in closeids:
             closeids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
-            req.request(url=url, payload=CLOSING_PAYLOAD)
+            req.put(url=url, payload=CLOSING_PAYLOAD)
 
         responses = req.finish()
 
@@ -280,7 +293,7 @@ def delete_tasks(slug, tasks, statuses, sync=False):
 
             delids.add(identifier)
             url = mr_api_addtask_endpoint.format(slug=slug, id=identifier)
-            req.request(url=url, payload=DELETING_PAYLOAD)
+            req.put(url=url, payload=DELETING_PAYLOAD)
 
         responses = req.finish()
 
