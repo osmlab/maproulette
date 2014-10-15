@@ -48,7 +48,8 @@ challenge_summary = {
     'description': fields.String,
     'help': MarkdownField,
     'blurb': fields.String,
-    'islocal': fields.Boolean
+    'islocal': fields.Boolean,
+    'active': fields.Boolean
 }
 
 task_fields = {
@@ -136,26 +137,27 @@ class ApiChallengeList(Resource):
                             help="lat is not a float")
         parser.add_argument('radius', type=int,
                             help="radius is not an int")
-        parser.add_argument('include_inactive', type=bool, default=False,
-                            help="include_inactive it not bool")
         args = parser.parse_args()
 
         difficulty = None
-        contains = None
 
         # Try to get difficulty from argument, or users preference
-        difficulty = args['difficulty']
+        difficulty = args.get('difficulty')
+        lon = args.get('lon')
+        lat = args.get('lat')
+        radius = args.get('radius')
 
         # get the list of challenges meeting the criteria
         query = db.session.query(Challenge)
 
-        if not args.include_inactive:
-            query = query.filter_by(active=True)
-
         if difficulty is not None:
             query = query.filter_by(difficulty=difficulty)
-        if contains is not None:
-            query = query.filter(Challenge.polygon.ST_Contains(contains))
+        if (lon is not None and lat is not None and radius is not None):
+            print "got lon, lat, rad: {lon}, {lat}, {rad}".format(lon=lon, lat=lat, rad=radius)
+            query = query.filter(
+                Challenge.polygon.ST_Contains(
+                    ST_Buffer('POINT({lon} {lat})'.format(lon=lon, lat=lat),
+                              radius)))
 
         challenges = query.all()
 
