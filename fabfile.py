@@ -54,6 +54,10 @@ def install_react_tools():
     sudo('npm install -g react-tools')
 
 
+def install_bower():
+    sudo('npm install -g bower')
+
+
 def create_deploy_directories(instance):
     basedir = "/srv/www/%s" % instance
     sudo("mkdir -p %s" % basedir)
@@ -182,6 +186,11 @@ def compile_jsx(instance=None):
              "/js/maproulette.js" % (basedir, basedir))
 
 
+def update_bower_dependencies(instance):
+    with cd("/srv/www/%s/htdocs/maproulette/maproulette/static" % instance):
+        run('bower -q install')
+
+
 def rsync(instance, reload_pip=False):
     compile_jsx()
     basedir = "/srv/www/%s" % instance
@@ -258,6 +267,7 @@ def setup_system():
     create_databases()
     install_nodejs()
     install_react_tools()
+    install_bower()
 
 
 def create_deployment(instance, setting="dev", branch=None):
@@ -271,6 +281,7 @@ def create_deployment(instance, setting="dev", branch=None):
     setup_config_file(instance, setting)
     flask_manage(instance, command='create_db')
     flask_manage(instance, command='db init')  # initialize alembic
+    update_bower_dependencies(instance)
     compile_jsx(instance)
     service('uwsgi', 'restart')
     service('nginx', 'restart')
@@ -283,6 +294,7 @@ def update_application(instance):
     install_python_dependencies(instance)
     service('postgresql', 'start')
     flask_manage(instance, command='db upgrade')
+    update_bower_dependencies(instance)    
     compile_jsx(instance)
     service('uwsgi', 'start')
 
