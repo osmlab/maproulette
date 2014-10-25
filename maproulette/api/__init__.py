@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 import geojson
 import json
 import markdown
+import bleach
 import re
 
 
@@ -45,7 +46,7 @@ challenge_summary = {
     'slug': fields.String,
     'title': fields.String,
     'difficulty': fields.Integer,
-    'description': fields.String,
+    'description': MarkdownField,
     'help': MarkdownField,
     'blurb': fields.String,
     'islocal': fields.Boolean

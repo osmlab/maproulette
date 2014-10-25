@@ -98,7 +98,7 @@ var ChallengeBox = React.createClass({
         };
         return(
             <div className="challengeBox">
-            <span className="title">{this.props.challenge.title}</span>
+            <span className="title">{converter.makeHtml(this.props.challenge.title)}</span>
             <DifficultyBadge difficulty={this.props.challenge.difficulty} />
             <p>{this.props.challenge.blurb}</p>
             <p>total tasks: {this.state.stats.total}, available: {this.state.stats.unfixed}</p>

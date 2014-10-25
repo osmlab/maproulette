@@ -20,3 +20,4 @@ Flask-Admin>=1.0.8
 requests>=2.2.1
 Fabric>=1.7.0
 python-dateutil>=2.2
+bleach>=1.4

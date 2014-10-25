@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "homepage": "https://github.com/osmlab/maproulette",
   "authors": [
-    "Serge Wroclawski <serge@wroclawski.org>"
+    "Serge Wroclawski <serge@wroclawski.org>",
+    "Martijn van Exel <m@rtijn.org>"
   ],
   "description": "Bower dependencies for Maproulette",
   "license": "Apache",
