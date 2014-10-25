@@ -40,7 +40,7 @@ class MarkdownField(Raw):
     """Markdown text"""
 
     def format(self, text):
-        return markdown.markdown(text)
+        return bleach.clean(markdown.markdown(text))
 
 challenge_summary = {
     'slug': fields.String,
