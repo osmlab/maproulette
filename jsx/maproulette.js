@@ -2,6 +2,16 @@
 
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 
+marked.setOptions({
+  gfm: true,
+  tables: true,
+  breaks: false,
+  pedantic: false,
+  sanitize: true,
+  smartLists: true,
+  smartypants: true
+});
+
 // React Components
 var Button = React.createClass({
   render: function(){
@@ -759,12 +769,11 @@ var MRManager = (function () {
         };
 
     var presentChallengeHelp = function (){
+        var renderedHelp = marked(challenge.help);
         React.renderComponent(
                 <div>
                 <h1>{challenge.title} Help</h1>
-                <div className="text">
-                  {{__html: challenge.help}}
-                </div>
+                <div className="text" dangerouslySetInnerHTML={{__html: renderedHelp}} />
                 <Button onClick={closeDialog(MRManager.readyToEdit)}>OK</Button>
                 </div>,
             document.getElementById('dialog'));
@@ -790,12 +799,13 @@ var MRManager = (function () {
         if (!challenge.slug){
             presentChallengeSelectionDialog();
         };
+        var renderedDescription = marked(challenge.description);
         React.renderComponent(
             <div>
             <h1>Welcome to MapRoulette!</h1>
             <p>You will be working on this challenge:</p>
             <h2>{challenge.title}</h2>
-            <p>{challenge.description}</p>
+            <div dangerouslySetInnerHTML={{__html: renderedDescription}} />
             <Button onClick={MRManager.readyToEdit}>
             Let&#39;s go!
             </Button>

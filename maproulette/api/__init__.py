@@ -16,8 +16,6 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 import geojson
 import json
-import markdown
-import bleach
 import re
 
 
@@ -35,21 +33,27 @@ class PointField(Raw):
         return '%f|%f' % to_shape(geometry).coords[0]
 
 
-class MarkdownField(Raw):
-
-    """Markdown text"""
-
-    def format(self, text):
-        return bleach.clean(markdown.markdown(text))
-
+# Marshal fields for the challenge list. #FIXME islocal is not used at the moment.
 challenge_summary = {
     'slug': fields.String,
     'title': fields.String,
     'difficulty': fields.Integer,
-    'description': MarkdownField,
-    'help': MarkdownField,
+    'description': fields.String,
+    'help': fields.String,
     'blurb': fields.String,
     'islocal': fields.Boolean
+}
+
+# Marshal fields for challenge detail. FIXME This should include the geometry as well
+challenge_detail = {
+    'slug': fields.String,
+    'title': fields.String,
+    'difficulty': fields.Integer,
+    'description': fields.String,
+    'help': fields.String,
+    'blurb': fields.String,
+    'active': fields.Boolean,
+    'type': fields.String
 }
 
 task_fields = {
@@ -170,7 +174,7 @@ class ApiChallengeDetail(ProtectedResource):
     def get(self, slug):
         """Return a single challenge by slug"""
         challenge = get_challenge_or_404(slug, True)
-        return marshal(challenge, challenge.marshal_fields)
+        return marshal(challenge, challenge_detail)
 
 
 class ApiSelfInfo(ProtectedResource):
