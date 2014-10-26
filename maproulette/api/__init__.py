@@ -134,13 +134,23 @@ class ApiChallengeList(Resource):
 
         # initialize the parser
         parser = reqparse.RequestParser()
-        parser.add_argument('difficulty', type=int, choices=["1", "2", "3"],
+        # FIXME this should be a bool but that does not seem to work.
+        parser.add_argument('return_inactive', 
+                            type=int,
+                            default=1,
+                            choices=["0", "1"],
+                            help='whether to return challenges that are currently not active, 1 for yes, 0 for no.')
+        parser.add_argument('difficulty',
+                            type=int, choices=["1", "2", "3"],
                             help='difficulty is not 1, 2, 3')
-        parser.add_argument('lon', type=float,
+        parser.add_argument('lon',
+                            type=float,
                             help="lon is not a float")
-        parser.add_argument('lat', type=float,
+        parser.add_argument('lat',
+                            type=float,
                             help="lat is not a float")
-        parser.add_argument('radius', type=int,
+        parser.add_argument('radius',
+                            type=int,
                             help="radius is not an int")
         args = parser.parse_args()
 
@@ -165,6 +175,9 @@ class ApiChallengeList(Resource):
                               radius)))
 
         challenges = query.all()
+
+        if args.return_inactive == 0:
+            challenges = [challenge for challenge in challenges if challenge.active]
 
         return challenges
 
@@ -221,7 +234,7 @@ class ApiChallengeSummaryStats(Resource):
     def get(self, challenge_slug):
         """Return statistics for the challenge identified by 'slug'"""
         # get the challenge
-        challenge = get_challenge_or_404(challenge_slug, True)
+        challenge = get_challenge_or_404(challenge_slug, abort_if_inactive=False)
 
         # query the number of tasks
         query = db.session.query(Task).filter_by(challenge_slug=challenge.slug)
