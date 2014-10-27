@@ -135,7 +135,7 @@ class ApiChallengeList(Resource):
         # initialize the parser
         parser = reqparse.RequestParser()
         # FIXME this should be a bool but that does not seem to work.
-        parser.add_argument('return_inactive', 
+        parser.add_argument('return_inactive',
                             type=int,
                             default=1,
                             choices=["0", "1"],
@@ -182,7 +182,7 @@ class ApiChallengeList(Resource):
         return challenges
 
 
-class ApiChallengeDetail(ProtectedResource):
+class ApiChallengeDetail(Resource):
 
     """Single Challenge endpoint"""
 
