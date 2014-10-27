@@ -188,7 +188,7 @@ class ApiChallengeDetail(Resource):
 
     def get(self, slug):
         """Return a single challenge by slug"""
-        challenge = get_challenge_or_404(slug, True)
+        challenge = get_challenge_or_404(slug, abort_if_inactive=False)
         return marshal(challenge, challenge_detail)
 
 
