@@ -774,6 +774,7 @@ class AdminApiUpdateTasks(Resource):
             app.logger.debug('we expect geojson')
             data = json.loads(request.data)
             # if there are no features, bail
+            app.logger.debug(data)
             if not data['features']:
                 abort(400, 'no features in geoJSON')
             # if there are too many features, bail
@@ -838,6 +839,7 @@ class AdminApiUpdateTasks(Resource):
             app.logger.debug('we expect geojson')
             data = json.loads(request.data)
             # if there are no features, bail
+            app.logger.debug(data)
             if not data['features']:
                 abort(400, 'no features in geoJSON')
             # if there are too many features, bail
