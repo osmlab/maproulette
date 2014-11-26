@@ -7,9 +7,9 @@ from flask import session, request, abort, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, \
-    json_to_task, refine_with_user_area, user_area_is_defined,\
+    json_to_task, geojson_to_task, refine_with_user_area, user_area_is_defined,\
     send_email, as_stats_dict, challenge_exists
-from maproulette.models import Challenge, Task, TaskGeometry, Action, User, db
+from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func
@@ -17,7 +17,6 @@ from sqlalchemy.exc import IntegrityError
 import geojson
 import json
 import re
-from shapely.geometry import asShape
 
 
 class ProtectedResource(Resource):
@@ -770,6 +769,7 @@ class AdminApiUpdateTasks(Resource):
                             help='whether to expect geoJSON as input')
         args = parser.parse_args()
 
+        # if geoJSON is passed in, process that
         if args.geojson:
             app.logger.debug('we expect geojson')
             data = json.loads(request.data)
@@ -781,28 +781,9 @@ class AdminApiUpdateTasks(Resource):
                 abort(400, 'more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
             # create tasks from each feature
             for feature in data['features']:
-                # check for id and geometries
-                if not 'id' in feature:
-                    app.logger.debug('no id in this feature, skipping')
-                    continue
-                if not 'geometry' in feature:
-                    app.logger.debug('no geometries in feature, skipping')
-                    continue
-                # generate an identifier
-                osmid = feature['id']
-                identifier = '{challenge_slug}-{osmid}'.format(
-                    challenge_slug=slug,
-                    osmid=osmid)
-                # create a task
-                task = Task(slug, identifier)
-                # get the geometry
-                app.logger.debug(feature['geometry'])
-                geom = feature['geometry']
-                shape = asShape(geom)
-                g = TaskGeometry(osmid, shape)
-                task.geometries.append(g)
-                # add to the session
-                db.session.add(task)
+                task = geojson_to_task(slug, feature)
+                if task is not None:
+                    db.session.add(task)
             # commit the tasks
             db.session.commit()
             return {}, 200
@@ -842,6 +823,34 @@ class AdminApiUpdateTasks(Resource):
     def put(self, slug):
 
         """bulk update"""
+
+        # initialize the parser
+        parser = reqparse.RequestParser()
+        parser.add_argument('geojson',
+                            type=int,
+                            default=1,
+                            choices=["0", "1"],
+                            help='whether to expect geoJSON as input')
+        args = parser.parse_args()
+
+        # if geoJSON is passed in, process that
+        if args.geojson:
+            app.logger.debug('we expect geojson')
+            data = json.loads(request.data)
+            # if there are no features, bail
+            if not data['features']:
+                abort(400, 'no features in geoJSON')
+            # if there are too many features, bail
+            if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
+                abort(400, 'more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+            # create tasks from each feature
+            for feature in data['features']:
+                task = geojson_to_task(slug, feature)
+                if task is not None:
+                    db.session.add(task)
+            # commit the tasks
+            db.session.commit()
+            return {}, 200
 
         # Get the data
         data = json.loads(request.data)

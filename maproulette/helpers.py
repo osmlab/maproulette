@@ -170,7 +170,45 @@ def json_to_task(slug, data, task=None, identifier=None):
             shape = asShape(feature['geometry'])
             g = TaskGeometry(osmid, shape)
             task.geometries.append(g)
+    return task
 
+
+def geojson_to_task(slug, feature):
+    """converts one geojson feature to a task.
+    This will only work in a limited number of cases, where:
+    * The geometry is one single Point or Linestring feature,
+    * The OSM ID of the feature is in the id field of the JSON,
+    and you are OK with the following:
+    * The description cannot be set at the task level
+    * The identifier will be slug-osmid"""
+    # check for id and geometries
+    if not 'id' in feature:
+        app.logger.debug('no id in this feature, skipping')
+        return None
+    if not 'geometry' in feature:
+        app.logger.debug('no geometries in feature, skipping')
+        return None
+    # generate an identifier
+    osmid = feature['id']
+    identifier = '{slug}-{osmid}'.format(
+        slug=slug,
+        osmid=osmid)
+    # find, or create a task
+    task = Task.query.filter(
+        Task.challenge_slug == slug).filter(
+        Task.identifier == identifier).first()
+    if task is None:
+        task = Task(slug, identifier)
+        app.logger.debug('creating task {identifier}'.format(
+            identifier=identifier))
+    else:
+        app.logger.debug('updating task {identifier}'.format(
+            identifier=identifier))
+    # get the geometry
+    geom = feature['geometry']
+    shape = asShape(geom)
+    g = TaskGeometry(osmid, shape)
+    task.geometries.append(g)
     return task
 
 
