@@ -9,7 +9,7 @@ from maproulette.helpers import get_random_task,\
     require_signedin, osmerror, \
     json_to_task, refine_with_user_area, user_area_is_defined,\
     send_email, as_stats_dict, challenge_exists
-from maproulette.models import Challenge, Task, Action, User, db
+from maproulette.models import Challenge, Task, TaskGeometry, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func
@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 import geojson
 import json
 import re
+from shapely.geometry import asShape
 
 
 class ProtectedResource(Resource):
@@ -760,6 +761,52 @@ class AdminApiUpdateTasks(Resource):
 
         """bulk create"""
 
+        # initialize the parser
+        parser = reqparse.RequestParser()
+        parser.add_argument('geojson',
+                            type=int,
+                            default=1,
+                            choices=["0", "1"],
+                            help='whether to expect geoJSON as input')
+        args = parser.parse_args()
+
+        if args.geojson:
+            app.logger.debug('we expect geojson')
+            data = json.loads(request.data)
+            # if there are no features, bail
+            if not data['features']:
+                abort(400, 'no features in geoJSON')
+            # if there are too many features, bail
+            if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
+                abort(400, 'more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+            # create tasks from each feature
+            for feature in data['features']:
+                # check for id and geometries
+                if not 'id' in feature:
+                    app.logger.debug('no id in this feature, skipping')
+                    continue
+                if not 'geometry' in feature:
+                    app.logger.debug('no geometries in feature, skipping')
+                    continue
+                # generate an identifier
+                osmid = feature['id']
+                identifier = '{challenge_slug}-{osmid}'.format(
+                    challenge_slug=slug,
+                    osmid=osmid)
+                # create a task
+                task = Task(slug, identifier)
+                # get the geometry
+                app.logger.debug(feature['geometry'])
+                geom = feature['geometry']
+                shape = asShape(geom)
+                g = TaskGeometry(osmid, shape)
+                task.geometries.append(g)
+                # add to the session
+                db.session.add(task)
+            # commit the tasks
+            db.session.commit()
+            return {}, 200
+
         # Get the posted data
         data = json.loads(request.data)
 
@@ -767,7 +814,7 @@ class AdminApiUpdateTasks(Resource):
         app.logger.debug('posting {number} tasks...'.format(number=len(data)))
 
         if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
-            abort(400, 'more than 5000 tasks in bulk create')
+            abort(400, 'more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
 
         try:
             for task in data:
