@@ -98,7 +98,7 @@ class ApiPing(Resource):
         return ["I am alive"]
 
 
-class ApiGetAChallenge(ProtectedResource):
+class ApiChallenge(ProtectedResource):
 
     @marshal_with(challenge_summary)
     def get(self):
@@ -556,7 +556,7 @@ api.add_resource(ApiChallengeTaskStatus,
 # challenge endpoints
 api.add_resource(ApiChallengeList,
                  '/api/challenges')
-api.add_resource(ApiGetAChallenge,
+api.add_resource(ApiChallenge,
                  '/api/challenge')
 api.add_resource(ApiChallengeDetail,
                  '/api/challenge/<string:slug>')
@@ -657,7 +657,7 @@ class AdminApiChallenge(Resource):
 
     def delete(self, slug):
         """delete a challenge"""
-        challenge = get_challenge_or_404(slug)
+        challenge = get_challenge_or_404(slug, abort_if_inactive=False)
         db.session.delete(challenge)
         try:
             db.session.commit()
@@ -753,44 +753,63 @@ class AdminApiUpdateTask(Resource):
         return {}, 204
 
 
+class AdminApiUpdateTasksFromGeoJSON(Resource):
+
+    """Bulk task create / update from GeoJSON endpoint"""
+
+    def post(self, slug):
+        """bulk create tasks"""
+
+        app.logger.debug('we expect geojson')
+        data = json.loads(request.data)
+        # if there are no features, bail
+        app.logger.debug(data)
+        if not isinstance(data, dict):
+            abort(400, message='We need a dictionary')
+        if not 'features' in data:
+            abort(400, message='no features in geoJSON')
+        # if there are too many features, bail
+        if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
+            abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+        # create tasks from each feature
+        for feature in data['features']:
+            task = geojson_to_task(slug, feature)
+            if task is not None:
+                db.session.add(task)
+        # commit the tasks
+        db.session.commit()
+        return {}, 200
+
+    def put(self, slug):
+        """bulk update tasks"""
+
+        app.logger.debug('we expect geojson')
+        data = json.loads(request.data)
+        # if there are no features, bail
+        app.logger.debug(data)
+        if not isinstance(data, dict):
+            abort(400, )
+        if not data['features']:
+            abort(400, message='no features in geoJSON')
+        # if there are too many features, bail
+        if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
+            abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+        # create tasks from each feature
+        for feature in data['features']:
+            task = geojson_to_task(slug, feature)
+            if task is not None:
+                db.session.add(task)
+        # commit the tasks
+        db.session.commit()
+        return {}, 200
+
+
 class AdminApiUpdateTasks(Resource):
 
     """Bulk task create / update endpoint"""
 
     def post(self, slug):
-
-        """bulk create"""
-
-        # initialize the parser
-        parser = reqparse.RequestParser()
-        parser.add_argument('geojson',
-                            type=int,
-                            default=1,
-                            choices=[0, 1],
-                            help='whether to expect geoJSON as input')
-        args = parser.parse_args()
-
-        # if geoJSON is passed in, process that
-        if args.geojson:
-            app.logger.debug('we expect geojson')
-            data = json.loads(request.data)
-            # if there are no features, bail
-            app.logger.debug(data)
-            if not isinstance(data, dict):
-                abort(400, message='We need a dictionary')
-            if not 'features' in data:
-                abort(400, message='no features in geoJSON')
-            # if there are too many features, bail
-            if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
-                abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
-            # create tasks from each feature
-            for feature in data['features']:
-                task = geojson_to_task(slug, feature)
-                if task is not None:
-                    db.session.add(task)
-            # commit the tasks
-            db.session.commit()
-            return {}, 200
+        """bulk create tasks"""
 
         # Get the posted data
         data = json.loads(request.data)
@@ -828,37 +847,6 @@ class AdminApiUpdateTasks(Resource):
 
         """bulk update"""
 
-        # initialize the parser
-        parser = reqparse.RequestParser()
-        parser.add_argument('geojson',
-                            type=int,
-                            default=1,
-                            choices=["0", "1"],
-                            help='whether to expect geoJSON as input')
-        args = parser.parse_args()
-
-        # if geoJSON is passed in, process that
-        if args.geojson:
-            app.logger.debug('we expect geojson')
-            data = json.loads(request.data)
-            # if there are no features, bail
-            app.logger.debug(data)
-            if not isinstance(data, dict):
-                abort(400, )
-            if not data['features']:
-                abort(400, message='no features in geoJSON')
-            # if there are too many features, bail
-            if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
-                abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
-            # create tasks from each feature
-            for feature in data['features']:
-                task = geojson_to_task(slug, feature)
-                if task is not None:
-                    db.session.add(task)
-            # commit the tasks
-            db.session.commit()
-            return {}, 200
-
         # Get the data
         data = json.loads(request.data)
 
@@ -893,10 +881,13 @@ class AdminApiUpdateTasks(Resource):
                 abort(500, message='something unexpected happened')
         return {}, 200
 
-api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
+api.add_resource(AdminApiChallenge,
+                 '/api/admin/challenge/<string:slug>')
 api.add_resource(AdminApiTaskStatuses,
                  '/api/admin/challenge/<string:slug>/tasks')
 api.add_resource(AdminApiUpdateTasks,
                  '/api/admin/challenge/<string:slug>/tasks')
+api.add_resource(AdminApiUpdateTasksFromGeoJSON,
+                 '/api/admin/challenge/<string:slug>/tasksfromgeojson')
 api.add_resource(AdminApiUpdateTask,
                  '/api/admin/challenge/<string:slug>/task/<string:identifier>')
