@@ -186,9 +186,13 @@ def compile_jsx(instance=None):
              "/js/maproulette.js" % (basedir, basedir))
 
 
-def update_bower_dependencies(instance):
+def install_bower_dependencies(instance):
     with cd("/srv/www/%s/htdocs/maproulette/maproulette/static" % instance):
         run('bower -q install')
+
+def update_bower_dependencies(instance):
+    with cd("/srv/www/%s/htdocs/maproulette/maproulette/static" % instance):
+        run('bower -q update')
 
 
 def rsync(instance, reload_pip=False):
@@ -292,7 +296,7 @@ def create_deployment(instance, setting="dev", branch=None):
     setup_config_file(instance, setting)
     flask_manage(instance, command='create_db')
     flask_manage(instance, command='db init')  # initialize alembic
-    update_bower_dependencies(instance)
+    install_bower_dependencies(instance)
     compile_jsx(instance)
     service('uwsgi', 'restart')
     service('nginx', 'restart')
