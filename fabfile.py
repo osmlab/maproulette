@@ -202,19 +202,25 @@ def rsync(instance, reload_pip=False):
 
 
 def reset_sessions(instance):
+    '''Removes all sessions stored on disk'''
+
     target = "/srv/www/%s/htdocs/maproulette/sessiondata" % instance
     sudo("rm -rf %s" % target)
     service('uwsgi', 'restart')
 
 
 def git_pull(instance):
+    '''Pulls latest for current branch from github'''
+
     sudo("cd /srv/www/%s/htdocs/maproulette && git pull" %
          instance, user="www-data")
 
 
 def setup_postgres_permissions():
+    '''Adds local trust to pg_hba.conf'''
+
     if not exists(pg_hba_fname):
-        print(red(pg_hba_fname + "is not present on the filesystem"))
+        print red(pg_hba_fname + "is not present on the filesystem")
         exit()
     sed(pg_hba_fname,
         "host\s*all\s*all\s*127.0.0.1/32\s*md5",
