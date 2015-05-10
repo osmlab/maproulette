@@ -230,6 +230,7 @@ def setup_postgres_permissions():
 
 
 def install_postgis():
+    '''install postgresql 9.3 and postgis 2.1'''
     # from
     # http://trac.osgeo.org/postgis/wiki/UsersWikiPostGIS21UbuntuPGSQL93Apt
     if not _is_ubuntu_1404():
@@ -248,10 +249,12 @@ def install_postgis():
 
 
 def create_db_user():
+    '''create the 'osm' postgresql user'''
     sudo('createuser -s -w osm', user='postgres')
 
 
 def create_databases():
+    '''create postgresql databases 'maproulette', 'maproulette_dev' and 'maproulette_test' with postgis extentions'''
     sudo("createdb -O osm maproulette", user='postgres')
     sudo("createdb -O osm maproulette_test", user='postgres')
     sudo("createdb -O osm maproulette_dev", user='postgres')
@@ -264,6 +267,7 @@ def create_databases():
 
 
 def setup_system():
+    '''setup system level dependencies for maproulette'''
     update_packages()
     upgrade_packages()
     install_packages()
@@ -277,6 +281,7 @@ def setup_system():
 
 
 def create_deployment(instance, setting="dev", branch=None):
+    '''deploy maproulette'''
     create_deploy_directories(instance)
     create_virtualenv(instance)
     checkout_repo(instance, branch)
@@ -294,17 +299,19 @@ def create_deployment(instance, setting="dev", branch=None):
 
 
 def update_application(instance):
+    '''update maproulette and application level dependencies'''
     service('uwsgi', 'stop')
     service('postgresql', 'stop')
     git_pull(instance)
     install_python_dependencies(instance)
     service('postgresql', 'start')
     flask_manage(instance, command='db upgrade')
-    update_bower_dependencies(instance)    
+    update_bower_dependencies(instance)
     compile_jsx(instance)
     service('uwsgi', 'start')
 
 
 def deploy(instance, setting="dev", branch=None):
+    '''master process to set up maproulette and its dependencies'''
     setup_system()
     create_deployment(instance, setting, branch)
