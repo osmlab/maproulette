@@ -9,6 +9,5 @@
   },
   "_source": "git://github.com/tzuryby/jquery.hotkeys.git",
   "_target": "*",
-  "_originalSource": "jquery.hotkeys",
-  "_direct": true
+  "_originalSource": "jquery.hotkeys"
 }

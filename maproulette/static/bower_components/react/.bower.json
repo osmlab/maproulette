@@ -11,6 +11,5 @@
   },
   "_source": "git://github.com/facebook/react-bower.git",
   "_target": "~0.10.0",
-  "_originalSource": "react",
-  "_direct": true
+  "_originalSource": "react"
 }
