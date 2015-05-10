@@ -16,11 +16,7 @@ oauth.init_app(app)
 
 @osm.tokengetter
 def get_osm_token(token=None):
-    app.logger.debug("polling tokengetter")
-    if 'osm_token' in session:
-        app.logger.debug('found tokens in session')
-        return session.get('osm_token')
-    return None
+    return session.get('osm_token')
 
 
 @app.route('/signin')
@@ -53,9 +49,9 @@ def retrieve_osm_data():
 
     # FIXME this is a messy function.
     data = osm.get('user/details').data
-    app.logger.debug("getting user data from osm")
-    if not data:
-        # FIXME this requires handling
+    app.logger.debug('received data: {}'.format(data))
+    if not data or not data.find('user'):
+        app.logger.debug('could not authenticate user')
         return False
     userxml = data.find('user')
     osmid = userxml.attrib['id']
