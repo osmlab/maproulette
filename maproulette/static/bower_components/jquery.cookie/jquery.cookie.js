@@ -1,5 +1,5 @@
 /*!
- * jQuery Cookie Plugin v1.4.1
+ * jQuery Cookie Plugin v1.4.0
  * https://github.com/carhartl/jquery-cookie
  *
  * Copyright 2013 Klaus Hartl
@@ -7,13 +7,10 @@
  */
 (function (factory) {
 	if (typeof define === 'function' && define.amd) {
-		// AMD
+		// AMD. Register as anonymous module.
 		define(['jquery'], factory);
-	} else if (typeof exports === 'object') {
-		// CommonJS
-		factory(require('jquery'));
 	} else {
-		// Browser globals
+		// Browser globals.
 		factory(jQuery);
 	}
 }(function ($) {
@@ -41,8 +38,13 @@
 		try {
 			// Replace server-side written pluses with spaces.
 			// If we can't decode the cookie, ignore it, it's unusable.
-			// If we can't parse the cookie, ignore it, it's unusable.
 			s = decodeURIComponent(s.replace(pluses, ' '));
+		} catch(e) {
+			return;
+		}
+
+		try {
+			// If we can't parse the cookie, ignore it, it's unusable.
 			return config.json ? JSON.parse(s) : s;
 		} catch(e) {}
 	}
@@ -55,13 +57,12 @@
 	var config = $.cookie = function (key, value, options) {
 
 		// Write
-
 		if (value !== undefined && !$.isFunction(value)) {
 			options = $.extend({}, config.defaults, options);
 
 			if (typeof options.expires === 'number') {
 				var days = options.expires, t = options.expires = new Date();
-				t.setTime(+t + days * 864e+5);
+				t.setDate(t.getDate() + days);
 			}
 
 			return (document.cookie = [
@@ -105,13 +106,12 @@
 	config.defaults = {};
 
 	$.removeCookie = function (key, options) {
-		if ($.cookie(key) === undefined) {
-			return false;
+		if ($.cookie(key) !== undefined) {
+			// Must not alter options, thus extending a fresh object...
+			$.cookie(key, '', $.extend({}, options, { expires: -1 }));
+			return true;
 		}
-
-		// Must not alter options, thus extending a fresh object...
-		$.cookie(key, '', $.extend({}, options, { expires: -1 }));
-		return !$.cookie(key);
+		return false;
 	};
 
 }));

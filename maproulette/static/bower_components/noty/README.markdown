@@ -1,3 +1,6 @@
+[![Gittip donate button](http://img.shields.io/gittip/needim.png)](https://www.gittip.com/needim/ "Donate weekly to this project using Gittip")
+[![Flattr donate button](http://img.shields.io/flattr/donate.png?color=green)](https://flattr.com/thing/529967/noty-jQuery-Notification-Plugin "Donate monthly to this project using Flattr")
+
 # noty - A jQuery Notification Plugin
 
 ![noty v2](http://needim.github.io/noty/img/noty-v2-logo.png?v2 "noty v2")
@@ -40,12 +43,12 @@ Documentation and examples are here: <http://needim.github.io/noty>
 2. If you cloned a while ago, get the latest changes from upstream:
 
    ```bash
-   git checkout master
-   git pull upstream master
+   git checkout develop
+   git pull upstream develop
    ```
 
-3. Create a new topic branch (off the main project development branch)
-   to contain your feature, change, or fix:
+3. Create a new topic branch (off the main project development branch) to
+   contain your feature, change, or fix:
 
    ```bash
    git checkout -b <topic-branch-name>
@@ -57,10 +60,10 @@ Documentation and examples are here: <http://needim.github.io/noty>
    [interactive rebase](https://help.github.com/articles/interactive-rebase)
    feature to tidy up your commits before making them public.
 
-5. Locally merge (or rebase) the upstream master branch into your topic branch:
+5. Locally merge (or rebase) the upstream development branch into your topic branch:
 
    ```bash
-   git pull [--rebase] upstream master
+   git pull [--rebase] upstream develop
    ```
 
 6. Push your topic branch up to your fork:
@@ -70,7 +73,7 @@ Documentation and examples are here: <http://needim.github.io/noty>
    ```
 
 7. [Open a Pull Request](https://help.github.com/articles/using-pull-requests/)
-    with a clear title and description against the `master` branch.
+    with a clear title and description against the `develop` branch.
 
 **IMPORTANT**: By submitting a patch, you agree to allow the project owners to
 license your work under the the terms of the [MIT License](LICENSE.txt).
