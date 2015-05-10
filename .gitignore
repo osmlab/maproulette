@@ -15,5 +15,5 @@ deploy_files/*
 examples/responses.json
 maproulette/static/js/maproulette.js
 maproulette/static/js/.module-cache/
-maproulette/static/bower_components/
+maproulette/static/bower_components/*
 responses.json
