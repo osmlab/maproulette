@@ -1,9 +1,9 @@
 from maproulette import app
 from flask.ext.restful import reqparse, fields, marshal, \
-    marshal_with, Api, Resource
+    marshal_with, Api, Resource, abort
 from flask.ext.restful.fields import Raw
 from flask.ext.restful.utils import cors
-from flask import session, request, abort, url_for
+from flask import session, request, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, \
@@ -205,11 +205,11 @@ class ApiSelfInfo(ProtectedResource):
         try:
             payload = json.loads(request.data)
         except Exception:
-            abort(400)
+            abort(400, message="JSON bad")
         [session.pop(k, None) for k, v in payload.iteritems() if v is None]
         for k, v in payload.iteritems():
             if k not in me_fields.keys():
-                abort(400, 'you cannot set this key')
+                abort(400, message='you cannot set this key')
             if v is not None:
                 app.logger.debug('setting {k} to {v}'.format(k=k, v=v))
                 session[k] = v
@@ -436,10 +436,10 @@ class ApiChallengeTask(ProtectedResource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return marshal(task, task_fields)
 
 
@@ -478,10 +478,10 @@ class ApiChallengeTaskDetails(ProtectedResource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}
 
 
@@ -578,15 +578,16 @@ class AdminApiChallenge(Resource):
 
     def post(self, slug):
         if challenge_exists(slug):
-            abort(409, 'This challenge already exists')
+            abort(409, message='This challenge already exists')
         if not re.match("^[\w\d_-]+$", slug):
-            abort(400, 'slug should contain only a-z, A-Z, 0-9, _, -')
+            abort(400, message='slug should contain only a-z, A-Z, 0-9, _, -')
         try:
+            app.logger.debug(request.data)
             payload = json.loads(request.data)
-        except Exception:
-            abort(400, "JSON bad")
+        except Exception as e:
+            abort(400, message=e.message)
         if 'title' not in payload:
-            abort(400, "new challenge must have title")
+            abort(400, message="new challenge must have title")
         c = Challenge(slug, payload.get('title'))
         if 'title' in payload:
             c.title = payload.get('title')
@@ -611,20 +612,20 @@ class AdminApiChallenge(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 201
 
     def put(self, slug):
         c = get_challenge_or_404(slug, abort_if_inactive=False)
         if not re.match("^[\w\d_-]+$", slug):
-            abort(400, 'slug should contain only a-z, A-Z, 0-9, _, -')
+            abort(400, message='slug should contain only a-z, A-Z, 0-9, _, -')
         try:
             payload = json.loads(request.data)
         except Exception:
-            abort(400, "JSON bad")
+            abort(400, message="JSON bad")
         if 'title' in payload:
             c.title = payload.get('title')
         if 'geometry' in payload:
@@ -648,10 +649,10 @@ class AdminApiChallenge(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 200
 
     def delete(self, slug):
@@ -664,10 +665,10 @@ class AdminApiChallenge(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 204
 
 
@@ -691,7 +692,7 @@ class AdminApiUpdateTask(Resource):
         """create one task."""
 
         if not re.match("^[\w\d_-]+$", identifier):
-            abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
+            abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
 
         # Parse the posted data
         try:
@@ -705,10 +706,10 @@ class AdminApiUpdateTask(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'you posted a task that already existed: {}'.format(e.message))
+                abort(409, message='you posted a task that already existed: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 201
 
     def put(self, slug, identifier):
@@ -726,10 +727,10 @@ class AdminApiUpdateTask(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 200
 
     def delete(self, slug, identifier):
@@ -745,10 +746,10 @@ class AdminApiUpdateTask(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 204
 
 
@@ -765,7 +766,7 @@ class AdminApiUpdateTasks(Resource):
         parser.add_argument('geojson',
                             type=int,
                             default=1,
-                            choices=["0", "1"],
+                            choices=[0, 1],
                             help='whether to expect geoJSON as input')
         args = parser.parse_args()
 
@@ -775,11 +776,13 @@ class AdminApiUpdateTasks(Resource):
             data = json.loads(request.data)
             # if there are no features, bail
             app.logger.debug(data)
-            if not data['features']:
-                abort(400, 'no features in geoJSON')
+            if not isinstance(data, dict):
+                abort(400, message='We need a dictionary')
+            if not 'features' in data:
+                abort(400, message='no features in geoJSON')
             # if there are too many features, bail
             if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
-                abort(400, 'more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+                abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
             # create tasks from each feature
             for feature in data['features']:
                 task = geojson_to_task(slug, feature)
@@ -796,16 +799,16 @@ class AdminApiUpdateTasks(Resource):
         app.logger.debug('posting {number} tasks...'.format(number=len(data)))
 
         if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
-            abort(400, 'more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+            abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
 
         try:
             for task in data:
                 if not 'identifier' in task:
-                    abort(400, 'task must have identifier')
+                    abort(400, message='task must have identifier')
                 if not re.match("^[\w\d_-]+$", task['identifier']):
-                    abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
+                    abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
                 if not 'geometries' in task:
-                    abort(400, 'new task must have geometries')
+                    abort(400, message='new task must have geometries')
                 t = json_to_task(slug, task)
                 db.session.add(t)
 
@@ -815,10 +818,10 @@ class AdminApiUpdateTasks(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'you posted a task that already existed: {}'.format(e.message))
+                abort(409, message='you posted a task that already existed: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 200
 
     def put(self, slug):
@@ -840,11 +843,13 @@ class AdminApiUpdateTasks(Resource):
             data = json.loads(request.data)
             # if there are no features, bail
             app.logger.debug(data)
+            if not isinstance(data, dict):
+                abort(400, )
             if not data['features']:
-                abort(400, 'no features in geoJSON')
+                abort(400, message='no features in geoJSON')
             # if there are too many features, bail
             if len(data['features']) > app.config['MAX_TASKS_BULK_UPDATE']:
-                abort(400, 'more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+                abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
             # create tasks from each feature
             for feature in data['features']:
                 task = geojson_to_task(slug, feature)
@@ -861,15 +866,15 @@ class AdminApiUpdateTasks(Resource):
         app.logger.debug('putting {number} tasks...'.format(number=len(data)))
 
         if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
-            abort(400, 'more than 5000 tasks in bulk update')
+            abort(400, message='more than 5000 tasks in bulk update')
 
         for task in data:
             if not 'identifier' in task:
-                abort(400, 'task must have identifier')
+                abort(400, message='task must have identifier')
             if not isinstance(task['identifier'], basestring):
-                abort(400, 'task identifier must be string')
+                abort(400, message='task identifier must be string')
             if not re.match("^[\w\d_-]+$", task['identifier']):
-                abort(400, 'identifier should contain only a-z, A-Z, 0-9, _, -')
+                abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
             t = json_to_task(slug,
                              task,
                              task=get_task_or_404(slug, task['identifier']))
@@ -882,10 +887,10 @@ class AdminApiUpdateTasks(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, 'the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, 'something unexpected happened')
+                abort(500, message='something unexpected happened')
         return {}, 200
 
 api.add_resource(AdminApiChallenge, '/api/admin/challenge/<string:slug>')
