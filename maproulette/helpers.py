@@ -204,6 +204,8 @@ def geojson_to_task(slug, feature):
     else:
         app.logger.debug('updating task {identifier}'.format(
             identifier=identifier))
+        # clear existing geometries
+        task.geometries = []
     # get the geometry
     geom = feature['geometry']
     shape = asShape(geom)
