@@ -1,22 +1,28 @@
-from flask.ext.testing import TestCase
-from maproulette import app, db
+import maproulette
+import unittest
+from flask.ext.sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine
 
-
-class MyTest(TestCase):
-
-    SQLALCHEMY_DATABASE_URI = "postgresql://martijnv@localhost/maproulette_test"
-    TESTING = True
-
-    def create_app(self):
-        return app
+class MaprouletteTestCase(unittest.TestCase):
 
     def setUp(self):
-        db.create_all()
+        maproulette.app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://martijnv@localhost/maproulette_test'
+        maproulette.app.config['TESTING'] = True
+        self.app = maproulette.app.test_client()
 
     def tearDown(self):
-        db.session.remove()
-        db.drop_all()
+        pass
 
-    def test_api_alive(self):
-        response = self.client.get('/api/ping')
-        assert 'I am alive' in response.data
+    def test_alive(self):
+        return_value = self.app.get('/api/ping')
+        assert 'I am alive' in return_value.data
+
+    def test_empty_challenge(self):
+        '''assert that there are no challenges in the database'''
+        return_value = self.app.get('/api/challenges')
+        assert return_value.status_code == 200
+        assert return_value.data[:2] == "[]"
+
+
+if __name__ == '__main__':
+    unittest.main()

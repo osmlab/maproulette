@@ -283,7 +283,6 @@ def setup_system():
     install_react_tools()
     install_bower()
 
-
 def create_deployment(instance, setting="dev", branch=None):
     '''deploy maproulette'''
     create_deploy_directories(instance)
