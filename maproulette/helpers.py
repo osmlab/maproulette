@@ -209,9 +209,13 @@ def geojson_to_task(slug, feature):
     # get the geometry
     geom = feature['geometry']
     shape = asShape(geom)
-    g = TaskGeometry(osmid, shape)
-    task.geometries.append(g)
-    return task
+    try:
+        g = TaskGeometry(osmid, shape)
+        task.geometries.append(g)
+        return task
+    except Exception, e:
+        app.logger.debug("task could not be created, {}".format(e))
+        return None
 
 
 def get_envelope(geoms):
