@@ -213,7 +213,7 @@ class ApiSelfInfo(ProtectedResource):
             if v is not None:
                 app.logger.debug('setting {k} to {v}'.format(k=k, v=v))
                 session[k] = v
-        return {}
+        return {}, 200
 
 
 class ApiChallengePolygon(ProtectedResource):
@@ -482,7 +482,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
             else:
                 app.logger.warn(e.message)
                 abort(500, message='something unexpected happened')
-        return {}
+        return {}, 200
 
 
 class ApiChallengeTaskStatus(ProtectedResource):
