@@ -46,7 +46,6 @@ IP_WHITELIST = []
 
 # Service API keys
 MAILGUN_API_KEY = 'CHANGE THIS'
-SKOBBLER_API_KEY = 'CHANGE THIS'
 
 # URL to the metrics site instance, for allowing CORS requests from there
 METRICS_URL = 'http://metrics.maproulette.org/'

@@ -3,7 +3,7 @@
 <body onload="init('map')">
 <div id="mr">
 <div id="controlpanel">
-    <div class="title">OpenStreetMap <em>MapRoulette</em></div>
+    <div class="title"><img src="{{ url_for("static", filename="images/MapRoulette.png") }}"></div>
     <div id="user">
         {%- if session.get('osm_token') -%}
         <script type="text/javascript">MRManager.loggedIn = "{{ session.display_name }}";</script>
