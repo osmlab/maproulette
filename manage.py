@@ -188,5 +188,18 @@ def populate_task_location():
             (counter, challenge.title)
 
 
+@manager.command
+def clean_sessions():
+    """Remove all stored sessions"""
+    session_dir = './sessiondata'
+    for f in os.listdir(session_dir):
+        file_path = os.path.join(session_dir, f)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception, e:
+            print e
+
+
 if __name__ == "__main__":
     manager.run()

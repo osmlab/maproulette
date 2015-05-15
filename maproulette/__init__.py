@@ -5,11 +5,13 @@ from flask.ext.kvsession import KVSessionExtension
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from flask.ext.sqlalchemy import SQLAlchemy
+from os.path import join, expanduser
 
 # initialize server KV session store
 if not os.path.exists('./sessiondata'):
     os.makedirs('./sessiondata')
-store = FilesystemStore('./sessiondata')
+
+session_store = FilesystemStore('./sessiondata')
 
 # instantiate flask app
 app = Flask(__name__,
@@ -19,7 +21,11 @@ app = Flask(__name__,
 
 # get configuration from a non-repo file specified
 # in this envvar
-app.config.from_envvar('MAPROULETTE_SETTINGS')
+try:
+    app.config.from_envvar('MAPROULETTE_SETTINGS')
+except Exception:
+    # alternate config file location for local development
+    app.config.from_pyfile(join(expanduser('~'), '.maproulette/config.py'))
 
 # set up the ORM engine and database object
 engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'],
@@ -36,4 +42,4 @@ if not app.debug:
 from maproulette import models, views, oauth, api
 
 # connect flask app to server KV session store
-KVSessionExtension(store, app)
+KVSessionExtension(session_store, app)

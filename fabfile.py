@@ -186,9 +186,13 @@ def compile_jsx(instance=None):
              "/js/maproulette.js" % (basedir, basedir))
 
 
-def update_bower_dependencies(instance):
+def install_bower_dependencies(instance):
     with cd("/srv/www/%s/htdocs/maproulette/maproulette/static" % instance):
         run('bower -q install')
+
+def update_bower_dependencies(instance):
+    with cd("/srv/www/%s/htdocs/maproulette/maproulette/static" % instance):
+        run('bower -q update')
 
 
 def rsync(instance, reload_pip=False):
@@ -202,19 +206,25 @@ def rsync(instance, reload_pip=False):
 
 
 def reset_sessions(instance):
+    '''Removes all sessions stored on disk'''
+
     target = "/srv/www/%s/htdocs/maproulette/sessiondata" % instance
     sudo("rm -rf %s" % target)
     service('uwsgi', 'restart')
 
 
 def git_pull(instance):
+    '''Pulls latest for current branch from github'''
+
     sudo("cd /srv/www/%s/htdocs/maproulette && git pull" %
          instance, user="www-data")
 
 
 def setup_postgres_permissions():
+    '''Adds local trust to pg_hba.conf'''
+
     if not exists(pg_hba_fname):
-        print(red(pg_hba_fname + "is not present on the filesystem"))
+        print red(pg_hba_fname + "is not present on the filesystem")
         exit()
     sed(pg_hba_fname,
         "host\s*all\s*all\s*127.0.0.1/32\s*md5",
@@ -224,6 +234,7 @@ def setup_postgres_permissions():
 
 
 def install_postgis():
+    '''install postgresql 9.3 and postgis 2.1'''
     # from
     # http://trac.osgeo.org/postgis/wiki/UsersWikiPostGIS21UbuntuPGSQL93Apt
     if not _is_ubuntu_1404():
@@ -242,10 +253,12 @@ def install_postgis():
 
 
 def create_db_user():
+    '''create the 'osm' postgresql user'''
     sudo('createuser -s -w osm', user='postgres')
 
 
 def create_databases():
+    '''create postgresql databases 'maproulette', 'maproulette_dev' and 'maproulette_test' with postgis extentions'''
     sudo("createdb -O osm maproulette", user='postgres')
     sudo("createdb -O osm maproulette_test", user='postgres')
     sudo("createdb -O osm maproulette_dev", user='postgres')
@@ -258,6 +271,7 @@ def create_databases():
 
 
 def setup_system():
+    '''setup system level dependencies for maproulette'''
     update_packages()
     upgrade_packages()
     install_packages()
@@ -269,8 +283,8 @@ def setup_system():
     install_react_tools()
     install_bower()
 
-
 def create_deployment(instance, setting="dev", branch=None):
+    '''deploy maproulette'''
     create_deploy_directories(instance)
     create_virtualenv(instance)
     checkout_repo(instance, branch)
@@ -281,24 +295,26 @@ def create_deployment(instance, setting="dev", branch=None):
     setup_config_file(instance, setting)
     flask_manage(instance, command='create_db')
     flask_manage(instance, command='db init')  # initialize alembic
-    update_bower_dependencies(instance)
+    install_bower_dependencies(instance)
     compile_jsx(instance)
     service('uwsgi', 'restart')
     service('nginx', 'restart')
 
 
 def update_application(instance):
+    '''update maproulette and application level dependencies'''
     service('uwsgi', 'stop')
     service('postgresql', 'stop')
     git_pull(instance)
     install_python_dependencies(instance)
     service('postgresql', 'start')
     flask_manage(instance, command='db upgrade')
-    update_bower_dependencies(instance)    
+    update_bower_dependencies(instance)
     compile_jsx(instance)
     service('uwsgi', 'start')
 
 
 def deploy(instance, setting="dev", branch=None):
+    '''master process to set up maproulette and its dependencies'''
     setup_system()
     create_deployment(instance, setting, branch)

@@ -13,8 +13,8 @@ OSM = {
 }
 
 # by default, disable Flask debug and testing modes
-DEBUG = False  # Also remember to change LOGLEVEL below
-TESTING = False
+DEBUG = True  # Also remember to change LOGLEVEL below
+TESTING = True
 
 # This is the buffer for looking for tasks / challenges near the given
 # lon/lat
@@ -29,7 +29,7 @@ SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette"
 
 # Logging details
 import logging
-LOGFILE = 'CHANGE THIS'
+LOGFILE = '/tmp/maproulette.log'
 LOGLEVEL = logging.DEBUG
 
 # the default challenge to run
