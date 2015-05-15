@@ -675,6 +675,7 @@ var MRManager = (function () {
             // fit the map snugly to the task features
             map.fitBounds(taskLayer.getBounds().pad(0.2));
             // show the task text as a notification
+            alert(challenge.instruction);
             notify.play(task.instruction, {
                 timeout: false,
                 killer: true
@@ -744,14 +745,14 @@ var MRManager = (function () {
 
         var presentDoneDialog = function () {
             // Right now we only support default tasks
-            React.renderComponent(
+            React.render(
                 <DefaultDoneDialog />,
                 document.getElementById('dialog'));
             $('#dialog').fadeIn();
         };
 
     var presentChallengeComplete = function(){
-        React.renderComponent(
+        React.render(
             <div>
             <p>The challenge you were working on is all done.
                Thanks for helping out!
@@ -764,13 +765,13 @@ var MRManager = (function () {
 
         var presentChallengeSelectionDialog = function () {
             $('controlpanel').fadeOut();
-            React.renderComponent(<ChallengeSelectionDialog />, document.getElementById('dialog'));
+            React.render(<ChallengeSelectionDialog />, document.getElementById('dialog'));
             $('#dialog').fadeIn();
         };
 
     var presentChallengeHelp = function (){
         var renderedHelp = marked(challenge.help);
-        React.renderComponent(
+        React.render(
                 <div>
                 <h1>{challenge.title} Help</h1>
                 <div className="text" dangerouslySetInnerHTML={{__html: renderedHelp}} />
@@ -781,7 +782,7 @@ var MRManager = (function () {
     };
 
   var presentWelcomeDialog = function() {
-    React.renderComponent(
+    React.render(
         <div>
         <h1>Welcome to MapRoulette</h1>
         <p>Not sure what to map? MapRoulette knows!</p>
@@ -800,7 +801,7 @@ var MRManager = (function () {
             presentChallengeSelectionDialog();
         };
         var renderedDescription = marked(challenge.description);
-        React.renderComponent(
+        React.render(
             <div>
             <h1>Welcome to MapRoulette!</h1>
             <p>You will be working on this challenge:</p>
