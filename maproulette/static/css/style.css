@@ -16,7 +16,6 @@ em {
 
 /* the main MapRoulette control panel */
 div#controlpanel {
-    border: 1px solid #aaa;
     z-index:15;
     position:absolute;
     right:10px;
@@ -24,7 +23,7 @@ div#controlpanel {
     width:250px;
     padding: 5px;
     text-align: center;
-    background-color:#fff;
+    background-color:rgba(255,255,255,0.6);
     -webkit-border-radius: 5px;
     border-radius: 5px;
 }
@@ -41,17 +40,11 @@ div.notifications {
 
 /* the MapRoulette title */
 div.title {
-    text-align: center;
-    font-size: 16pt;
-    font-weight: bold;
 }
 
 /* challenge container in list */
 .challengeBox {
-    background-color: rgb(220,220,220);
-    border: 1px solid #000000;
-    border-radius: 3px;
-    -webkit-border-radius: 3px;
+    background-color: rgba(255,255,255,0.9);
     color: #000000;
     margin: 4px;
     padding: 4px;
@@ -93,10 +86,7 @@ div.title {
 
 /* all buttons */
 div.button {
-    background-color: #ffa6a2;
-    border: 1px solid #000000;
-    border-radius: 3px;
-    -webkit-border-radius: 3px;
+    background-color: rgba(255,255,255,0.9);
     color: #000000;
     font-size: 14px;
     line-height: 20px;
@@ -122,8 +112,7 @@ div.button.tiny {
     font-weight: normal;
     font-size: 11px;
     padding: 0px;
-    border: 1px solid rgb(100,100,100);
-    background-color: #ffc9c4;
+    background-color: rgba(255,255,255,0.9);
 }
 
 /* the button hover */
@@ -164,13 +153,10 @@ div#dialog {
     width: 30%;
     left: 35%;
     top: 20%;
-    border: 1px solid #aaa;
     z-index:15;
     padding: 5px;
     text-align: center;
-    background-color:#fff;
-    -webkit-border-radius: 5px;
-    border-radius: 5px;
+    background-color:rgba(255,255,255,0.6);
     max-height: 65%;
     overflow-y:auto;
 }
