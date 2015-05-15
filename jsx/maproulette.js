@@ -225,7 +225,7 @@ var MRNotifier = function () {
     // defaults for noty engine
     $.noty.defaults = {
         layout: 'top',
-        theme: 'mapRouletteTheme',
+        theme: 'relax',
         type: 'alert',
         text: '',
         dismissQueue: true,
@@ -238,7 +238,7 @@ var MRNotifier = function () {
                 height: 'toggle'
             },
             easing: 'swing',
-            speed: 500
+            speed: 200
         },
         timeout: 5000,
         force: false,
@@ -468,7 +468,6 @@ var MRManager = (function () {
             var params = [];
             var result = ''
             if (task.identifier) result += '/' + task.identifier;
-            result += '?';
             if (typeof near.lat === 'number' && typeof near.lon === 'number') { // this is not quite accurate but good enough for a casual check.
                 params.push('lon=' + near.lon);
                 params.push('lat=' + near.lat);
@@ -477,7 +476,7 @@ var MRManager = (function () {
             // if ([1, 2, 3].indexOf(difficulty) > -1 && isChallenge) { // difficulty must be 1,2,3
             //     urlParams += 'difficulty=' + difficulty
             // }
-            result += params.join('&');
+            result += '?' + params.join('&');
             return result;
         };
 
@@ -569,30 +568,32 @@ var MRManager = (function () {
             if (!challenge.slug) {
                 challenge.slug = $.cookie('challenge');
             };
-            // if we still don't have anything, let the server select a challenge for us.
-            if (!challenge.slug) {
-                url = "/api/challenge";
-            } else {
-                url = "/api/challenge/" + challenge.slug;
-            };
+            // now retrieve the challenge (it will get a random one if there's no slug yet)
+            retrieveChallenge();
+
+            $.cookie('challenge', challenge.slug);
+
+            // update the challenge detail UI elements
+            $('#challenge_title').text(challenge.title);
+            $('#challenge_blurb').text(challenge.blurb);
+
+            // and move on to get the stats
+            getChallengeStats();
+
+            if (presentDialog) presentChallengeDialog();
+        };
+
+        // This retrieves a challenge - if there is already a challenge object with a slug property, it will get its details, otherwise it will retrieve a random challenge.
+        var retrieveChallenge = function() {
+            var url = (challenge && challenge.hasOwnProperty('slug')) ? "/api/challenge/" + challenge.slug : "/api/challenge/";
             $.ajax({
                 url: url,
                 async: false,
                 success: function (data) {
                     challenge = data;
-                    // set the challenge cookie
-                    $.cookie('challenge', challenge.slug);
-                    // update the challenge detail UI elements
-                    $('#challenge_title').text(challenge.title);
-                    $('#challenge_blurb').text(challenge.blurb);
-                    // and move on to get the stats
-
-                    getChallengeStats();
-                    if (presentDialog) presentChallengeDialog();
-                },
+                }
             });
         };
-
 
         var getChallengeStats = function () {
             //now get the challenge stats
@@ -649,6 +650,9 @@ var MRManager = (function () {
                         async: false,
                         success: function (data) {
                             task.features = data.features;
+                            if (!task.hasOwnProperty('instruction') || task.instruction == null || task.instruction === '') {
+                                task.instruction = challenge.instruction;
+                            }
                             drawTask();
                             getChallengeStats();
                             updateHash();
@@ -675,8 +679,7 @@ var MRManager = (function () {
             // fit the map snugly to the task features
             map.fitBounds(taskLayer.getBounds().pad(0.2));
             // show the task text as a notification
-            alert(challenge.instruction);
-            notify.play(task.instruction, {
+            notify.play(marked(task.instruction), {
                 timeout: false,
                 killer: true
             });
@@ -820,9 +823,13 @@ var MRManager = (function () {
     };
 
         var readyToEdit = function () {
+            // Make sure we have the challenge details
+            if (!challenge.title) retrieveChallenge();
+            // UI preparation
             $('#dialog').fadeOut();
             $('.controlpanel').fadeIn();
-            if (!task.identifier) nextTask();
+            // Load a task
+            task.identifier?getTask():nextTask();
         };
 
         var geolocateUser = function () {
@@ -986,7 +993,6 @@ var MRManager = (function () {
                     var res = h.substr(3).split('/');
                     challenge.slug = res[0];
                     task.identifier = res[1];
-                    getTask(false);
                     return true;
                 };
                 if (h.indexOf('#p=') == 0) {
