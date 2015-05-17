@@ -1,6 +1,7 @@
 /** @jsx React.DOM */
 
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
+var USE_SKOBBLER = false;
 
 marked.setOptions({
   gfm: true,
@@ -349,7 +350,9 @@ var MRConfig = (function () {
             center: new L.LatLng(40, -90),
             zoom: 4,
             keyboard: false,
-            apiKey: 'CHANGE ME'
+            // Below are Skobbler API specific options. If you don't have a Skobbler API key, set USE_SKOBBLER to false and ignore these.
+            apiKey: 'CHANGE ME',
+            mapStyle: 'lite'
         },
 
         // default tile URL
@@ -493,15 +496,19 @@ var MRManager = (function () {
 
 
             // initialize the map
-            map = new L.skobbler.map(elem, MRConfig.mapOptions);
+            if (USE_SKOBBLER) {
+                map = new L.skobbler.map(elem, MRConfig.mapOptions);
+            } else {
+                map = new L.Map(elem, MRConfig.mapOptions);
 
-            // and the tile layer
-            var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
-                attribution: MRConfig.tileAttrib
-            });
+                var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
+                    attribution: MRConfig.tileAttrib
+                });
+
+                map.addLayer(tileLayer);
+            }
 
             // Add both the tile layer and the task layer to the map
-            map.addLayer(tileLayer);
             map.addLayer(taskLayer);
 
             // Register the keyboard shortcuts
