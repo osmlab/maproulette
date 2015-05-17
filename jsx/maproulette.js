@@ -348,7 +348,8 @@ var MRConfig = (function () {
         mapOptions: {
             center: new L.LatLng(40, -90),
             zoom: 4,
-            keyboard: false
+            keyboard: false,
+            apiKey: 'CHANGE ME'
         },
 
         // default tile URL
@@ -492,7 +493,7 @@ var MRManager = (function () {
 
 
             // initialize the map
-            map = new L.Map(elem, MRConfig.mapOptions);
+            map = new L.skobbler.map(elem, MRConfig.mapOptions);
 
             // and the tile layer
             var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
