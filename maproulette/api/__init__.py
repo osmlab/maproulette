@@ -18,6 +18,7 @@ import geojson
 import json
 import re
 
+message_internal_server_error = 'Something really unexpected happened...'
 
 class ProtectedResource(Resource):
 
@@ -437,10 +438,10 @@ class ApiChallengeTask(ProtectedResource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='The session and the database did not agree for task identifier {identifier}: {message}'.format(id=task.identifier, message=e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return marshal(task, task_fields)
 
 
@@ -479,10 +480,10 @@ class ApiChallengeTaskDetails(ProtectedResource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='The session and the database did not agree for task identifier {identifier}: {message}'.format(id=task.identifier, message=e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return {}, 200
 
 
@@ -579,16 +580,16 @@ class AdminApiChallenge(Resource):
 
     def post(self, slug):
         if challenge_exists(slug):
-            abort(409, message='This challenge already exists')
+            abort(409, message='This challenge {slug} already exists.'.format(slug=challenge.slug))
         if not re.match("^[\w\d_-]+$", slug):
-            abort(400, message='slug should contain only a-z, A-Z, 0-9, _, -')
+            abort(400, message='The challenge slug should contain only a-z, A-Z, 0-9, _, -')
         try:
             app.logger.debug(request.data)
             payload = json.loads(request.data)
         except Exception as e:
             abort(400, message=e.message)
         if 'title' not in payload:
-            abort(400, message="new challenge must have title")
+            abort(400, message="A new challenge must have title")
         c = Challenge(slug, payload.get('title'))
         if 'title' in payload:
             c.title = payload.get('title')
@@ -613,10 +614,10 @@ class AdminApiChallenge(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='The session and the database did not agree for challenge {slug}: {message}'.format(slug=challenge.slug, message=e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return {}, 201
 
     def put(self, slug):
@@ -626,7 +627,7 @@ class AdminApiChallenge(Resource):
         try:
             payload = json.loads(request.data)
         except Exception:
-            abort(400, message="JSON bad")
+            abort(400, message="There is something wrong with your JSON.")
         if 'title' in payload:
             c.title = payload.get('title')
         if 'geometry' in payload:
@@ -653,7 +654,7 @@ class AdminApiChallenge(Resource):
                 abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return {}, 200
 
     def delete(self, slug):
@@ -669,7 +670,7 @@ class AdminApiChallenge(Resource):
                 abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message='Something really unexpected happened...')
         return {}, 204
 
 
@@ -707,10 +708,10 @@ class AdminApiUpdateTask(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='you posted a task that already existed: {}'.format(e.message))
+                abort(409, message='You posted a task ({identifier}) that already existed: {message}'.format(identifier=task.identifier, message=e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return {}, 201
 
     def put(self, slug, identifier):
@@ -728,7 +729,7 @@ class AdminApiUpdateTask(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='The session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
                 abort(500, message='something unexpected happened')
@@ -750,7 +751,7 @@ class AdminApiUpdateTask(Resource):
                 abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return {}, 204
 
 
@@ -838,10 +839,10 @@ class AdminApiUpdateTasks(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='you posted a task that already existed: {}'.format(e.message))
+                abort(409, message='You tried to post a task ({identifier}) that already existed: {message}'.format(identifier=task.identifier, message=e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return {}, 200
 
     def put(self, slug):
@@ -879,7 +880,7 @@ class AdminApiUpdateTasks(Resource):
                 abort(409, message='the session and the database did not agree: {}'.format(e.message))
             else:
                 app.logger.warn(e.message)
-                abort(500, message='something unexpected happened')
+                abort(500, message=message_internal_server_error)
         return {}, 200
 
 api.add_resource(AdminApiChallenge,

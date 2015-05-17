@@ -107,13 +107,14 @@ var ChallengeBox = React.createClass({
             MRManager.userPickChallenge(slug);
         };
         return(
+            <Button onClick={pickMe}>
             <div className="challengeBox">
             <span className="title">{this.props.challenge.title}</span>
             <DifficultyBadge difficulty={this.props.challenge.difficulty} />
             <p>{this.props.challenge.blurb}</p>
             <p>total tasks: {this.state.stats.total}, available: {this.state.stats.unfixed}</p>
-            <Button onClick={pickMe}>Work on this challenge</Button>
             </div>
+            </Button>
         );
     }
 });
