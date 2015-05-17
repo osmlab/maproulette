@@ -5,13 +5,13 @@ body, #map {
     position: absolute;
     margin: 0px;
     overflow: hidden;
-    font: 11pt arial, sans-serif;
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 11pt;
 }
 
 /* emphasized text */
 em {
     font-style:italic;
-    /*color:#44cc33;*/
 }
 
 /* the main MapRoulette control panel */
@@ -24,8 +24,6 @@ div#controlpanel {
     padding: 5px;
     text-align: center;
     background-color:rgba(255,255,255,0.6);
-    -webkit-border-radius: 5px;
-    border-radius: 5px;
 }
 
 /* the notifications container */
@@ -44,7 +42,7 @@ div.title {
 
 /* challenge container in list */
 .challengeBox {
-    background-color: rgba(255,255,255,0.9);
+    background-color: rgba(255,255,255,1);
     color: #000000;
     margin: 4px;
     padding: 4px;
@@ -56,8 +54,6 @@ div.title {
 
 .difficultyBadge .d1 {
     border: 1px solid #fff;
-    border-radius: 3px;
-    -webkit-border-radius: 3px;
     font-size: 10px;
     margin-left: 5px;
     padding: 2px;
@@ -66,8 +62,6 @@ div.title {
 
 .difficultyBadge .d2 {
     border: 1px solid #fff;
-    border-radius: 3px;
-    -webkit-border-radius: 3px;
     font-size: 10px;
     margin-left: 5px;
     padding: 2px;
@@ -76,8 +70,6 @@ div.title {
 
 .difficultyBadge .d3 {
     border: 1px solid #fff;
-    border-radius: 3px;
-    -webkit-border-radius: 3px;
     font-size: 10px;
     margin-left: 5px;
     padding: 2px;
@@ -86,7 +78,7 @@ div.title {
 
 /* all buttons */
 div.button {
-    background-color: rgba(255,255,255,0.9);
+    background-color: rgba(255,255,255,1);
     color: #000000;
     font-size: 14px;
     line-height: 20px;
@@ -96,14 +88,14 @@ div.button {
 
 /* the 'fixed' button */
 div#fixed.button {
-    background-color: rgb(120,230,100);
+    background-color: rgba(120,230,100,1);
     border-width: 2px;
     font-weight: bold;
 }
 
 /* cancel style buttons */
 div.button.cancel {
-    background-color: rgb(240,240,240);
+    background-color: rgba(240,240,240,1);
     font-weight: normal;
 }
 
@@ -112,7 +104,7 @@ div.button.tiny {
     font-weight: normal;
     font-size: 11px;
     padding: 0px;
-    background-color: rgba(255,255,255,0.9);
+    background-color: rgba(255,255,255,1);
 }
 
 /* the button hover */
@@ -125,7 +117,7 @@ div.button:hover {
 /* user display name */
 div#user {
     font-size: smaller;
-    color: rgb(100,100,100);
+    color: rgba(100,100,100,1);
 }
 
 /* the challenge title */
@@ -143,7 +135,7 @@ div#challenge_blurb {
 /* the little stats section */
 div.smallmsg {
     font-size: x-small;
-    color: rgb(100,100,100);
+    color: rgba(100,100,100,1);
 }
 
 /* the dialog presented after clicking 'edit' */
@@ -163,9 +155,7 @@ div#dialog {
 
 /* the key 'icons' */
 span.key {
-    background-color: #FFFFFF;
-    border: 1px solid #000000;
-    border-radius: 3px;
+    border: 1px solid rgba(100,100,100,1);
     color: #000000;
     display: inline-block;
     font-size: 10px;
@@ -175,6 +165,7 @@ span.key {
     padding: 2px;
     text-align: center;
     width: 14px;
+    border-radius:5px;
 }
 
 /* hide the challenge menu for now while the backend is not implemented. */
