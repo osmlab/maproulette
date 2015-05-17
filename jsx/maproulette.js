@@ -92,7 +92,6 @@ var ChallengeBox = React.createClass({
             url: "/api/challenge/" + this.props.challenge.slug + "/summary",
             dataType: 'json',
             success: function(data) {
-                console.log(data);
                 this.setState({"stats": data})
                 if (this.state.stats.total == 0 || this.state.stats.unfixed == 0) {
                     this.getDOMNode().style.display = "none";
@@ -601,9 +600,7 @@ var MRManager = (function () {
             var endpoint = '/api/challenge/' + challenge.slug + "/summary";
             $.getJSON(endpoint, function (data) {
                 for (key in data) {
-                    console.log('raw value: ' + data[key]);
                     var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
-                    console.log('value for ' + key + ': ' + value);
                     $('#challenge_' + key).html(value).fadeIn();
                 };
             });
@@ -926,7 +923,6 @@ var MRManager = (function () {
                 };
                 $('#msg_editarea').show();
                 notify.play('You have set your preferred editing location.', {killer: true})
-                console.log(editArea.toGeoJSON());
             };
             storeServerSettings(data);
             if(map.hasLayer(editArea)) map.removeLayer(editArea);
