@@ -13,6 +13,8 @@ from geoalchemy2.shape import from_shape
 from geoalchemy2.types import Geography
 import requests
 from datetime import datetime, timedelta
+from sqlalchemy.sql import compiler
+from psycopg2.extensions import adapt as sqlescape
 
 
 def signed_in():
@@ -120,6 +122,7 @@ def get_random_task(challenge):
                               'created']),
                           Task.random >= rn).order_by(Task.random)
     q = refine_with_user_area(q)
+    app.logger.debug(compile_query(q))
     if q.first() is None:
         # we may not have gotten one if there is no task with
         # Task.random <= the random value. chance of this gets
@@ -349,3 +352,17 @@ class JsonTasks(object):
             assert 'location' in task, \
                 "Task must contain a 'location' property"
         self.data = data
+
+
+def compile_query(query):
+    dialect = query.session.bind.dialect
+    statement = query.statement
+    comp = compiler.SQLCompiler(dialect, statement)
+    comp.compile()
+    enc = dialect.encoding
+    params = {}
+    for k, v in comp.params.iteritems():
+        if isinstance(v, unicode):
+            v = v.encode(enc)
+        params[k] = sqlescape(v)
+    return (comp.string.encode(enc) % params).decode(enc)
