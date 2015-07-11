@@ -244,7 +244,8 @@ class Task(db.Model):
             challenge_slug,
             identifier,
             geometries=[],
-            instruction=None):
+            instruction=None,
+            status='created'):
         self.challenge_slug = challenge_slug
         self.identifier = identifier
         self.instruction = instruction

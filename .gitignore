@@ -17,3 +17,4 @@ maproulette/static/js/maproulette.js
 .module-cache/
 bower_components/
 responses.json
+migrations/

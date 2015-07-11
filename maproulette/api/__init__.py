@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 import geojson
 import json
 import re
+from pprint import pprint
 
 message_internal_server_error = 'Something really unexpected happened...'
 
@@ -580,7 +581,7 @@ class AdminApiChallenge(Resource):
 
     def post(self, slug):
         if challenge_exists(slug):
-            abort(409, message='This challenge {slug} already exists.'.format(slug=challenge.slug))
+            abort(409, message='This challenge already exists.')
         if not re.match("^[\w\d_-]+$", slug):
             abort(400, message='The challenge slug should contain only a-z, A-Z, 0-9, _, -')
         try:
@@ -698,6 +699,7 @@ class AdminApiUpdateTask(Resource):
 
         # Parse the posted data
         try:
+            app.logger.debug(request.data)
             t = json_to_task(
                 slug,
                 json.loads(request.data),
@@ -815,12 +817,14 @@ class AdminApiUpdateTasks(Resource):
 
         # Get the posted data
         data = json.loads(request.data)
-
-        # debug output number of tasks being posted
-        app.logger.debug('posting {number} tasks...'.format(number=len(data)))
+        app.logger.debug(len(data))
+        app.logger.debug(app.config['MAX_TASKS_BULK_UPDATE'])
 
         if len(data) > app.config['MAX_TASKS_BULK_UPDATE']:
             abort(400, message='more than the max number of allowed tasks ({})in bulk create'.format(app.config['MAX_TASKS_BULK_UPDATE']))
+
+        # debug output number of tasks being posted
+        app.logger.debug('posting {number} tasks...'.format(number=len(data)))
 
         try:
             for task in data:
@@ -843,7 +847,7 @@ class AdminApiUpdateTasks(Resource):
             else:
                 app.logger.warn(e.message)
                 abort(500, message=message_internal_server_error)
-        return {}, 200
+        return {}, 201
 
     def put(self, slug):
 

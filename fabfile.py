@@ -71,14 +71,20 @@ def create_virtualenv(instance):
     sudo("virtualenv %s/virtualenv" % (dirname), user="www-data")
 
 
-def checkout_repo(instance, branch=None):
+def checkout_repo(instance, is_dev, branch=None):
     dirname = "/srv/www/%s/htdocs/maproulette" % instance
+    git_org = 'osmlab'
+    if is_dev:
+        git_org = 'mvexel'
     if branch:
-        cmd = "git clone https://github.com/osmlab/maproulette.git -b %s %s" %\
-              (branch, dirname)
+        cmd = "git clone https://github.com/{}/maproulette.git -b {} {}".format(
+            git_org,
+            branch,
+            dirname)
     else:
-        cmd = "git clone https://github.com/osmlab/maproulette.git %s" %\
-            (dirname)
+        cmd = "git clone https://github.com/{}/maproulette.git {}".format(
+            git_org,
+            dirname)
     with cd("/srv/www"):
         sudo(cmd, user="www-data")
 
@@ -156,7 +162,7 @@ def setup_nginx_file(instance):
         sudo("ln -s %s %s" % (sites_available_file, sites_enabled_file))
 
 
-def setup_config_file(instance, setting):
+def setup_config_file(instance, is_dev):
     basedir = "/srv/www/%s" % instance
     target = basedir + "/config.py"
     upload_template("config",
@@ -166,7 +172,7 @@ def setup_config_file(instance, setting):
                     template_dir="fabric_templates",
                     context={
                         "instance": instance,
-                        "setting": setting,
+                        "is_dev": is_dev,
                         #"consumer_key": '',
                         #"consumer_secret": ''
                     })
@@ -283,16 +289,16 @@ def setup_system():
     install_react_tools()
     install_bower()
 
-def create_deployment(instance, setting="dev", branch=None):
+def create_deployment(instance, is_dev=True, branch=None):
     '''deploy maproulette'''
     create_deploy_directories(instance)
     create_virtualenv(instance)
-    checkout_repo(instance, branch)
+    checkout_repo(instance, is_dev, branch)
     install_python_dependencies(instance)
     setup_uwsgi_file(instance)
     setup_nginx_file(instance)
     setup_cron(instance)
-    setup_config_file(instance, setting)
+    setup_config_file(instance, is_dev)
     flask_manage(instance, command='create_db')
     flask_manage(instance, command='db init')  # initialize alembic
     install_bower_dependencies(instance)
@@ -314,7 +320,7 @@ def update_application(instance):
     service('uwsgi', 'start')
 
 
-def deploy(instance, setting="dev", branch=None):
+def deploy(instance, is_dev=True, branch=None):
     '''master process to set up maproulette and its dependencies'''
     setup_system()
-    create_deployment(instance, setting, branch)
+    create_deployment(instance, is_dev, branch)
