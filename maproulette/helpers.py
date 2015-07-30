@@ -1,5 +1,5 @@
 """Some helper functions"""
-from flask import abort, session, request, make_response
+from flask import abort, session, request, make_response, Response
 from maproulette.models import Challenge, Task, TaskGeometry
 from maproulette.challengetypes import challenge_types
 from functools import wraps
@@ -366,3 +366,28 @@ def compile_query(query):
             v = v.encode(enc)
         params[k] = sqlescape(v)
     return (comp.string.encode(enc) % params).decode(enc)
+
+
+def check_auth(username, password):
+    """This function is called to check if a username /
+    password combination is valid.
+    """
+    return username == app.config['AUTHORIZED_USER'] and password == app.config['AUTHORIZED_PASSWORD']
+
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+        'Could not verify your access level for that URL.\n'
+        'You have to login with proper credentials', 401,
+        {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated

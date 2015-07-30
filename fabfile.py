@@ -314,7 +314,7 @@ def update_application(instance):
     git_pull(instance)
     install_python_dependencies(instance)
     service('postgresql', 'start')
-    flask_manage(instance, command='db upgrade')
+    # flask_manage(instance, command='db upgrade')
     update_bower_dependencies(instance)
     compile_jsx(instance)
     service('uwsgi', 'start')

@@ -8,7 +8,7 @@ from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404,\
     require_signedin, osmerror, \
     json_to_task, geojson_to_task, refine_with_user_area, user_area_is_defined,\
-    send_email, as_stats_dict, challenge_exists
+    send_email, as_stats_dict, challenge_exists, requires_auth
 from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
@@ -17,7 +17,6 @@ from sqlalchemy.exc import IntegrityError
 import geojson
 import json
 import re
-from pprint import pprint
 
 message_internal_server_error = 'Something really unexpected happened...'
 
@@ -205,6 +204,7 @@ class ApiSelfInfo(ProtectedResource):
 
     def put(self):
         """User setting information about themselves"""
+        payload = None
         try:
             payload = json.loads(request.data)
         except Exception:
@@ -579,17 +579,23 @@ class AdminApiChallenge(Resource):
 
     """Admin challenge creation endpoint"""
 
+    @requires_auth
     def post(self, slug):
+        payload = None
         if challenge_exists(slug):
+            app.logger.debug('The challenge already exists')
             abort(409, message='This challenge already exists.')
         if not re.match("^[\w\d_-]+$", slug):
+            app.logger.debug('The challenge slug should contain only a-z, A-Z, 0-9, _, -')
             abort(400, message='The challenge slug should contain only a-z, A-Z, 0-9, _, -')
         try:
-            app.logger.debug(request.data)
             payload = json.loads(request.data)
         except Exception as e:
+            app.logger.debug('POST request does not have a JSON payload')
+            app.logger.debug(request.data)
             abort(400, message=e.message)
         if 'title' not in payload:
+            app.logger.debug('A new challenge must have title')
             abort(400, message="A new challenge must have title")
         c = Challenge(slug, payload.get('title'))
         if 'title' in payload:
@@ -621,6 +627,7 @@ class AdminApiChallenge(Resource):
                 abort(500, message=message_internal_server_error)
         return {}, 201
 
+    @requires_auth
     def put(self, slug):
         c = get_challenge_or_404(slug, abort_if_inactive=False)
         if not re.match("^[\w\d_-]+$", slug):
@@ -658,6 +665,7 @@ class AdminApiChallenge(Resource):
                 abort(500, message=message_internal_server_error)
         return {}, 200
 
+    @requires_auth
     def delete(self, slug):
         """delete a challenge"""
         challenge = get_challenge_or_404(slug, abort_if_inactive=False)
@@ -679,6 +687,7 @@ class AdminApiTaskStatuses(Resource):
 
     """Admin Task status endpoint"""
 
+    @requires_auth
     def get(self, slug):
         """Return task statuses for the challenge identified by 'slug'"""
         challenge = get_challenge_or_404(slug, True, False)
@@ -691,6 +700,7 @@ class AdminApiUpdateTask(Resource):
 
     """Challenge Task Create / Update endpoint"""
 
+    @requires_auth
     def post(self, slug, identifier):
         """create one task."""
 
@@ -710,12 +720,13 @@ class AdminApiUpdateTask(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='You posted a task ({identifier}) that already existed: {message}'.format(identifier=task.identifier, message=e.message))
+                abort(409, message='You posted a task ({identifier}) that already existed: {message}'.format(identifier=t.identifier, message=e.message))
             else:
                 app.logger.warn(e.message)
                 abort(500, message=message_internal_server_error)
         return {}, 201
 
+    @requires_auth
     def put(self, slug, identifier):
         """update one task."""
 
@@ -737,6 +748,7 @@ class AdminApiUpdateTask(Resource):
                 abort(500, message='something unexpected happened')
         return {}, 200
 
+    @requires_auth
     def delete(self, slug, identifier):
         """Delete a task"""
 
@@ -761,6 +773,7 @@ class AdminApiUpdateTasksFromGeoJSON(Resource):
 
     """Bulk task create / update from GeoJSON endpoint"""
 
+    @requires_auth
     def post(self, slug):
         """bulk create tasks"""
 
@@ -784,6 +797,7 @@ class AdminApiUpdateTasksFromGeoJSON(Resource):
         db.session.commit()
         return {}, 200
 
+    @requires_auth
     def put(self, slug):
         """bulk update tasks"""
 
@@ -812,6 +826,7 @@ class AdminApiUpdateTasks(Resource):
 
     """Bulk task create / update endpoint"""
 
+    @requires_auth
     def post(self, slug):
         """bulk create tasks"""
 
@@ -849,6 +864,7 @@ class AdminApiUpdateTasks(Resource):
                 abort(500, message=message_internal_server_error)
         return {}, 201
 
+    @requires_auth
     def put(self, slug):
 
         """bulk update"""
