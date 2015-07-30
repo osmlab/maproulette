@@ -300,7 +300,6 @@ def create_deployment(instance, is_dev=True, branch=None):
     setup_cron(instance)
     setup_config_file(instance, is_dev)
     flask_manage(instance, command='create_db')
-    flask_manage(instance, command='db init')  # initialize alembic
     install_bower_dependencies(instance)
     compile_jsx(instance)
     service('uwsgi', 'restart')
