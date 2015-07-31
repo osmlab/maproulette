@@ -137,11 +137,6 @@ class ApiChallengeList(Resource):
         # initialize the parser
         parser = reqparse.RequestParser()
         # FIXME this should be a bool but that does not seem to work.
-        parser.add_argument('return_inactive',
-                            type=int,
-                            default=1,
-                            choices=[0, 1],
-                            help='whether to return challenges that are currently not active, 1 for yes, 0 for no.')
         parser.add_argument('difficulty',
                             type=int, choices=[1, 2, 3],
                             help='difficulty is not 1, 2, 3')
@@ -177,9 +172,6 @@ class ApiChallengeList(Resource):
                               radius)))
 
         challenges = query.all()
-
-        if args.return_inactive == 0:
-            challenges = [challenge for challenge in challenges if challenge.active]
 
         return challenges
 

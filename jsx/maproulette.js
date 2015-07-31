@@ -127,13 +127,15 @@ var ChallengeSelectionDialog = React.createClass({
         },
     componentWillMount: function(){
         $.ajax({
-            url: "/api/challenges?return_inactive=0", // only active challenges
+            url: "/api/challenges",
             dataType: 'json',
             success: function(data) {
-                data.sort(function(a, b){
+                var active_challenges = data.filter(function (elem) {
+                    return elem.active;
+                }).sort(function(a, b){
                     return(a.difficulty - b.difficulty)
                 });
-                this.setState({challenges: data});
+                this.setState({challenges: active_challenges});
             }.bind(this)
         })
         $.ajax({
