@@ -1,6 +1,7 @@
 /** @jsx React.DOM */
 
 var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
+var USE_SKOBBLER = false;
 
 marked.setOptions({
   gfm: true,
@@ -92,7 +93,6 @@ var ChallengeBox = React.createClass({
             url: "/api/challenge/" + this.props.challenge.slug + "/summary",
             dataType: 'json',
             success: function(data) {
-                console.log(data);
                 this.setState({"stats": data})
                 if (this.state.stats.total == 0 || this.state.stats.unfixed == 0) {
                     this.getDOMNode().style.display = "none";
@@ -107,13 +107,14 @@ var ChallengeBox = React.createClass({
             MRManager.userPickChallenge(slug);
         };
         return(
+            <Button onClick={pickMe}>
             <div className="challengeBox">
             <span className="title">{this.props.challenge.title}</span>
             <DifficultyBadge difficulty={this.props.challenge.difficulty} />
             <p>{this.props.challenge.blurb}</p>
             <p>total tasks: {this.state.stats.total}, available: {this.state.stats.unfixed}</p>
-            <Button onClick={pickMe}>Work on this challenge</Button>
             </div>
+            </Button>
         );
     }
 });
@@ -348,7 +349,10 @@ var MRConfig = (function () {
         mapOptions: {
             center: new L.LatLng(40, -90),
             zoom: 4,
-            keyboard: false
+            keyboard: false,
+            // Below are Skobbler API specific options. If you don't have a Skobbler API key, set USE_SKOBBLER to false and ignore these.
+            apiKey: 'CHANGE ME',
+            mapStyle: 'lite'
         },
 
         // default tile URL
@@ -492,15 +496,19 @@ var MRManager = (function () {
 
 
             // initialize the map
-            map = new L.Map(elem, MRConfig.mapOptions);
+            if (USE_SKOBBLER) {
+                map = new L.skobbler.map(elem, MRConfig.mapOptions);
+            } else {
+                map = new L.Map(elem, MRConfig.mapOptions);
 
-            // and the tile layer
-            var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
-                attribution: MRConfig.tileAttrib
-            });
+                var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
+                    attribution: MRConfig.tileAttrib
+                });
+
+                map.addLayer(tileLayer);
+            }
 
             // Add both the tile layer and the task layer to the map
-            map.addLayer(tileLayer);
             map.addLayer(taskLayer);
 
             // Register the keyboard shortcuts
@@ -600,9 +608,7 @@ var MRManager = (function () {
             var endpoint = '/api/challenge/' + challenge.slug + "/summary";
             $.getJSON(endpoint, function (data) {
                 for (key in data) {
-                    console.log('raw value: ' + data[key]);
                     var value = parseInt(data[key]) > 10 ? 'about ' + (~~((parseInt(data[key]) + 5) / 10) * 10) : 'only a few';
-                    console.log('value for ' + key + ': ' + value);
                     $('#challenge_' + key).html(value).fadeIn();
                 };
             });
@@ -925,7 +931,6 @@ var MRManager = (function () {
                 };
                 $('#msg_editarea').show();
                 notify.play('You have set your preferred editing location.', {killer: true})
-                console.log(editArea.toGeoJSON());
             };
             storeServerSettings(data);
             if(map.hasLayer(editArea)) map.removeLayer(editArea);

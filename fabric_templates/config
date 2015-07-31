@@ -3,19 +3,16 @@
 # http://www.thedutchtable.com/2013/03/een-ei-is-geen-eivrolijk-pasen.html
 SECRET_KEY = 'REPLACE WITH YOUR APPLICATION SECRET KEY'
 
-{% if setting == "dev" -%}
+{% if is_dev -%}
 {% set db = "maproulette_dev" -%}
 {% set cors_url = "http://maproulette-metrics-stage.s3-website-us-east-1.amazonaws.com/" -%}
-{% elif setting == "test" -%}
-{% set db = "maproulette_test" -%}
-{% set cors_url = "http://maproulette-metrics-stage.s3-website-us-east-1.amazonaws.com/" -%}
-{% elif setting == "prod" -%}
+{% else -%}
 {% set db = "maproulette" -%}
 {% set cors_url = "http://maproulette-metrics-production.s3-website-us-east-1.amazonaws.com/" -%}
 {% endif -%}
 
 # The database connection
-SQLALCHEMY_DATABASE_URI = "postgresql://osm@localhost/{{db}}"
+SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/{{db}}"
 
 # show a teaser page instead of the real thing
 TEASER = False
@@ -54,11 +51,9 @@ MAX_CHANGESET_OFFSET = timedelta(hours=1)
 DEFAULT_CHALLENGE = 'test1'
 
 # The OAuth configuration paramters for OSM.
-{% if setting == "dev" -%}
+{% if is_dev -%}
 {% set osm_url = "http://api06.dev.openstreetmap.org" -%}
-{% elif setting == "test" -%}
-{% set osm_url = "https://www.openstreetmap.org" -%}
-{% elif setting == "prod" -%}
+{% else -%}
 {% set osm_url = "https://www.openstreetmap.org" -%}
 {% endif -%}
 

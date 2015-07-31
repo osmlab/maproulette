@@ -49,3 +49,10 @@ MAILGUN_API_KEY = 'CHANGE THIS'
 
 # URL to the metrics site instance, for allowing CORS requests from there
 METRICS_URL = 'http://metrics.maproulette.org/'
+
+# Max number of tasks in a bulk task update
+MAX_TASKS_BULK_UPDATE = 5000
+
+# Basic Authentication user / pass
+AUTHORIZED_USER = 'testuser'
+AUTHORIZED_PASSWORD = 'password'
