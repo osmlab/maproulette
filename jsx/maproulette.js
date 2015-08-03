@@ -357,11 +357,18 @@ var MRConfig = (function () {
             mapStyle: 'lite'
         },
 
-        // default tile URL
-        tileUrl: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-
-        // default tile attribution
-        tileAttrib: '&copy; <a href=\'http://openstreetmap.org\'> OpenStreetMap</a> contributors',
+        // the collection of tile layers.
+        // Each layer should have an url and attribution property.
+        // the key will be the title in the layer picker control
+        // where underscores in the key will be translated to spaces.
+        tileLayers: {
+            OpenStreetMap: {
+                url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                attribution: "&copy; <a href=\'http://openstreetmap.org\'> OpenStreetMap</a> contributors"},
+            ESRI_Aerial: {
+                url: "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                attribution: "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"}
+            },
 
         // minimum zoom level for enabling edit buttons
         minZoomLevelForEditing: 14
@@ -503,11 +510,21 @@ var MRManager = (function () {
             } else {
                 map = new L.Map(elem, MRConfig.mapOptions);
 
-                var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
-                    attribution: MRConfig.tileAttrib
-                });
+                var layers = {};
 
-                map.addLayer(tileLayer);
+                // add each layer to the map
+                for (tileLayerKey in MRConfig.tileLayers) {
+                    var tileLayer = MRConfig.tileLayers[tileLayerKey];
+                    var layer = new L.TileLayer(tileLayer.url, {
+                    attribution: tileLayer.attribution});
+                    map.addLayer(layer);
+                    // add layer to control
+                    layers[tileLayerKey.replace('_',' ')] = layer;
+                };
+
+                // add Layer control to the map
+                L.control.layers(layers, null, {position:"topleft"}).addTo(map);
+
             }
 
             // Add both the tile layer and the task layer to the map
