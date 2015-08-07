@@ -1,3 +1,7 @@
+import sys
+import os
+import logging
+
 # The application secret key
 SECRET_KEY = 'CHANGE THIS'
 
@@ -12,9 +16,8 @@ OSM = {
     'consumer_secret': 'CHANGE THIS'
 }
 
-# by default, disable Flask debug and testing modes
-DEBUG = True  # Also remember to change LOGLEVEL below
-TESTING = True
+# Set debugging mode. This is detected by looking at the 'runserver' argument passed to manage.py
+DEBUG = (sys.argv[1] == 'runserver')
 
 # This is the buffer for looking for tasks / challenges near the given
 # lon/lat
@@ -28,17 +31,11 @@ MAX_SQ_DEGREES_FOR_LOCAL = 10
 SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/maproulette"
 
 # Logging details
-import logging
-LOGFILE = '/tmp/maproulette.log'
-LOGLEVEL = logging.DEBUG
+LOGFILE = os.path.join(os.path.expanduser('~'), '/tmp/maproulette.log')
+LOGLEVEL = logging.DEBUG if DEBUG else logging.INFO
 
 # the default challenge to run
 DEFAULT_CHALLENGE = 'CHANGE THIS'
-
-# show a teaser page instead of the real thing
-TEASER = False
-# the text that should go into the teaser
-TEASER_TEXT = 'New MapRoulette Coming SOON!'
 
 # IP Whitelist for external API calls
 # (/api/admin/*, /api/stats*, /api/users, /api/challenges)

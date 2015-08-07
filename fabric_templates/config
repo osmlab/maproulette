@@ -1,31 +1,33 @@
-# The application secret key
-
-# http://www.thedutchtable.com/2013/03/een-ei-is-geen-eivrolijk-pasen.html
-SECRET_KEY = 'REPLACE WITH YOUR APPLICATION SECRET KEY'
-
 {% if is_dev -%}
 {% set db = "maproulette_dev" -%}
 {% set cors_url = "http://maproulette-metrics-stage.s3-website-us-east-1.amazonaws.com/" -%}
+{% set osm_url = "http://api06.dev.openstreetmap.org" -%}
 {% else -%}
 {% set db = "maproulette" -%}
 {% set cors_url = "http://maproulette-metrics-production.s3-website-us-east-1.amazonaws.com/" -%}
+{% set osm_url = "https://www.openstreetmap.org" -%}
 {% endif -%}
-
-# The database connection
-SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/{{db}}"
-
-# show a teaser page instead of the real thing
-TEASER = False
-# the text that should go into the teaser
-TEASER_TEXT = 'New MapRoulette Challenges coming SOON!'
-
+import sys
+import os
 import logging
-LOGFILE = '/srv/www/{{instance}}/log/maproulette.log'
-LOGLEVEL = logging.DEBUG
 
-# by default, disable Flask debug and testing modes
-DEBUG = True
-TESTING = True
+# The application secret key
+SECRET_KEY = 'CHANGEME'
+
+# The OAuth configuration paramters for OSM.
+
+OSM = {
+    'base_url': '{{osm_url}}/api/0.6/',
+    'request_token_url':
+    '{{osm_url}}/oauth/request_token',
+    'access_token_url': '{{osm_url}}/oauth/access_token',
+    'authorize_url': '{{osm_url}}/oauth/authorize',
+    'consumer_key': 'CHANGEME',
+    'consumer_secret': 'CHANGEME'
+}
+
+# Set debugging mode. This is detected by looking at the 'runserver' argument passed to manage.py
+DEBUG = (sys.argv[1] == 'runserver')
 
 # This is the buffer for looking for tasks / challenges near the given
 # lon/lat
@@ -35,47 +37,29 @@ NEARBUFFER = 0.01
 # for considering a challenge 'local'
 MAX_SQ_DEGREES_FOR_LOCAL = 10
 
-from datetime import timedelta
+# The database connection
+SQLALCHEMY_DATABASE_URI = "postgresql://osm:osm@localhost/{{db}}"
 
-# The expiration threshold for tasks that are 'assigned' or 'editing'
-TASK_EXPIRATION_THRESHOLD = timedelta(hours=1)
-
-# The expiration threshold for tasks that are 'assigned' or 'editing'
-TASK_EXPIRATION_THRESHOLD = timedelta(hours=1)
-
-# The time buffer between a task marked as fixed and the timestamp on the
-# changeset in OSM. (Used in validation)
-MAX_CHANGESET_OFFSET = timedelta(hours=1)
+# Logging details
+LOGFILE = '/srv/www/{{instance}}/log/maproulette.log'
+LOGLEVEL = logging.DEBUG if DEBUG else logging.INFO
 
 # the default challenge to run
-DEFAULT_CHALLENGE = 'test1'
-
-# The OAuth configuration paramters for OSM.
-{% if is_dev -%}
-{% set osm_url = "http://api06.dev.openstreetmap.org" -%}
-{% else -%}
-{% set osm_url = "https://www.openstreetmap.org" -%}
-{% endif -%}
-
-OSM = {
-    'base_url': '{{osm_url}}/api/0.6/',
-    'request_token_url':
-    '{{osm_url}}/oauth/request_token',
-    'access_token_url': '{{osm_url}}/oauth/access_token',
-    'authorize_url': '{{osm_url}}/oauth/authorize',
-    'consumer_key': '{{consumer_key}}',
-    'consumer_secret': '{{consumer_secret}}'
-}
-
-# The MailGun API KEY
-MAILGUN_API_KEY = 'REPLACE WITH YOUR MAILGUN API KEY'
+DEFAULT_CHALLENGE = 'CHANGEME'
 
 # IP Whitelist for external API calls
 # (/api/admin/*, /api/stats*, /api/users, /api/challenges)
-IP_WHITELIST = [ ]
+IP_WHITELIST = []
 
-# Max number of tasks in a bulk update call
-MAX_TASKS_BULK_UPDATE = 5000
+# Service API keys
+MAILGUN_API_KEY = 'CHANGEME'
 
 # URL to the metrics site instance, for allowing CORS requests from
 METRICS_URL = '{{cors_url}}'
+
+# Max number of tasks in a bulk task update
+MAX_TASKS_BULK_UPDATE = 5000
+
+# Basic Authentication user / pass
+AUTHORIZED_USER = 'CHANGEME'
+AUTHORIZED_PASSWORD = 'CHANGEME'
