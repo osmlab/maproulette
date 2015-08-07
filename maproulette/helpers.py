@@ -87,9 +87,10 @@ def require_signedin(f):
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not app.debug and not 'osm_token' in session:
+        if not app.debug and 'osm_token' not in session:
             abort(403)
         return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -106,6 +107,7 @@ def local_or_whitelist_only(f):
         if not ip == "127.0.0.1" and ip not in app.config["IP_WHITELIST"]:
             abort(403)
         return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -142,7 +144,7 @@ def json_to_task(slug, data, task=None, identifier=None):
     """Parse task json coming in through the admin api"""
 
     if identifier is None and task is None:
-        if not 'identifier' in data:
+        if 'identifier' not in data:
             raise Exception('no identifier given')
         identifier = data['identifier']
 
@@ -185,10 +187,10 @@ def geojson_to_task(slug, feature):
     * The description cannot be set at the task level
     * The identifier will be slug-osmid"""
     # check for id and geometries
-    if not 'id' in feature:
+    if 'id' not in feature:
         app.logger.debug('no id in this feature, skipping')
         return None
-    if not 'geometry' in feature:
+    if 'geometry' not in feature:
         app.logger.debug('no geometries in feature, skipping')
         return None
     # generate an identifier
@@ -253,6 +255,7 @@ def send_email(to, subject, text):
               "text": text})
 
 
+# TODO this function is a mess.
 def as_stats_dict(tuples, order=[0, 1, 2], start=None, end=None):
     # this parses three-field statistics query result in the form
     # [('status', datetime(2012, 05, 01, 12, 00), 12), ...]
@@ -311,7 +314,6 @@ def parse_time(key, unix_time=False):
 
 
 class GeoPoint(object):
-
     """A geo-point class for use as a validation in the req parser"""
 
     def __init__(self, value):
@@ -327,7 +329,6 @@ class GeoPoint(object):
 
 
 class JsonData(object):
-
     """A simple class for use as a validation that a manifest is valid"""
 
     def __init__(self, value):
@@ -335,11 +336,10 @@ class JsonData(object):
 
     @property
     def json(self):
-        return self.dumps(self.data)
+        return json.dumps(self.data)
 
 
 class JsonTasks(object):
-
     """A class for validation of a mass tasks insert"""
 
     def __init__(self, value):
@@ -355,6 +355,12 @@ class JsonTasks(object):
 
 
 def compile_query(query):
+    """
+    Reconstructs the raw SQL query from an SQLAlchemy query object.
+
+    :param query: SQLAlchemy query objext
+    :return: The raw SQL query as a string.
+    """
     dialect = query.session.bind.dialect
     statement = query.statement
     comp = compiler.SQLCompiler(dialect, statement)
@@ -383,11 +389,20 @@ def authenticate():
         {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 
+# authentication function wrapper. will require authentication on decorated functions unless we're on localhost.
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
+        app.logger.debug(request.url)
+        if not is_localhost(request.url) and (not auth or not check_auth(auth.username, auth.password)):
             return authenticate()
         return f(*args, **kwargs)
+
     return decorated
+
+
+# determines if a URL is localhost
+def is_localhost(url):
+    from urlparse import urlparse
+    return urlparse(url).hostname == 'localhost'
