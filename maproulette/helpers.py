@@ -384,8 +384,8 @@ def check_auth(username, password):
 def authenticate():
     """Sends a 401 response that enables basic auth"""
     return Response(
-        401,
-        {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        status=401,
+        headers={'WWW-Authenticate': 'Basic realm="Login Required"'})
 
 
 # authentication function wrapper. will require authentication on decorated functions unless we're on localhost.
