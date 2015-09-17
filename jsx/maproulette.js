@@ -714,7 +714,7 @@ var MRManager = (function () {
         };
 
         var displayAdminArea = function () {
-            var mqurl = 'http://open.mapquestapi.com/nominatim/v1/reverse.php?format=json&lat=' + map.getCenter().lat + '&lon=' + map.getCenter().lng;
+            var mqurl = 'http://open.mapquestapi.com/nominatim/v1/reverse.php?key=Nj8oRSldMF8mjcsqp2JtTIcYHTDMDMuq&format=json&lat=' + map.getCenter().lat + '&lon=' + map.getCenter().lng;
             $.ajax({
                 url: mqurl,
                 jsonp: "json_callback",
