@@ -143,6 +143,8 @@ def get_random_task(challenge):
 def json_to_task(slug, data, task=None, identifier=None):
     """Parse task json coming in through the admin api"""
 
+    app.logger.debug(data)
+
     if identifier is None and task is None:
         if 'identifier' not in data:
             raise Exception('no identifier given')
