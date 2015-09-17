@@ -27,14 +27,21 @@ div#controlpanel {
 }
 
 /* the notifications container */
-div.notifications {
+.notification {
     z-index:15;
     position:absolute;
     left:50px;
     top:10px;
     width:30%;
+    font-size:12px;
+    opacity: 0.9!important;
+    padding: 10px!important;
 }
 
+.toast-info {
+    background-color: #fff!important;
+    color: #000!important;
+}
 
 /* the MapRoulette title */
 div.title {
