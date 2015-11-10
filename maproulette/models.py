@@ -44,7 +44,7 @@ class User(db.Model):
         db.String,
         nullable=False)
     home_location = db.Column(
-        Geometry('POINT', management=True))
+        Geometry('POINT'))
     languages = db.Column(
         db.String)
     changeset_count = db.Column(
@@ -54,8 +54,7 @@ class User(db.Model):
     last_changeset_date = db.Column(
         db.DateTime)
     last_changeset_bbox = db.Column(
-        Geometry('POLYGON',
-                 management=True))
+        Geometry('POLYGON'))
     osm_account_created = db.Column(
         db.DateTime)
     difficulty = db.Column(
