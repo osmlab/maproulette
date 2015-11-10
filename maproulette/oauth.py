@@ -54,6 +54,10 @@ def retrieve_osm_data():
         app.logger.debug('could not authenticate user')
         return False
     userxml = data.find('user')
+    if not userxml:
+        app.logger.error('Could not get user data from OSM')
+        return False
+    else:
     osmid = userxml.attrib['id']
     # query for existing user
     if bool(User.query.filter(User.id == osmid).count()):
