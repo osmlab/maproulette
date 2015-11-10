@@ -26,3 +26,5 @@ Ceating and maintaining a good challenge is a little more complex than just push
 ## Contact
 
 Bug and feature requests are best left as an issue right here on Github. For other things, contact maproulette@maproulette.org
+
+MapRoulette now also has its very own [Slack community](http://maproulette.slack.com). Invite yourself [here](https://maproulette-slack-selfinvite.herokuapp.com)!
