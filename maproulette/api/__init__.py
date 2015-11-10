@@ -34,7 +34,7 @@ class PointField(Raw):
         return '%f|%f' % to_shape(geometry).coords[0]
 
 
-# Marshal fields for the challenge list. #FIXME islocal is not used at the moment.
+# Marshal fields for the challenge list.
 challenge_summary = {
     'slug': fields.String,
     'title': fields.String,
@@ -46,7 +46,7 @@ challenge_summary = {
     'active': fields.Boolean
 }
 
-# Marshal fields for challenge detail. FIXME This should include the geometry as well
+# Marshal fields for challenge detail.
 challenge_detail = {
     'slug': fields.String,
     'title': fields.String,
@@ -56,7 +56,8 @@ challenge_detail = {
     'help': fields.String,
     'blurb': fields.String,
     'active': fields.Boolean,
-    'type': fields.String
+    'type': fields.String,
+    'options': fields.String
 }
 
 task_fields = {
@@ -136,7 +137,6 @@ class ApiChallengeList(Resource):
 
         # initialize the parser
         parser = reqparse.RequestParser()
-        # FIXME this should be a bool but that does not seem to work.
         parser.add_argument('difficulty',
                             type=int, choices=[1, 2, 3],
                             help='difficulty is not 1, 2, 3')
@@ -151,8 +151,6 @@ class ApiChallengeList(Resource):
                             help="radius is not an int")
         args = parser.parse_args()
 
-        difficulty = None
-
         # Try to get difficulty from argument, or users preference
         difficulty = args.get('difficulty')
         lon = args.get('lon')
@@ -164,15 +162,13 @@ class ApiChallengeList(Resource):
 
         if difficulty is not None:
             query = query.filter_by(difficulty=difficulty)
-        if (lon is not None and lat is not None and radius is not None):
+        if lon is not None and lat is not None and radius is not None:
             print "got lon, lat, rad: {lon}, {lat}, {rad}".format(lon=lon, lat=lat, rad=radius)
             query = query.filter(
                 Challenge.polygon.ST_Contains(
                     ST_Buffer('POINT({lon} {lat})'.format(lon=lon, lat=lat),
                               radius)))
-
         challenges = query.all()
-
         return challenges
 
 
@@ -590,22 +586,15 @@ class AdminApiChallenge(Resource):
             app.logger.debug('A new challenge must have title')
             abort(400, message="A new challenge must have title")
         c = Challenge(slug, payload.get('title'))
-        if 'title' in payload:
-            c.title = payload.get('title')
-        if 'geometry' in payload:
-            c.geometry = payload.get('geometry')
-        if 'description' in payload:
-            c.description = payload.get('description')
-        if 'blurb' in payload:
-            c.blurb = payload.get('blurb')
-        if 'help' in payload:
-            c.help = payload.get('help')
-        if 'instruction' in payload:
-            c.instruction = payload.get('instruction')
-        if 'active' in payload:
-            c.active = payload.get('active')
-        if 'difficulty' in payload:
-            c.difficulty = payload.get('difficulty')
+        c.title = payload.get('title')
+        c.geometry = payload.get('geometry')
+        c.description = payload.get('description')
+        c.blurb = payload.get('blurb')
+        c.help = payload.get('help')
+        c.instruction = payload.get('instruction')
+        c.active = payload.get('active')
+        c.difficulty = payload.get('difficulty')
+        c.options = payload.get('options')
         db.session.add(c)
         try:
             db.session.commit()
@@ -628,22 +617,16 @@ class AdminApiChallenge(Resource):
             payload = json.loads(request.data)
         except Exception:
             abort(400, message="There is something wrong with your JSON.")
-        if 'title' in payload:
-            c.title = payload.get('title')
-        if 'geometry' in payload:
-            c.geometry = payload.get('geometry')
-        if 'description' in payload:
-            c.description = payload.get('description')
-        if 'blurb' in payload:
-            c.blurb = payload.get('blurb')
-        if 'help' in payload:
-            c.help = payload.get('help')
-        if 'instruction' in payload:
-            c.instruction = payload.get('instruction')
-        if 'active' in payload:
-            c.active = payload.get('active')
-        if 'difficulty' in payload:
-            c.difficulty = payload.get('difficulty')
+        app.logger.debug(payload)
+        c.title = payload.get('title')
+        c.geometry = payload.get('geometry')
+        c.description = payload.get('description')
+        c.blurb = payload.get('blurb')
+        c.help = payload.get('help')
+        c.instruction = payload.get('instruction')
+        c.active = payload.get('active')
+        c.difficulty = payload.get('difficulty')
+        c.options = payload.get('options')
         db.session.add(c)
         try:
             db.session.commit()
@@ -833,18 +816,18 @@ class AdminApiUpdateTasks(Resource):
         # debug output number of tasks being posted
         app.logger.debug('posting {number} tasks...'.format(number=len(data)))
 
-        try:
-            for task in data:
-                if not 'identifier' in task:
-                    abort(400, message='task must have identifier')
-                if not re.match("^[\w\d_-]+$", task['identifier']):
-                    abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
-                if not 'geometries' in task:
-                    abort(400, message='new task must have geometries')
-                t = json_to_task(slug, task)
-                db.session.add(t)
-
+        for task in data:
+            app.logger.debug(task)
+            if not isinstance(task.get('identifier'), basestring):
+                abort(400, message='task identifier must exist and be string')
+            if not re.match("^[\w\d_-]+$", task['identifier']):
+                abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
+            if 'geometries' not in task:
+                abort(400, message='new task must have geometries')
+            t = json_to_task(slug, task)
+            db.session.add(t)
             # commit all dirty tasks at once.
+        try:
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
@@ -871,10 +854,8 @@ class AdminApiUpdateTasks(Resource):
             abort(400, message='more than 5000 tasks in bulk update')
 
         for task in data:
-            if not 'identifier' in task:
-                abort(400, message='task must have identifier')
-            if not isinstance(task['identifier'], basestring):
-                abort(400, message='task identifier must be string')
+            if not isinstance(task.get('identifier'), basestring):
+                abort(400, message='task identifier must exist and be string')
             if not re.match("^[\w\d_-]+$", task['identifier']):
                 abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
             t = json_to_task(slug,

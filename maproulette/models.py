@@ -44,7 +44,7 @@ class User(db.Model):
         db.String,
         nullable=False)
     home_location = db.Column(
-        Geometry('POINT', management=True))
+        Geometry('POINT'))
     languages = db.Column(
         db.String)
     changeset_count = db.Column(
@@ -54,8 +54,7 @@ class User(db.Model):
     last_changeset_date = db.Column(
         db.DateTime)
     last_changeset_bbox = db.Column(
-        Geometry('POLYGON',
-                 management=True))
+        Geometry('POLYGON'))
     osm_account_created = db.Column(
         db.DateTime)
     difficulty = db.Column(
@@ -117,6 +116,10 @@ class Challenge(db.Model):
         db.String,
         default='default',
         nullable=False)
+    options = db.Column(
+        db.String,
+        default='',
+        nullable=True)
 
     # note that spatial indexes seem to be created automagically
     __table_args__ = (
@@ -131,7 +134,8 @@ class Challenge(db.Model):
                  help=None,
                  instruction=None,
                  active=None,
-                 difficulty=None):
+                 difficulty=None,
+                 options=None):
         if geometry is None:
             geometry = world_polygon
         if active is None:
@@ -145,6 +149,7 @@ class Challenge(db.Model):
         self.instruction = instruction
         self.active = active
         self.difficulty = difficulty
+        self.options = options
 
     def __unicode__(self):
         return self.slug

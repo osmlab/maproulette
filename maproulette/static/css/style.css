@@ -23,18 +23,25 @@ div#controlpanel {
     width:250px;
     padding: 5px;
     text-align: center;
-    background-color:rgba(255,255,255,0.6);
+    background-color:rgba(255,255,255,0.8);
 }
 
 /* the notifications container */
-div.notifications {
+.notification {
     z-index:15;
     position:absolute;
     left:50px;
     top:10px;
     width:30%;
+    font-size:12px;
+    opacity: 0.9!important;
+    padding: 10px!important;
 }
 
+.toast-info {
+    background-color: #fff!important;
+    color: #000!important;
+}
 
 /* the MapRoulette title */
 div.title {

@@ -13,6 +13,25 @@ marked.setOptions({
   smartypants: true
 });
 
+toastr.options = {
+  "closeButton": false,
+  "debug": false,
+  "newestOnTop": false,
+  "progressBar": false,
+  "toastClass": "notification",
+  "positionClass": "toast-top-left",
+  "preventDuplicates": false,
+  "onclick": null,
+  "showDuration": "300",
+  "hideDuration": "1000",
+  "timeOut": "3000",
+  "extendedTimeOut": "0",
+  "showEasing": "swing",
+  "hideEasing": "linear",
+  "showMethod": "fadeIn",
+  "hideMethod": "fadeOut"
+}
+
 // React Components
 var Button = React.createClass({
   render: function(){
@@ -224,70 +243,6 @@ var Q = (function () {
     return query_string;
 }());
 
-var MRNotifier = function () {
-    // defaults for noty engine
-    $.noty.defaults = {
-        layout: 'top',
-        theme: 'relax',
-        type: 'alert',
-        text: '',
-        dismissQueue: true,
-        template: '<div class="noty_message"><span class="noty_text"></span><div class="noty_close"></div></div>',
-        animation: {
-            open: {
-                height: 'toggle'
-            },
-            close: {
-                height: 'toggle'
-            },
-            easing: 'swing',
-            speed: 200
-        },
-        timeout: 5000,
-        force: false,
-        modal: false,
-        maxVisible: 5,
-        killer: false,
-        closeWith: ['click'],
-        callback: {
-            onShow: function () {},
-            afterShow: function () {},
-            onClose: function () {},
-            afterClose: function () {}
-        },
-        buttons: false // an array of buttons
-    };
-    // play a notification using options
-    // the options are specific to the notification framework used.
-    // currently we use noty, see http://ned.im/noty/#options
-    var play = function (text, options) {
-        // if an array (of lines) was passed in, join them
-        if (Object.prototype.toString.call(text) === '[object Array]') {
-            text = text.join('<br />');
-        }
-        // if no options were passed in, initialize options object
-        if (!options) options = {};
-        options.text = text;
-        return $('.notifications').noty(options);
-    };
-
-    // clear the notification queue
-    var clear = function () {
-        $.noty.clearQueue();
-    };
-
-    // cancel a notification by id
-    var close = function (n) {
-        if (typeof n === 'noty') n.close();
-    };
-
-    return {
-        play: play,
-        clear: clear,
-        close: close
-    }
-}();
-
 var MRHelpers = (function () {
 
     var addComma = function (str) {
@@ -357,11 +312,18 @@ var MRConfig = (function () {
             mapStyle: 'lite'
         },
 
-        // default tile URL
-        tileUrl: 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-
-        // default tile attribution
-        tileAttrib: '&copy; <a href=\'http://openstreetmap.org\'> OpenStreetMap</a> contributors',
+        // the collection of tile layers.
+        // Each layer should have an url and attribution property.
+        // the key will be the title in the layer picker control
+        // where underscores in the key will be translated to spaces.
+        tileLayers: {
+            OpenStreetMap: {
+                url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                attribution: "&copy; <a href=\'http://openstreetmap.org\'> OpenStreetMap</a> contributors"},
+            ESRI_Aerial: {
+                url: "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                attribution: "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"}
+            },
 
         // minimum zoom level for enabling edit buttons
         minZoomLevelForEditing: 14
@@ -389,9 +351,6 @@ var MRManager = (function () {
                 }
             }
         });
-
-        // create a notifier
-        notify = MRNotifier;
 
         // are we logged in?
         this.loggedIn = false;
@@ -503,11 +462,21 @@ var MRManager = (function () {
             } else {
                 map = new L.Map(elem, MRConfig.mapOptions);
 
-                var tileLayer = new L.TileLayer(MRConfig.tileUrl, {
-                    attribution: MRConfig.tileAttrib
-                });
+                var layers = {};
 
-                map.addLayer(tileLayer);
+                // add each layer to the map
+                for (tileLayerKey in MRConfig.tileLayers) {
+                    var tileLayer = MRConfig.tileLayers[tileLayerKey];
+                    var layer = new L.TileLayer(tileLayer.url, {
+                    attribution: tileLayer.attribution});
+                    map.addLayer(layer);
+                    // add layer to control
+                    layers[tileLayerKey.replace('_',' ')] = layer;
+                };
+
+                // add Layer control to the map
+                L.control.layers(layers, null, {position:"topleft"}).addTo(map);
+
             }
 
             // Add both the tile layer and the task layer to the map
@@ -531,9 +500,7 @@ var MRManager = (function () {
                     presentChallengeComplete();
                 } else if (jqxhr.status === 0) {
                     // status code 0 is returned if remote control does not respond
-                    notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?', {
-                        type: 'error'
-                    });
+                    toastr.error('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
                 }
             });
 
@@ -646,10 +613,7 @@ var MRManager = (function () {
                     task = data;
                     if (['fixed', 'alreadyfixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.status) > -1) {
                         setTimeout(function () {
-                            notify.play('This task is already fixed, or it was marked as not an error.', {
-                                type: 'warning',
-                                timeout: false
-                            })
+                            toastr.warning('This task is already fixed, or it was marked as not an error.')
                         }, 2000);
                     }
                     //...and its geometries
@@ -687,23 +651,20 @@ var MRManager = (function () {
             // fit the map snugly to the task features
             map.fitBounds(taskLayer.getBounds().pad(0.2));
             // show the task text as a notification
-            notify.play(marked(task.instruction), {
-                timeout: false,
-                killer: true
-            });
+            toastr.clear();
+            toastr.info(marked(task.instruction), '', { timeOut: 0 });
             // let the user know where we are
             displayAdminArea();
             return true;
         };
 
         var displayAdminArea = function () {
-            var mqurl = 'http://open.mapquestapi.com/nominatim/v1/reverse.php?format=json&lat=' + map.getCenter().lat + '&lon=' + map.getCenter().lng;
+            var mqurl = 'http://open.mapquestapi.com/nominatim/v1/reverse.php?key=Nj8oRSldMF8mjcsqp2JtTIcYHTDMDMuq&format=json&lat=' + map.getCenter().lat + '&lon=' + map.getCenter().lng;
             $.ajax({
                 url: mqurl,
+                jsonp: "json_callback",
                 success: function (data) {
-                    notify.play(MRHelpers.mqResultToString(data.address), {
-                        timeout: false
-                    });
+                    toastr.info(MRHelpers.mqResultToString(data.address));
                 }
             });
         };
@@ -721,9 +682,7 @@ var MRManager = (function () {
 
         var openTaskInJosm = function () {
             if (map.getZoom() < MRConfig.minZoomLevelForEditing) {
-                notify.play(MRConfig.strings.msgZoomInForEdit, {
-                    type: 'warning'
-                });
+                toastr.warning(MRConfig.strings.msgZoomInForEdit);
                 return false;
             }
             var josmUri = constructJosmUri();
@@ -732,9 +691,7 @@ var MRManager = (function () {
                 url: josmUri,
                 success: function (t) {
                     if (t.indexOf('OK') === -1) {
-                        notify.play('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?', {
-                            type: 'error'
-                        });
+                        toastr.error('JOSM remote control did not respond. Do you have JOSM running with Remote Control enabled?');
                     } else {
                         updateTask('editing');
                         setTimeout(confirmRemap, 4000);
@@ -750,7 +707,7 @@ var MRManager = (function () {
             // work in all browsers.
             window.open(constructIdUri(), 'MRIdWindow');
             updateTask('editing');
-            notify.play('Your task is being loaded in iD in a separate tab. Please return here after you completed your fixes!');
+            toastr.info('Your task is being loaded in iD in a separate tab. Please return here after you completed your fixes!');
             setTimeout(confirmRemap, 4000)
         };
 
@@ -851,7 +808,7 @@ var MRManager = (function () {
             map.on('locationfound', function (e) {
                 near.lat = parseFloat(e.latlng.lat);
                 near.lon = parseFloat(e.latlng.lng);
-                notify.play('We found your location. MapRoulette will try and give you tasks closer to home if they are available.');
+                toastr.info('We found your location. MapRoulette will try and give you tasks closer to home if they are available.');
             });
             // If the location is not found, meh.
             map.on('locationerror', function (e) {
@@ -877,16 +834,12 @@ var MRManager = (function () {
         };
 
         var userPickEditLocation = function () {
-            notify.play('Click on the map to let MapRoulette know where you want to edit.<br />' + 
+            toastr.info('Click on the map to let MapRoulette know where you want to edit.<br />' + 
                 'You can use the +/- on your keyboard to increase the radius of your area.<br /><br />' + 
                 'When you are satisfied with your selection, <b>Click this notification to confirm your selection</b>.<br />' + 
-                'To unset your editing area, or cancel, click this dialog without making a selection.', {
-                killer: true,
-                timeout: false,
-                callback: {
-                    afterClose: MRManager.confirmPickingLocation 
-                },
-            });
+                'To unset your editing area, or cancel, click this dialog without making a selection.', '',  { 
+                    timeOut: 0,
+                    onHidden: MRManager.confirmPickingLocation});
             // remove geoJSON layer
             map.removeLayer(taskLayer);
             // set zoom level
@@ -924,7 +877,8 @@ var MRManager = (function () {
                     "radius" : null 
                 };
                 $('#msg_editarea').hide();
-                notify.play('You cleared your designated editing area.', {killer: true});
+                toastr.clear();
+                toastr.info('You cleared your designated editing area.');
             } else {
                 data = {
                     "lon" : editArea.getLatLng().lng,
@@ -932,7 +886,8 @@ var MRManager = (function () {
                     "radius" : editArea.getRadius() 
                 };
                 $('#msg_editarea').show();
-                notify.play('You have set your preferred editing location.', {killer: true})
+                toastr.clear();
+                toastr.info('You have set your preferred editing location.');
             };
             storeServerSettings(data);
             if(map.hasLayer(editArea)) map.removeLayer(editArea);
