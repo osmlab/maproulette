@@ -924,22 +924,32 @@ var MRManager = (function () {
         }
 
         var registerHotkeys = function () {
-            $(document).bind('keypress', 'q', function () {
-                MRManager.nextTask("falsepositive")
+            $(document).keypress(function( e ) {
+                switch(e.keyCode) {
+                    case 81:
+                        console.log('q pressed');
+                        MRManager.nextTask("falsepositive");
+                        break;
+                    case 87:
+                        console.log('w pressed');
+                        MRManager.nextTask("skipped");
+                        break;
+                    case 69:
+                        console.log('e pressed');
+                        MRManager.openTaskInId();
+                        break;
+                    case 82:
+                        console.log('r pressed');
+                        MRManager.openTaskInJosm();
+                        break;
+                    case 27:
+                        console.log('esc pressed');
+                        $('#dialog').fadeOut();
+                        break;
+                    default:
+                        break;
+                }
             });
-            $(document).bind('keypress', 'w', function () {
-                MRManager.nextTask("skipped")
-            });
-            $(document).bind('keypress', 'e', function () {
-                MRManager.openTaskInId()
-            });
-            $(document).bind('keypress', 'r', function () {
-                MRManager.openTaskInJosm()
-            });
-            $(document).bind('keypress', 'esc', function () {
-                $('#dialog').fadeOut()
-            });
-
         }
 
         var updateHash = function () {
