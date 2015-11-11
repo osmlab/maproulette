@@ -355,14 +355,14 @@ var MRManager = (function () {
         // are we logged in?
         this.loggedIn = false;
 
-        var constructJosmUri = function () {
+        var constructJosmUri = function (new_layer) {
             var bounds = map.getBounds();
             var nodes = [];
             var ways = [];
             var relations = [];
             var sw = bounds.getSouthWest();
             var ne = bounds.getNorthEast();
-            var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=0&select=';
+            var uri = 'http://127.0.0.1:8111/load_and_zoom?left=' + sw.lng + '&right=' + ne.lng + '&top=' + ne.lat + '&bottom=' + sw.lat + '&new_layer=' + (new_layer?'true':'false') + '&select=';
             var selects = [];
 
             for (f in task.features) {
@@ -387,7 +387,7 @@ var MRManager = (function () {
             }
 
             uri += selects.join(',');
-
+            console.log(uri);
             return uri;
         };
 
@@ -680,12 +680,15 @@ var MRManager = (function () {
             getTask();
         };
 
-        var openTaskInJosm = function () {
+        var openTaskInJosm = function (new_layer) {
+
+            new_layer = typeof new_layer !== 'undefined' ? new_layer : true;
+
             if (map.getZoom() < MRConfig.minZoomLevelForEditing) {
                 toastr.warning(MRConfig.strings.msgZoomInForEdit);
                 return false;
             }
-            var josmUri = constructJosmUri();
+            var josmUri = constructJosmUri(new_layer);
             // Use the .ajax JQ method to load the JOSM link unobtrusively and alert when the JOSM plugin is not running.
             $.ajax({
                 url: josmUri,
@@ -924,26 +927,24 @@ var MRManager = (function () {
         }
 
         var registerHotkeys = function () {
-            $(document).keypress(function( e ) {
+            $(document).keypress(function(e) {
                 switch(e.keyCode) {
-                    case 81:
-                        console.log('q pressed');
+                    case 113: //q
                         MRManager.nextTask("falsepositive");
                         break;
-                    case 87:
-                        console.log('w pressed');
+                    case 119: //w
                         MRManager.nextTask("skipped");
                         break;
-                    case 69:
-                        console.log('e pressed');
+                    case 101: //e
                         MRManager.openTaskInId();
                         break;
-                    case 82:
-                        console.log('r pressed');
+                    case 114: //r
+                        MRManager.openTaskInJosm(false);
+                        break;
+                    case 82: //R
                         MRManager.openTaskInJosm();
                         break;
-                    case 27:
-                        console.log('esc pressed');
+                    case 27: //esc
                         $('#dialog').fadeOut();
                         break;
                     default:
