@@ -5,7 +5,7 @@ from flask.ext.restful.fields import Raw
 from flask.ext.restful.utils import cors
 from flask import session, request, url_for
 from maproulette.helpers import get_random_task,\
-    get_challenge_or_404, get_task_or_404,\
+    get_challenge_or_404, get_task_or_404, get_task_or_none,\
     require_signedin, osmerror, \
     json_to_task, geojson_to_task, refine_with_user_area, user_area_is_defined,\
     send_email, as_stats_dict, challenge_exists, requires_auth
@@ -602,7 +602,7 @@ class AdminApiChallenge(Resource):
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='The session and the database did not agree for challenge {slug}: {message}'.format(slug=challenge.slug, message=e.message))
+                abort(409, message='The session and the database did not agree for challenge {slug}: {message}'.format(slug=c.slug, message=e.message))
             else:
                 app.logger.warn(e.message)
                 abort(500, message=message_internal_server_error)
@@ -818,22 +818,26 @@ class AdminApiUpdateTasks(Resource):
 
         for task in data:
             app.logger.debug(task)
-            if not isinstance(task.get('identifier'), basestring):
+            if not isinstance(task['identifier'], basestring):
                 abort(400, message='task identifier must exist and be string')
-            if not re.match("^[\w\d_-]+$", task['identifier']):
-                abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
-            if 'geometries' not in task:
-                abort(400, message='new task must have geometries')
-            t = json_to_task(slug, task)
-            db.session.add(t)
-            # commit all dirty tasks at once.
+            existingTask = get_task_or_none(slug, task['identifier'])
+            if existingTask is None:
+                if not re.match("^[\w\d_-]+$", task['identifier']):
+                    abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
+                if 'geometries' not in task:
+                    abort(400, message='new task must have geometries')
+                t = json_to_task(slug, task)
+                db.session.add(t)
+                # commit all dirty tasks at once.
+            else:
+                app.logger.debug("Skipping task ({identifier}) as it already exists.".format(identifier=task['identifier']))
         try:
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
                 app.logger.warn(e.message)
                 db.session.rollback()
-                abort(409, message='You tried to post a task ({identifier}) that already existed: {message}'.format(identifier=task.identifier, message=e.message))
+                abort(409, message='You tried to post a task ({identifier}) that already existed: {message}'.format(identifier=task['identifier'], message=e.message))
             else:
                 app.logger.warn(e.message)
                 abort(500, message=message_internal_server_error)
@@ -854,13 +858,17 @@ class AdminApiUpdateTasks(Resource):
             abort(400, message='more than 5000 tasks in bulk update')
 
         for task in data:
-            if not isinstance(task.get('identifier'), basestring):
+            if not isinstance(task['identifier'], basestring):
                 abort(400, message='task identifier must exist and be string')
             if not re.match("^[\w\d_-]+$", task['identifier']):
                 abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
-            t = json_to_task(slug,
-                             task,
-                             task=get_task_or_404(slug, task['identifier']))
+            existingTask = get_task_or_none(slug, task['identifier'])
+            if existingTask is None:
+                t = json_to_task(slug, task)
+            else:
+                t = json_to_task(slug,
+                                 task,
+                                 task=existingTask)
             db.session.add(t)
 
         # commit all dirty tasks at once.
