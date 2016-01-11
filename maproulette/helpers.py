@@ -65,11 +65,20 @@ def challenge_exists(challenge_slug):
 def get_task_or_404(challenge_slug, task_identifier):
     """Return a task based on its challenge and task identifier"""
 
+    t = get_task_or_none(challenge_slug, task_identifier)
+    if t is None:
+        abort(404)
+    return t
+
+
+def get_task_or_none(challenge_slug, task_identifier):
+    """Return a task based on it's challenge and task identifier or none if not found"""
+
     t = Task.query.filter(
         Task.challenge_slug == challenge_slug).filter(
         Task.identifier == task_identifier).first()
     if not t:
-        abort(404)
+        return None
     return t
 
 
