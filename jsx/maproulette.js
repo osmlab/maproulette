@@ -30,7 +30,7 @@ toastr.options = {
   "hideEasing": "linear",
   "showMethod": "fadeIn",
   "hideMethod": "fadeOut"
-}
+};
 
 // React Components
 var Button = React.createClass({
@@ -58,9 +58,9 @@ var ActionButton = React.createClass({
         var action = this.props.action;
         return (
             <div className="button"
-            onClick={function(){MRManager.nextTask(action)}}>
+            onClick={function(){MRManager.nextTask(action);}}>
             {this.props.children}
-            </div>)
+            </div>);
     }
 });
 
@@ -104,7 +104,7 @@ var ChallengeBox = React.createClass({
     getInitialState: function () {
         return {
             stats: {"total": 0, "unfixed": 0}
-        }
+        };
     },
 
     componentWillMount: function () {
@@ -112,12 +112,12 @@ var ChallengeBox = React.createClass({
             url: "/api/challenge/" + this.props.challenge.slug + "/summary",
             dataType: 'json',
             success: function(data) {
-                this.setState({"stats": data})
+                this.setState({"stats": data});
                 if (this.state.stats.total == 0 || this.state.stats.unfixed == 0) {
                     this.getDOMNode().style.display = "none";
                 };
             }.bind(this)
-        })
+        });
     },
 
     render: function(){
@@ -152,18 +152,18 @@ var ChallengeSelectionDialog = React.createClass({
                 var active_challenges = data.filter(function (elem) {
                     return elem.active;
                 }).sort(function(a, b){
-                    return(a.difficulty - b.difficulty)
+                    return(a.difficulty - b.difficulty);
                 });
                 this.setState({challenges: active_challenges});
             }.bind(this)
-        })
+        });
         $.ajax({
             url: "/api/me",
             dataType: 'json',
             success: function(data) {
                 this.setState({usersettings: data});
             }.bind(this)
-        })
+        });
     },
     render: function(){
         var challengeBoxes = this.state.challenges.map(function(challenge){
@@ -192,7 +192,7 @@ var DefaultDoneDialog = React.createClass({
           <ActionButton action="skipped">Too difficult/Couldn&#39;t see</ActionButton>
           <ActionButton action="falsepositive">It was not an error</ActionButton>
           <ActionButton action="alreadyfixed">Someone beat me to it</ActionButton>
-          </div>)
+          </div>);
   }
 });
 
@@ -200,8 +200,8 @@ var DefaultDoneDialog = React.createClass({
 
 var signIn = function(){
   //location.reload();
-  location.href="/signin"
-}
+  location.href="/signin";
+};
 
 // Decorator to close the dialog box and run the specified function.
 // If it's a react component, unmounts it too
@@ -214,7 +214,7 @@ var closeDialog = function(fun){
                 React.unmountComponentAtNode(document.getElementById('dialog'));
             }
         });
-    }
+    };
 };
 
 // get URL parameters
@@ -253,34 +253,34 @@ var MRHelpers = (function () {
         // Convert a MapQuest reverse geocoding result to a human readable string.
         var out, county, town;
         if (!addr || !(addr.town || addr.county || addr.hamlet || addr.state || addr.country)) {
-            return 'We are somewhere on earth..'
-        }
+            return 'We are somewhere on earth..';
+        };
         out = 'We are ';
         if (addr.city != null) {
-            out += 'in ' + addr.city
+            out += 'in ' + addr.city;
         } else if (addr.town != null) {
-            out += 'in ' + addr.town
+            out += 'in ' + addr.town;
         } else if (addr.hamlet != null) {
-            out += 'in ' + addr.hamlet
+            out += 'in ' + addr.hamlet;
         } else {
-            out += 'somewhere in '
+            out += 'somewhere in ';
         }
         out += addComma(out);
         if (addr.county) {
             if (addr.county.toLowerCase().indexOf('county') > -1) {
-                out += addr.county
+                out += addr.county;
             } else {
-                out += addr.county + ' County'
+                out += addr.county + ' County';
             }
         }
         out += addComma(out);
         if (addr.state) {
-            out += addr.state
-        }
+            out += addr.state;
+        };
         out += addComma(out);
         if (addr.country) {
             if (addr.country.indexOf('United States') > -1) {
-                out += 'the '
+                out += 'the ';
             }
             out += addr.country;
         }
@@ -290,7 +290,7 @@ var MRHelpers = (function () {
 
     return {
         mqResultToString: mqResultToString,
-    }
+    };
 }());
 
 var MRConfig = (function () {
@@ -333,7 +333,7 @@ var MRConfig = (function () {
 var MRManager = (function () {
         var map;
         var editArea;
-        var MAX_EDIT_RADIUS = 512000 // 512 km
+        var MAX_EDIT_RADIUS = 512000; // 512 km
         var challenges = [];
         var challenge = {};
         var task = {};
@@ -387,7 +387,6 @@ var MRManager = (function () {
             }
 
             uri += selects.join(',');
-            console.log(uri);
             return uri;
         };
 
@@ -396,10 +395,12 @@ var MRManager = (function () {
             var center = map.getCenter();
             var lat = center.lat;
             var lon = center.lng;
-            var baseUriComponent = "http://openstreetmap.us/iD/release/#";
+            var baseUriComponent = "http://osm.org/edit?editor=id#";
             var idUriComponent = "id=";
-            var mapUriComponent = "map=" + [zoom, lon, lat].join('/');
+            var mapUriComponent = "map=" + [zoom, lat, lon].join('/');
             // http://openstreetmap.us/iD/release/#background=Bing&id=w238383695,w238383626,&desmap=20.00/-77.02271/38.90085
+            // https://www.openstreetmap.org/edit?editor=id&way=decode274204300#map=18/40.78479/-111.88787
+            // https://www.openstreetmap.org/edit?editor=id#map=19/53.30938/-0.98069
             for (i in task.features) {
                 var feature = task.features[i];
                 if (!feature.properties.osmid) {
@@ -417,7 +418,7 @@ var MRManager = (function () {
                     break;
                 case 'MultiPolygon':
                     idUrlComponent += "r" + feature.properties.osmid + ",";
-                    break
+                    break;
                 }
             }
             // remove trailing comma - iD won't play ball with it
@@ -426,12 +427,20 @@ var MRManager = (function () {
             return uri;
         };
 
+        var constructOsmUri = function () {
+            var zoom = map.getZoom();
+            var center = map.getCenter();
+            var lat = center.lat;
+            var lon = center.lng;
+            return "http://osm.org/edit#map=" + [zoom, lat, lon].join('/');
+        };
+
         /*
          * A helper function to construct the URL parameters for location and difficulty
          */
         var constructUrlParameters = function (assign) {
             var params = [];
-            var result = ''
+            var result = '';
             if (task.identifier) result += '/' + task.identifier;
             if (typeof near.lat === 'number' && typeof near.lon === 'number') { // this is not quite accurate but good enough for a casual check.
                 params.push('lon=' + near.lon);
@@ -522,7 +531,7 @@ var MRManager = (function () {
          */
         var challengeExists = function (slug) {
             var status;
-            var url = '/api/challenge/' + slug
+            var url = '/api/challenge/' + slug;
             $.ajax({
                 url: url,
                 async: false,
@@ -531,7 +540,7 @@ var MRManager = (function () {
                 }
             });
             return status === 200;
-        }
+        };
 
         /*
          * get a named, or random challenge
@@ -586,7 +595,7 @@ var MRManager = (function () {
         var updateTask = function (action) {
             // if we don't have a task yet, return immediately
             if (!task) {
-                return false
+                return false;
             }
             var payload = {
                 "action": action,
@@ -613,7 +622,7 @@ var MRManager = (function () {
                     task = data;
                     if (['fixed', 'alreadyfixed', 'validated', 'falsepositive', 'notanerror'].indexOf(task.status) > -1) {
                         setTimeout(function () {
-                            toastr.warning('This task is already fixed, or it was marked as not an error.')
+                            toastr.warning('This task is already fixed, or it was marked as not an error.');
                         }, 2000);
                     }
                     //...and its geometries
@@ -711,7 +720,18 @@ var MRManager = (function () {
             window.open(constructIdUri(), 'MRIdWindow');
             updateTask('editing');
             toastr.info('Your task is being loaded in iD in a separate tab. Please return here after you completed your fixes!');
-            setTimeout(confirmRemap, 4000)
+            setTimeout(confirmRemap, 4000);
+        };
+
+        var openTaskInOsm = function () {
+            // this opens a new tab and focuses the browser on it.
+            // We may want to consider http://stackoverflow.com/a/11389138 to
+            // open a tab in the background - seems like that trick does not
+            // work in all browsers.
+            window.open(constructOsmUri(), 'MROSMWindow');
+            updateTask('editing');
+            toastr.info('Your task is being loaded in your preferred OSM editor in a separate tab. Please return here after you completed your fixes!');
+            setTimeout(confirmRemap, 4000);
         };
 
         var presentDoneDialog = function () {
@@ -827,7 +847,7 @@ var MRManager = (function () {
             slug = decodeURI(slug);
             $('#dialog').fadeOut({
                 complete: function () {
-                    $('.controlpanel').fadeIn()
+                    $('.controlpanel').fadeIn();
                 }
             });
             challenge.slug = slug;
@@ -859,7 +879,7 @@ var MRManager = (function () {
                     }
                 }
             });
-        }
+        };
 
         var isPickingLocation = function (e) {
             var zoomDependentEditRadius = 100 * Math.pow(2, 18 - Math.max(6, map.getZoom()));
@@ -867,9 +887,9 @@ var MRManager = (function () {
                 zoomDependentEditRadius = editArea.getRadius();
                 map.removeLayer(editArea);
             };
-            editArea = new L.Circle(e.latlng, zoomDependentEditRadius)
+            editArea = new L.Circle(e.latlng, zoomDependentEditRadius);
             editArea.addTo(map);
-        }
+        };
 
         var confirmPickingLocation = function() {
             var data = {};
@@ -900,7 +920,7 @@ var MRManager = (function () {
             $(document).unbind('keypress.plusminus', false);
             getChallengeStats();
             setTimeout(MRManager.presentChallengeSelectionDialog(), 4000);
-        }
+        };
 
         var getServerSettings = function(keys) {
             // This gets the server stored session settings for the given array of keys from /api/me
@@ -914,7 +934,7 @@ var MRManager = (function () {
                 };
                 return out;
             });
-        }
+        };
 
         var storeServerSettings = function(data) {
             // This stores a dict of settings on the server
@@ -924,25 +944,29 @@ var MRManager = (function () {
                 contentType: "application/json",
                 data: JSON.stringify(data)
             });
-        }
+        };
 
         var registerHotkeys = function () {
-            $(document).keypress(function(e) {
+            $(document).keydown(function(e) {
+                e.preventDefault();
                 switch(e.keyCode) {
-                    case 113: //q
+                    case 81: //q
                         MRManager.nextTask("falsepositive");
                         break;
-                    case 119: //w
+                    case 87: //w
                         MRManager.nextTask("skipped");
                         break;
-                    case 101: //e
+                    case 69: //e
                         MRManager.openTaskInId();
                         break;
-                    case 114: //r
+                    case 82: //r
                         MRManager.openTaskInJosm(false);
                         break;
-                    case 82: //R
+                    case 84: //t
                         MRManager.openTaskInJosm();
+                        break;
+                    case 89: //y
+                        MRManager.openTaskInOsm();
                         break;
                     case 27: //esc
                         $('#dialog').fadeOut();
@@ -951,11 +975,11 @@ var MRManager = (function () {
                         break;
                 }
             });
-        }
+        };
 
         var updateHash = function () {
             location.hash = 't=' + challenge.slug + '/' + task.identifier;
-        }
+        };
 
         var parseHash = function () {
             if (location.hash) {
@@ -997,6 +1021,7 @@ var MRManager = (function () {
             nextTask: nextTask,
             openTaskInId: openTaskInId,
             openTaskInJosm: openTaskInJosm,
+            openTaskInOsm: openTaskInOsm,
             geolocateUser: geolocateUser,
             userPickChallenge: userPickChallenge,
             userPickEditLocation: userPickEditLocation,
