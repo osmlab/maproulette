@@ -21,7 +21,6 @@ toastr.options = {
   "toastClass": "notification",
   "positionClass": "toast-top-left",
   "preventDuplicates": false,
-  "onclick": null,
   "showDuration": "300",
   "hideDuration": "1000",
   "timeOut": "3000",
@@ -29,7 +28,8 @@ toastr.options = {
   "showEasing": "swing",
   "hideEasing": "linear",
   "showMethod": "fadeIn",
-  "hideMethod": "fadeOut"
+  "hideMethod": "fadeOut",
+  "tapToDismiss" : false
 };
 
 // React Components
