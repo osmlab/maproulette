@@ -181,10 +181,14 @@ def json_to_task(slug, data, task=None, identifier=None):
     if 'geometries' in data:
         geometries = data.pop('geometries')
         # parse the geometries
+        app.logger.debug(geometries)
         for feature in geometries['features']:
-            osmid = feature['properties'].get('osmid')
+            osmid = None
+            if 'properties' in feature and feature['properties'].get('osmid'):
+                osmid = feature['properties'].get('osmid')
+            app.logger.debug(feature)
             shape = asShape(feature['geometry'])
-            g = TaskGeometry(osmid, shape)
+            g = TaskGeometry(shape, osmid)
             task.geometries.append(g)
     return task
 
