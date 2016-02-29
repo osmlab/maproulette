@@ -118,13 +118,11 @@ def create_testdata(challenges=10, tasks=100, users=10):
             # create a linestring connecting the two points
             # no constructor for linestring from points?
             l1 = LineString([(p1.x, p1.y), (p2.x, p2.y)])
-            # generate some random 'osm ids'
-            osmids = [random.randrange(1000000, 1000000000) for _ in range(2)]
             # add the first point and the linestring to the task's geometries
-            task_geometries.append(TaskGeometry(osmids[0], p1))
+            task_geometries.append(TaskGeometry(p1))
             # set a linestring for every other challenge
             if not j % 2:
-                task_geometries.append(TaskGeometry(osmids[1], l1))
+                task_geometries.append(TaskGeometry(l1))
             # instantiate the task and register it with challenge 'test'
             # Initialize a task with its challenge slug and persistent ID
             task = Task(challenge.slug, identifier, task_geometries)

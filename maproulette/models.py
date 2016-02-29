@@ -357,7 +357,7 @@ class TaskGeometry(db.Model):
         Geometry,
         nullable=False)
 
-    def __init__(self, osmid, shape):
+    def __init__(self, shape, osmid=None):
         self.osmid = osmid
         self.geom = from_shape(shape)
 

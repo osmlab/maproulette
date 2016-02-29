@@ -819,12 +819,15 @@ class AdminApiUpdateTasks(Resource):
         for task in data:
             app.logger.debug(task)
             if not isinstance(task['identifier'], basestring):
+                app.logger.debug('identifier not a string')
                 abort(400, message='task identifier must exist and be string')
             existingTask = get_task_or_none(slug, task['identifier'])
             if existingTask is None:
                 if not re.match("^[\w\d_-]+$", task['identifier']):
+                    app.logger.debug('identifier should contain only a-z, A-Z, 0-9, _, -')
                     abort(400, message='identifier should contain only a-z, A-Z, 0-9, _, -')
                 if 'geometries' not in task:
+                    app.logger.debug('new task must have geometries')
                     abort(400, message='new task must have geometries')
                 t = json_to_task(slug, task)
                 db.session.add(t)
