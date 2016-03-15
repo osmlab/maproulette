@@ -88,7 +88,7 @@ user_summary = {
 }
 
 api = Api(app)
-# api.decorators = [cors.crossdomain(origin=app.config['METRICS_URL'])]
+api.decorators = [cors.crossdomain(origin=app.config['METRICS_URL'])]
 
 # override the default JSON representation to support the geo objects
 
