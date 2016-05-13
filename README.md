@@ -1,3 +1,5 @@
+**Deprecation notice: MapRoulette is moving to an entirely new code base, which will also introduce breaking changes to the API. The new project lives at https://github.com/maproulette/maproulette2 and a live instance is now available at http://maproulette.org:8080**
+
 Welcome to MapRoulette, the powerful & popular bug fixing tool (or is it a game?) for OpenStreetMap.
 
 This README deals with development related topics only. If you are interested in contributing to OpenStreetMap by fixing some bugs through MapRoulette, just head over to [the MapRoulette web site](http://maproulette.org) and get started - it should be pretty self explanatory.
