@@ -164,7 +164,7 @@ def json_to_task(slug, data, task=None, identifier=None):
         try:
             task = Task(slug, identifier)
         except Exception as e:
-            app.logger.warn(e.message)
+            app.logger.warn(e)
             raise e
     else:
         # delete existing task geometries
@@ -402,5 +402,5 @@ def requires_auth(f):
 
 # determines if a URL is localhost
 def is_localhost(url):
-    from urlparse import urlparse
+    from urllib.parse import urlparse
     return urlparse(url).hostname == 'localhost'

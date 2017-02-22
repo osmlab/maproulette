@@ -301,7 +301,7 @@ class Task(db.Model):
             try:
                 db.session.commit()
             except Exception as e:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
                 raise e
         return True
