@@ -5,8 +5,7 @@ from flask.ext.restful.fields import Raw
 from flask.ext.restful.utils import cors
 from flask import session, request, url_for
 from maproulette.helpers import get_random_task,\
-    get_challenge_or_404, get_task_or_404, get_task_or_none,\
-    require_signedin, osmerror, \
+    get_challenge_or_404, get_task_or_404, get_task_or_none, osmerror, \
     json_to_task, geojson_to_task, refine_with_user_area, user_area_is_defined,\
     send_email, as_stats_dict, challenge_exists, requires_auth
 from maproulette.models import Challenge, Task, Action, User, db
@@ -19,11 +18,6 @@ import json
 import re
 
 message_internal_server_error = 'Something really unexpected happened...'
-
-class ProtectedResource(Resource):
-
-    """A Resource that requires the caller to be authenticated against OSM"""
-    method_decorators = [require_signedin]
 
 
 class PointField(Raw):
@@ -101,7 +95,7 @@ class ApiPing(Resource):
         return ["I am alive"]
 
 
-class ApiChallenge(ProtectedResource):
+class ApiChallenge(Resource):
 
     @marshal_with(challenge_summary)
     def get(self):
@@ -182,14 +176,16 @@ class ApiChallengeDetail(Resource):
         return marshal(challenge, challenge_detail)
 
 
-class ApiSelfInfo(ProtectedResource):
+class ApiSelfInfo(Resource):
 
     """Information about the currently logged in user"""
 
+    @requires_auth
     def get(self):
         """Return information about the logged in user"""
         return marshal(session, me_fields)
 
+    @requires_auth
     def put(self):
         """User setting information about themselves"""
         payload = None
@@ -207,7 +203,7 @@ class ApiSelfInfo(ProtectedResource):
         return {}, 200
 
 
-class ApiChallengePolygon(ProtectedResource):
+class ApiChallengePolygon(Resource):
 
     """Challenge geometry endpoint"""
 
@@ -364,7 +360,7 @@ class ApiStatsHistory(Resource):
             end=end)
 
 
-class ApiChallengeTask(ProtectedResource):
+class ApiChallengeTask(Resource):
 
     """Random Task endpoint"""
 
@@ -434,7 +430,7 @@ class ApiChallengeTask(ProtectedResource):
         return marshal(task, task_fields)
 
 
-class ApiChallengeTaskDetails(ProtectedResource):
+class ApiChallengeTaskDetails(Resource):
 
     """Task details endpoint"""
 
@@ -476,7 +472,7 @@ class ApiChallengeTaskDetails(ProtectedResource):
         return {}, 200
 
 
-class ApiChallengeTaskStatus(ProtectedResource):
+class ApiChallengeTaskStatus(Resource):
 
     """Task status endpoint"""
 
@@ -487,7 +483,7 @@ class ApiChallengeTaskStatus(ProtectedResource):
         return {'status': task.status}
 
 
-class ApiChallengeTaskGeometries(ProtectedResource):
+class ApiChallengeTaskGeometries(Resource):
 
     """Task geometry endpoint"""
 

@@ -91,24 +91,21 @@ def task_exists(challenge_slug, task_identifier):
     return True
 
 
-def require_signedin(f):
-    """Require the caller to be authenticated against OSM"""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not app.debug and 'osm_token' not in session:
-            abort(403)
+# authentication function wrapper. will require authentication on decorated functions unless we're on localhost.
+def requires_auth(f):
+    def decorator(*args, **kwargs):
+        auth = request.authorization
+        app.logger.debug(request.url)
+        if not is_localhost(request.url) and (not auth or not check_auth(auth.username, auth.password)):
+            return authenticate()
         return f(*args, **kwargs)
-
-    return decorated_function
+    return decorator
 
 
 def local_or_whitelist_only(f):
     """Restricts the view to only localhost or a whitelist defined in
     the app configuration. If there is a proxy, it will handle that too"""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorator(*args, **kwargs):
         if not request.headers.getlist("X-Forwarded-For"):
             ip = request.remote_addr
         else:
@@ -116,8 +113,7 @@ def local_or_whitelist_only(f):
         if not ip == "127.0.0.1" and ip not in app.config["IP_WHITELIST"]:
             abort(403)
         return f(*args, **kwargs)
-
-    return decorated_function
+    return decorator
 
 
 def get_random_task(challenge):
@@ -385,20 +381,6 @@ def authenticate():
     return Response(
         status=401,
         headers={'WWW-Authenticate': 'Basic realm="Login Required"'})
-
-
-# authentication function wrapper. will require authentication on decorated functions unless we're on localhost.
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        app.logger.debug(request.url)
-        if not is_localhost(request.url) and (not auth or not check_auth(auth.username, auth.password)):
-            return authenticate()
-        return f(*args, **kwargs)
-
-    return decorated
-
 
 # determines if a URL is localhost
 def is_localhost(url):
