@@ -163,7 +163,7 @@ def json_to_task(slug, data, task=None, identifier=None):
         # create the task if none was passed in
         try:
             task = Task(slug, identifier)
-        except Exception, e:
+        except Exception as e:
             app.logger.warn(e.message)
             raise e
     else:
@@ -233,7 +233,7 @@ def geojson_to_task(slug, feature):
         g = TaskGeometry(osmid, shape)
         task.geometries.append(g)
         return task
-    except Exception, e:
+    except Exception as e:
         app.logger.debug("task could not be created, {}".format(e))
         return None
 
@@ -370,23 +370,7 @@ class JsonTasks(object):
 
 
 def compile_query(query):
-    """
-    Reconstructs the raw SQL query from an SQLAlchemy query object.
-
-    :param query: SQLAlchemy query objext
-    :return: The raw SQL query as a string.
-    """
-    dialect = query.session.bind.dialect
-    statement = query.statement
-    comp = compiler.SQLCompiler(dialect, statement)
-    comp.compile()
-    enc = dialect.encoding
-    params = {}
-    for k, v in comp.params.iteritems():
-        if isinstance(v, unicode):
-            v = v.encode(enc)
-        params[k] = sqlescape(v)
-    return (comp.string.encode(enc) % params).decode(enc)
+    return query.statement
 
 
 def check_auth(username, password):

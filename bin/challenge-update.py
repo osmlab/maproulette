@@ -30,30 +30,28 @@ changed_ids = [i for in in old_ids.intersection(new_ids) if old[i] != new[i]]
 
 # In order of priority, delete old task, update tasks and add tasks
 for i in deleted_ids:
-    print "Deleting %s... ", % i
+    print("Deleting %s... ", % i)
     requests.delete('http://localhost:8866/api/admin/challenge/%s/task/%s' %
                     challenge_id, i)
     r.raise_for_status()
-    print "Done"
-    
+    print("Done")
+
 for i in changed_ids:
-    print "Uploading changed %s...", % i
+    print("Uploading changed %s...", % i)
     requests.put('http://localhost:8886/api/admin/challenge/%s/task/%s' %
                  challenge_id, i,
                  headers = {'Content-type': 'application/json',
                             'Accept': 'text/plain'},
                  payload = json.dump(new[i]))
     r.raise_for_status()
-    print "Done"
+    print("Done")
 
 for i in to_new_ids:
-    print "Uploading new %s...", % i
+    print("Uploading new %s...", % i)
     requests.put('http://localhost:8866/api/admin/challenge/%s/task/%s' %
                  challenge_id, i, payload = json.dumps(new[i]),
                  headers = {'Content-type': 'application/json',
                             'Accept': 'text/plain'},
                  payload = json.dumps(new[i]))
     r.raise_for_status()
-    print "Done"
-
-                 
+    print("Done")

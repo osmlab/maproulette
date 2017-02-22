@@ -163,7 +163,7 @@ class ApiChallengeList(Resource):
         if difficulty is not None:
             query = query.filter_by(difficulty=difficulty)
         if lon is not None and lat is not None and radius is not None:
-            print "got lon, lat, rad: {lon}, {lat}, {rad}".format(lon=lon, lat=lat, rad=radius)
+            print("got lon, lat, rad: {lon}, {lat}, {rad}".format(lon=lon, lat=lat, rad=radius))
             query = query.filter(
                 Challenge.polygon.ST_Contains(
                     ST_Buffer('POINT({lon} {lat})'.format(lon=lon, lat=lat),
@@ -197,8 +197,8 @@ class ApiSelfInfo(ProtectedResource):
             payload = json.loads(request.data)
         except Exception:
             abort(400, message="JSON bad")
-        [session.pop(k, None) for k, v in payload.iteritems() if v is None]
-        for k, v in payload.iteritems():
+        [session.pop(k, None) for k, v in payload.items() if v is None]
+        for k, v in payload.items():
             if k not in me_fields.keys():
                 abort(400, message='you cannot set this key')
             if v is not None:

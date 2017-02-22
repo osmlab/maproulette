@@ -7,11 +7,10 @@ SECRET_KEY = 'CHANGE THIS'
 
 # The OAuth configuration paramters for OSM.
 OSM = {
-    'base_url': 'http://master.apis.dev.openstreetmap.org/api/0.6/',
-    'request_token_url':
-    'http://master.apis.dev.openstreetmap.org/oauth/request_token',
-    'access_token_url': 'http://master.apis.dev.openstreetmap.org/oauth/access_token',
-    'authorize_url': 'http://master.apis.dev.openstreetmap.org/oauth/authorize',
+    'base_url': 'https://master.apis.dev.openstreetmap.org/api/0.6/',
+    'request_token_url': 'https://master.apis.dev.openstreetmap.org/oauth/request_token',
+    'access_token_url': 'https://master.apis.dev.openstreetmap.org/oauth/access_token',
+    'authorize_url': 'https://master.apis.dev.openstreetmap.org/oauth/authorize',
     'consumer_key': 'CHANGE THIS',
     'consumer_secret': 'CHANGE_THIS'
 }

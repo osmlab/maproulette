@@ -75,7 +75,7 @@ def create_testdata(challenges=10, tasks=100, users=10):
 
     # create ten challenges
     for i in range(1, int(challenges) + 1):
-        print "Generating Test Challenge #%d" % i
+        print("Generating Test Challenge #%d" % i)
         minx = -120
         maxx = -40
         miny = 20
@@ -97,12 +97,12 @@ def create_testdata(challenges=10, tasks=100, users=10):
             maxx = minx + 1
             maxy = miny + 1
             challengepoly = box(minx, miny, maxx, maxy)
-            print "\tChallenge has a bounding box of ", challengepoly
+            print("\tChallenge has a bounding box of ", challengepoly)
             challenge.polygon = challengepoly
         db.session.add(challenge)
 
         # add some tasks to the challenge
-        print "\tGenerating %i tasks for challenge %i" % (int(tasks), i)
+        print("\tGenerating %i tasks for challenge %i" % (int(tasks), i))
         # generate NUM_TASKS random tasks
         for j in range(int(tasks)):
             # generate a unique identifier
@@ -161,10 +161,10 @@ def clean_stale_tasks():
             Task.identifier, Task.challenge_slug).having(max(Action.timestamp) < stale_threshold).all():
         task.append_action(Action("available"))
         db.session.add(task)
-        print "setting task %s to available" % (task.identifier)
+        print("setting task %s to available" % (task.identifier))
         counter += 1
     db.session.commit()
-    print 'done. %i tasks made available' % counter
+    print('done. %i tasks made available' % counter)
 
 
 @manager.command
@@ -182,8 +182,8 @@ def populate_task_location():
             if not counter % 1000:
                 db.session.commit()
         db.session.commit()
-        print 'done. Location for %i tasks in challenge %s set' %\
-            (counter, challenge.title)
+        print('done. Location for %i tasks in challenge %s set' %\
+            (counter, challenge.title))
 
 
 @manager.command
@@ -195,8 +195,8 @@ def clean_sessions():
         try:
             if os.path.isfile(file_path):
                 os.unlink(file_path)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
 
 
 if __name__ == "__main__":

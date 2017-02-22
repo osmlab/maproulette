@@ -1,4 +1,4 @@
-Flask>=0.10.1
+Flask>=0.9,<0.11
 Flask-RESTful>=0.2.1
 Flask-KVSession>=0.4
 Flask-OAuthlib>=0.4.2

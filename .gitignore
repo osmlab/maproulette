@@ -19,3 +19,4 @@ bower_components/
 responses.json
 migrations/
 .idea/
+.DS_Store

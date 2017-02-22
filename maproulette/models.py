@@ -35,7 +35,8 @@ class User(db.Model):
         db.Integer,
         unique=True,
         primary_key=True,
-        nullable=False)
+        nullable=False,
+        autoincrement=True)
     oauth_token = db.Column(
         db.String)
     oauth_secret = db.Column(
@@ -77,7 +78,8 @@ class Challenge(db.Model):
         db.Integer,
         unique=True,
         primary_key=True,
-        nullable=False)
+        nullable=False,
+        autoincrement=True)
     slug = db.Column(
         db.String(72),
         unique=True,
@@ -201,7 +203,8 @@ class Task(db.Model):
         db.Integer,
         Sequence('tasks_id_seq'),
         unique=True,
-        nullable=False)
+        nullable=False,
+        autoincrement=True)
     identifier = db.Column(
         db.String(72),
         primary_key=True,
@@ -277,7 +280,7 @@ class Task(db.Model):
 
     def update(self, new_values, geometries, commit=True):
         """This updates a task based on a dict with new values"""
-        for k, v in new_values.iteritems():
+        for k, v in new_values.items():
             # if a status is set, append an action
             if k == 'status':
                 self.append_action(Action(v))
@@ -314,7 +317,7 @@ class Task(db.Model):
         try:
             db.session.commit()
         except Exception as e:
-            app.logger.warn(e.message)
+            app.logger.warn(e)
             db.session.rollback()
             raise e
 
@@ -343,7 +346,8 @@ class TaskGeometry(db.Model):
         db.Integer,
         nullable=False,
         unique=True,
-        primary_key=True)
+        primary_key=True,
+        autoincrement=True)
     osmid = db.Column(
         db.BigInteger)
     task_id = db.Column(
@@ -386,7 +390,8 @@ class Action(db.Model):
         db.Integer,
         unique=True,
         primary_key=True,
-        nullable=False)
+        nullable=False,
+        autoincrement=True)
     timestamp = db.Column(
         db.DateTime,
         # store the timestamp as naive UTC time

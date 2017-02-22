@@ -27,7 +27,7 @@ def _is_ubuntu_1404():
     result = run('uname -a | grep -q Ubuntu', quiet=True).succeeded and\
         run('lsb_release -r | grep -q 14.04', quiet=True).succeeded
     if result:
-        print "This is Ubuntu 14.04."
+        print("This is Ubuntu 14.04.")
     return result
 
 
@@ -230,7 +230,7 @@ def setup_postgres_permissions():
     '''Adds local trust to pg_hba.conf'''
 
     if not exists(pg_hba_fname):
-        print red(pg_hba_fname + "is not present on the filesystem")
+        print(red(pg_hba_fname + "is not present on the filesystem"))
         exit()
     sed(pg_hba_fname,
         "host\s*all\s*all\s*127.0.0.1/32\s*md5",

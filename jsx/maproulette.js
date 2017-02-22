@@ -775,9 +775,7 @@ var MRManager = (function () {
   var presentWelcomeDialog = function() {
     React.render(
         <div>
-        <h1>Welcome to MapRoulette</h1>
-        <h2>New MapRoulette is coming!</h2>
-        <p>This version of MapRoulette will be replaced by New MapRoulette at the end of June, 2016. You can preview the New Maproulette <a href='http://maproulette.org:8080/'>here</a>.</p>
+        <h1>Welcome to MapRoulette!</h1>
         <Button onClick={signIn}>Sign in</Button>
         </div>, document.getElementById('dialog'));
     $('#dialog').fadeIn();
