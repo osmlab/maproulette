@@ -27,7 +27,7 @@ div#controlpanel {
 }
 
 /* The announcement */
-div#announce {
+div#announce:not(:empty) {
     z-index: 5;
     position: absolute;
     top:0px;
