@@ -91,6 +91,15 @@ def task_exists(challenge_slug, task_identifier):
     return True
 
 
+def requires_token(f):
+    def decorator(*args, **kwargs):
+        app.logger.debug('token token token')
+        if token not in session:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorator
+
+
 # authentication function wrapper. will require authentication on decorated functions unless we're on localhost.
 def requires_auth(f):
     def decorator(*args, **kwargs):

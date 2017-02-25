@@ -7,7 +7,7 @@ from flask import session, request, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404, get_task_or_none, osmerror, \
     json_to_task, geojson_to_task, refine_with_user_area, user_area_is_defined,\
-    send_email, as_stats_dict, challenge_exists, requires_auth
+    send_email, as_stats_dict, challenge_exists, requires_auth, requires_token
 from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
