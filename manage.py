@@ -3,9 +3,9 @@
 import os
 import sys
 import subprocess
-from flask.ext.runner import Manager
+from flask_runner import Manager
 from maproulette import app, db
-from flask.ext.migrate import MigrateCommand, Migrate
+from flask_migrate import MigrateCommand, Migrate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 

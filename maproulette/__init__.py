@@ -1,10 +1,10 @@
 import os
 from flask import Flask
 from simplekv.fs import FilesystemStore
-from flask.ext.kvsession import KVSessionExtension
+from flask_kvsession import KVSessionExtension
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from os.path import join, expanduser
 
 # initialize server KV session store

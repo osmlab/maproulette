@@ -1,1 +1,0 @@
-You are looking at the code for MapRoulette 1 which has been deprecated in favor of the new version, [MapRoulette 2](http://github.com/maproulette/maproulette2). Unless you have a specific interest in this deprecated code base, do not add any new issues, or pull requests.CONTRIBUTING

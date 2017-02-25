@@ -738,6 +738,13 @@ var MRManager = (function () {
             setTimeout(confirmRemap, 4000);
         };
 
+        var openTaskInOSM = function () {
+            window.open(constructOSMUri(), 'MROSMWindow');
+            updateTask('editing');
+            toastr.info('Your task is being loaded in your preferred OSM editor in a separate tab. Please return here after you completed your fixes!');
+            setTimeout(confirmRemap, 4000)
+        };
+
         var presentDoneDialog = function () {
             // Right now we only support default tasks
             React.render(

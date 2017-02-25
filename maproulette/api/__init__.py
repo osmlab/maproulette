@@ -1,8 +1,8 @@
 from maproulette import app
-from flask.ext.restful import reqparse, fields, marshal, \
+from flask_restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource, abort
-from flask.ext.restful.fields import Raw
-from flask.ext.restful.utils import cors
+from flask_restful.fields import Raw
+from flask_restful.utils import cors
 from flask import session, request, url_for
 from maproulette.helpers import get_random_task,\
     get_challenge_or_404, get_task_or_404, get_task_or_none, osmerror, \

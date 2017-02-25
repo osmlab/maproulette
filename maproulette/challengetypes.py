@@ -1,7 +1,7 @@
 """This module contains the various challenge types"""
 
 from maproulette.models import Challenge
-from flask.ext.restful import fields
+from flask_restful import fields
 
 challenge_types = {}
 
