@@ -396,34 +396,38 @@ var MRManager = (function () {
             var lat = center.lat;
             var lon = center.lng;
             var baseUriComponent = "http://osm.org/edit?editor=id#";
-            var idUriComponent = "id=";
-            var mapUriComponent = "map=" + [zoom, lat, lon].join('/');
-            // http://openstreetmap.us/iD/release/#background=Bing&id=w238383695,w238383626,&desmap=20.00/-77.02271/38.90085
-            // https://www.openstreetmap.org/edit?editor=id&way=decode274204300#map=18/40.78479/-111.88787
-            // https://www.openstreetmap.org/edit?editor=id#map=19/53.30938/-0.98069
+            var comment = "This edit is from MapRoulette challenge '" + challenge.title + "'. See " + window.location.href + " for details.";
+            var hashComponents = [];
+            // var idUriComponent = "id=";
+            hashComponents.push("map=" + [zoom, lat, lon].join('/'));
+            hashComponents.push("comment=" + encodeURIComponent(comment));
+            // https://github.com/openstreetmap/iD/blob/master/API.md#id-on-openstreetmaporg-rails-port
             for (i in task.features) {
                 var feature = task.features[i];
                 if (!feature.properties.osmid) {
                     continue;
                 }
-                switch (feature.geometry.type) {
-                case 'Point':
-                    idUriComponent += "n" + feature.properties.osmid + ",";
-                    break;
-                case 'LineString':
-                    idUriComponent += "w" + feature.properties.osmid + ",";
-                    break;
-                case 'Polygon':
-                    idUriComponent += "w" + feature.properties.osmid + ",";
-                    break;
-                case 'MultiPolygon':
-                    idUrlComponent += "r" + feature.properties.osmid + ",";
-                    break;
-                }
+                // I don't think selecting nodes / ways / relations is supported.
+                // switch (feature.geometry.type) {
+                // case 'Point':
+                //     idUriComponent += "n" + feature.properties.osmid + ",";
+                //     break;
+                // case 'LineString':
+                //     idUriComponent += "w" + feature.properties.osmid + ",";
+                //     break;
+                // case 'Polygon':
+                //     idUriComponent += "w" + feature.properties.osmid + ",";
+                //     break;
+                // case 'MultiPolygon':
+                //     idUrlComponent += "r" + feature.properties.osmid + ",";
+                //     break;
+                // }
             }
             // remove trailing comma - iD won't play ball with it
-            idUriComponent = idUriComponent.replace(/,$/, "");
-            var uri = baseUriComponent + [idUriComponent, mapUriComponent].join('&');
+            // idUriComponent = idUriComponent.replace(/,$/, "");
+            // var uri = baseUriComponent + [idUriComponent, mapUriComponent].join('&');
+            var uri = baseUriComponent + hashComponents.join('&');
+            console.log(uri);
             return uri;
         };
 
@@ -734,6 +738,13 @@ var MRManager = (function () {
             setTimeout(confirmRemap, 4000);
         };
 
+        var openTaskInOSM = function () {
+            window.open(constructOSMUri(), 'MROSMWindow');
+            updateTask('editing');
+            toastr.info('Your task is being loaded in your preferred OSM editor in a separate tab. Please return here after you completed your fixes!');
+            setTimeout(confirmRemap, 4000)
+        };
+
         var presentDoneDialog = function () {
             // Right now we only support default tasks
             React.render(
@@ -775,9 +786,7 @@ var MRManager = (function () {
   var presentWelcomeDialog = function() {
     React.render(
         <div>
-        <h1>Welcome to MapRoulette</h1>
-        <h2>New MapRoulette is coming!</h2>
-        <p>This version of MapRoulette will be replaced by New MapRoulette at the end of June, 2016. You can preview the New Maproulette <a href='http://maproulette.org:8080/'>here</a>.</p>
+        <h1>Welcome to MapRoulette!</h1>
         <Button onClick={signIn}>Sign in</Button>
         </div>, document.getElementById('dialog'));
     $('#dialog').fadeIn();
@@ -946,30 +955,32 @@ var MRManager = (function () {
         var registerHotkeys = function () {
             $(document).keydown(function(e) {
                 e.preventDefault();
-                switch(e.keyCode) {
-                    case 81: //q
-                        MRManager.nextTask("falsepositive");
-                        break;
-                    case 87: //w
-                        MRManager.nextTask("skipped");
-                        break;
-                    case 69: //e
-                        MRManager.openTaskInId();
-                        break;
-                    case 82: //r
-                        MRManager.openTaskInJosm(false);
-                        break;
-                    case 84: //t
-                        MRManager.openTaskInJosm();
-                        break;
-                    case 89: //y
-                        MRManager.openTaskInOsm();
-                        break;
-                    case 27: //esc
-                        $('#dialog').fadeOut();
-                        break;
-                    default:
-                        break;
+                if (!(e.altKey || e.ctrlKey || e.shiftKey || e.metaKey)) {
+                    switch(e.keyCode) {
+                        case 81: //q
+                            MRManager.nextTask("falsepositive");
+                            break;
+                        case 87: //w
+                            MRManager.nextTask("skipped");
+                            break;
+                        case 69: //e
+                            MRManager.openTaskInId();
+                            break;
+                        case 82: //r
+                            MRManager.openTaskInJosm(false);
+                            break;
+                        case 84: //t
+                            MRManager.openTaskInJosm();
+                            break;
+                        case 89: //y
+                            MRManager.openTaskInOsm();
+                            break;
+                        case 27: //esc
+                            $('#dialog').fadeOut();
+                            break;
+                        default:
+                            break;
+                    }
                 }
             });
         };

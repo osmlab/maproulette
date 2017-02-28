@@ -1,6 +1,6 @@
 import maproulette
 import unittest
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 
 class MaprouletteTestCase(unittest.TestCase):

@@ -127,6 +127,6 @@ def get_latest_changeset(osm_id):
     """Gets the latest changeset for the signed in user"""
     if osm_id is None:
         return None
-    endpoint = 'changesets?user=%s' % (session.get('osm_id'))
+    endpoint = 'changesets?user={}'.format(osm_id)
     changesets = osm.get(endpoint).data
     return changesets.find('changeset') or None

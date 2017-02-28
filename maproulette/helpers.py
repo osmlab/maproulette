@@ -91,24 +91,30 @@ def task_exists(challenge_slug, task_identifier):
     return True
 
 
-def require_signedin(f):
-    """Require the caller to be authenticated against OSM"""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not app.debug and 'osm_token' not in session:
+def requires_token(f):
+    def decorator(*args, **kwargs):
+        app.logger.debug('token token token')
+        if token not in session:
             abort(403)
         return f(*args, **kwargs)
+    return decorator
 
-    return decorated_function
+
+# authentication function wrapper. will require authentication on decorated functions unless we're on localhost.
+def requires_auth(f):
+    def decorator(*args, **kwargs):
+        auth = request.authorization
+        app.logger.debug(request.url)
+        if not is_localhost(request.url) and (not auth or not check_auth(auth.username, auth.password)):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorator
 
 
 def local_or_whitelist_only(f):
     """Restricts the view to only localhost or a whitelist defined in
     the app configuration. If there is a proxy, it will handle that too"""
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorator(*args, **kwargs):
         if not request.headers.getlist("X-Forwarded-For"):
             ip = request.remote_addr
         else:
@@ -116,8 +122,7 @@ def local_or_whitelist_only(f):
         if not ip == "127.0.0.1" and ip not in app.config["IP_WHITELIST"]:
             abort(403)
         return f(*args, **kwargs)
-
-    return decorated_function
+    return decorator
 
 
 def get_random_task(challenge):
@@ -163,8 +168,8 @@ def json_to_task(slug, data, task=None, identifier=None):
         # create the task if none was passed in
         try:
             task = Task(slug, identifier)
-        except Exception, e:
-            app.logger.warn(e.message)
+        except Exception as e:
+            app.logger.warn(e)
             raise e
     else:
         # delete existing task geometries
@@ -233,7 +238,7 @@ def geojson_to_task(slug, feature):
         g = TaskGeometry(osmid, shape)
         task.geometries.append(g)
         return task
-    except Exception, e:
+    except Exception as e:
         app.logger.debug("task could not be created, {}".format(e))
         return None
 
@@ -370,23 +375,7 @@ class JsonTasks(object):
 
 
 def compile_query(query):
-    """
-    Reconstructs the raw SQL query from an SQLAlchemy query object.
-
-    :param query: SQLAlchemy query objext
-    :return: The raw SQL query as a string.
-    """
-    dialect = query.session.bind.dialect
-    statement = query.statement
-    comp = compiler.SQLCompiler(dialect, statement)
-    comp.compile()
-    enc = dialect.encoding
-    params = {}
-    for k, v in comp.params.iteritems():
-        if isinstance(v, unicode):
-            v = v.encode(enc)
-        params[k] = sqlescape(v)
-    return (comp.string.encode(enc) % params).decode(enc)
+    return query.statement
 
 
 def check_auth(username, password):
@@ -402,21 +391,7 @@ def authenticate():
         status=401,
         headers={'WWW-Authenticate': 'Basic realm="Login Required"'})
 
-
-# authentication function wrapper. will require authentication on decorated functions unless we're on localhost.
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        app.logger.debug(request.url)
-        if not is_localhost(request.url) and (not auth or not check_auth(auth.username, auth.password)):
-            return authenticate()
-        return f(*args, **kwargs)
-
-    return decorated
-
-
 # determines if a URL is localhost
 def is_localhost(url):
-    from urlparse import urlparse
+    from urllib.parse import urlparse
     return urlparse(url).hostname == 'localhost'

@@ -1,14 +1,13 @@
 from maproulette import app
-from flask.ext.restful import reqparse, fields, marshal, \
+from flask_restful import reqparse, fields, marshal, \
     marshal_with, Api, Resource, abort
-from flask.ext.restful.fields import Raw
-from flask.ext.restful.utils import cors
+from flask_restful.fields import Raw
+from flask_restful.utils import cors
 from flask import session, request, url_for
 from maproulette.helpers import get_random_task,\
-    get_challenge_or_404, get_task_or_404, get_task_or_none,\
-    require_signedin, osmerror, \
+    get_challenge_or_404, get_task_or_404, get_task_or_none, osmerror, \
     json_to_task, geojson_to_task, refine_with_user_area, user_area_is_defined,\
-    send_email, as_stats_dict, challenge_exists, requires_auth
+    send_email, as_stats_dict, challenge_exists, requires_auth, requires_token
 from maproulette.models import Challenge, Task, Action, User, db
 from geoalchemy2.functions import ST_Buffer
 from geoalchemy2.shape import to_shape
@@ -19,11 +18,6 @@ import json
 import re
 
 message_internal_server_error = 'Something really unexpected happened...'
-
-class ProtectedResource(Resource):
-
-    """A Resource that requires the caller to be authenticated against OSM"""
-    method_decorators = [require_signedin]
 
 
 class PointField(Raw):
@@ -101,7 +95,7 @@ class ApiPing(Resource):
         return ["I am alive"]
 
 
-class ApiChallenge(ProtectedResource):
+class ApiChallenge(Resource):
 
     @marshal_with(challenge_summary)
     def get(self):
@@ -163,7 +157,7 @@ class ApiChallengeList(Resource):
         if difficulty is not None:
             query = query.filter_by(difficulty=difficulty)
         if lon is not None and lat is not None and radius is not None:
-            print "got lon, lat, rad: {lon}, {lat}, {rad}".format(lon=lon, lat=lat, rad=radius)
+            print("got lon, lat, rad: {lon}, {lat}, {rad}".format(lon=lon, lat=lat, rad=radius))
             query = query.filter(
                 Challenge.polygon.ST_Contains(
                     ST_Buffer('POINT({lon} {lat})'.format(lon=lon, lat=lat),
@@ -182,14 +176,16 @@ class ApiChallengeDetail(Resource):
         return marshal(challenge, challenge_detail)
 
 
-class ApiSelfInfo(ProtectedResource):
+class ApiSelfInfo(Resource):
 
     """Information about the currently logged in user"""
 
+    @requires_auth
     def get(self):
         """Return information about the logged in user"""
         return marshal(session, me_fields)
 
+    @requires_auth
     def put(self):
         """User setting information about themselves"""
         payload = None
@@ -197,8 +193,8 @@ class ApiSelfInfo(ProtectedResource):
             payload = json.loads(request.data)
         except Exception:
             abort(400, message="JSON bad")
-        [session.pop(k, None) for k, v in payload.iteritems() if v is None]
-        for k, v in payload.iteritems():
+        [session.pop(k, None) for k, v in payload.items() if v is None]
+        for k, v in payload.items():
             if k not in me_fields.keys():
                 abort(400, message='you cannot set this key')
             if v is not None:
@@ -207,7 +203,7 @@ class ApiSelfInfo(ProtectedResource):
         return {}, 200
 
 
-class ApiChallengePolygon(ProtectedResource):
+class ApiChallengePolygon(Resource):
 
     """Challenge geometry endpoint"""
 
@@ -364,7 +360,7 @@ class ApiStatsHistory(Resource):
             end=end)
 
 
-class ApiChallengeTask(ProtectedResource):
+class ApiChallengeTask(Resource):
 
     """Random Task endpoint"""
 
@@ -425,16 +421,16 @@ class ApiChallengeTask(ProtectedResource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='The session and the database did not agree for task identifier {identifier}: {message}'.format(id=task.identifier, message=e.message))
+                abort(409, message='The session and the database did not agree for task identifier {identifier}: {message}'.format(id=task.identifier, message=e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return marshal(task, task_fields)
 
 
-class ApiChallengeTaskDetails(ProtectedResource):
+class ApiChallengeTaskDetails(Resource):
 
     """Task details endpoint"""
 
@@ -467,16 +463,16 @@ class ApiChallengeTaskDetails(ProtectedResource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='The session and the database did not agree for task identifier {identifier}: {message}'.format(id=task.identifier, message=e.message))
+                abort(409, message='The session and the database did not agree for task identifier {identifier}: {message}'.format(id=task.identifier, message=e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return {}, 200
 
 
-class ApiChallengeTaskStatus(ProtectedResource):
+class ApiChallengeTaskStatus(Resource):
 
     """Task status endpoint"""
 
@@ -487,7 +483,7 @@ class ApiChallengeTaskStatus(ProtectedResource):
         return {'status': task.status}
 
 
-class ApiChallengeTaskGeometries(ProtectedResource):
+class ApiChallengeTaskGeometries(Resource):
 
     """Task geometry endpoint"""
 
@@ -581,7 +577,7 @@ class AdminApiChallenge(Resource):
         except Exception as e:
             app.logger.debug('POST request does not have a JSON payload')
             app.logger.debug(request.data)
-            abort(400, message=e.message)
+            abort(400, message=e)
         if 'title' not in payload:
             app.logger.debug('A new challenge must have title')
             abort(400, message="A new challenge must have title")
@@ -600,11 +596,11 @@ class AdminApiChallenge(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='The session and the database did not agree for challenge {slug}: {message}'.format(slug=c.slug, message=e.message))
+                abort(409, message='The session and the database did not agree for challenge {slug}: {message}'.format(slug=c.slug, message=e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return {}, 201
 
@@ -632,11 +628,11 @@ class AdminApiChallenge(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return {}, 200
 
@@ -649,11 +645,11 @@ class AdminApiChallenge(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message='Something really unexpected happened...')
         return {}, 204
 
@@ -693,11 +689,11 @@ class AdminApiUpdateTask(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='You posted a task ({identifier}) that already existed: {message}'.format(identifier=t.identifier, message=e.message))
+                abort(409, message='You posted a task ({identifier}) that already existed: {message}'.format(identifier=t.identifier, message=e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return {}, 201
 
@@ -715,11 +711,11 @@ class AdminApiUpdateTask(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='The session and the database did not agree: {}'.format(e.message))
+                abort(409, message='The session and the database did not agree: {}'.format(e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message='something unexpected happened')
         return {}, 200
 
@@ -735,11 +731,11 @@ class AdminApiUpdateTask(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return {}, 204
 
@@ -838,11 +834,11 @@ class AdminApiUpdateTasks(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='You tried to post a task ({identifier}) that already existed: {message}'.format(identifier=task['identifier'], message=e.message))
+                abort(409, message='You tried to post a task ({identifier}) that already existed: {message}'.format(identifier=task['identifier'], message=e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return {}, 201
 
@@ -879,11 +875,11 @@ class AdminApiUpdateTasks(Resource):
             db.session.commit()
         except Exception as e:
             if type(e) == IntegrityError:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 db.session.rollback()
-                abort(409, message='the session and the database did not agree: {}'.format(e.message))
+                abort(409, message='the session and the database did not agree: {}'.format(e))
             else:
-                app.logger.warn(e.message)
+                app.logger.warn(e)
                 abort(500, message=message_internal_server_error)
         return {}, 200
 
