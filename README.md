@@ -1,6 +1,6 @@
 Welcome to MapRoulette 1, the powerful & popular bug fixing tool (or is it a game?) for OpenStreetMap.
 
-This is the old version of Maproulette. The new codebase is at http://github.com/maproulette/maproulette2
+This a very old version of Maproulette. Modern MapRoulette is now separated into a React based front end application at https://github.com/osmlab/maproulette3 and a Scala based backend at http://github.com/maproulette/maproulette2
 
 This README deals with development related topics only. If you are interested in contributing to OpenStreetMap by fixing some bugs through MapRoulette, just head over to [the MapRoulette web site](http://maproulette.org) and get started - it should be pretty self explanatory.
 
